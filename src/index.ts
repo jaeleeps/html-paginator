@@ -11,6 +11,8 @@ export type { ResolvedPageConfig } from './pageConfig';
 export { renderTemplate } from './renderTemplate';
 export { buildPages, CLASS_NAMES } from './buildPages';
 export type { BuildPagesOptions } from './buildPages';
+export { createDomMeasurer, measureOuterHeight } from './measure';
+export type { DomMeasurer, DomMeasurerOptions } from './measure';
 export type {
   BreakBehavior,
   HeaderFooterTemplate,
