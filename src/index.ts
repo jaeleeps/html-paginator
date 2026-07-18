@@ -4,6 +4,8 @@
  */
 
 export { createPaginator, DEFAULT_PAGE_SIZE } from './createPaginator';
+export { distribute } from './distribute';
+export type { DistributeOptions, DistributedPage } from './distribute';
 export type {
   BreakBehavior,
   HeaderFooterTemplate,
