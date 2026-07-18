@@ -5,7 +5,17 @@
 
 export { createPaginator, DEFAULT_PAGE_SIZE } from './createPaginator';
 export { distribute } from './distribute';
-export type { DistributeOptions, DistributedPage } from './distribute';
+export type { DistributeOptions, DistributedPage, WrapInfo } from './distribute';
+export {
+  BREAK_ATTRIBUTE,
+  CONTINUED_ATTRIBUTE,
+  createDomBreaker,
+  domChildren,
+  domWrap,
+  getBreakBehavior,
+  warnNestedBreakAttributes,
+} from './domBreak';
+export type { DomWrapOptions } from './domBreak';
 export { PAGE_SIZE_PRESETS, resolvePageConfig, resolveSize } from './pageConfig';
 export type { ResolvedPageConfig } from './pageConfig';
 export { renderTemplate } from './renderTemplate';
