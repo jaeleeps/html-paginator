@@ -69,6 +69,11 @@ export interface PaginatorConfig {
   pageOverrides?: Record<number, PageConfig>;
   /** Repeat <thead> on table continuation pages. Default: false. */
   repeatTableHead?: boolean;
+  /**
+   * Inject the built-in page/print stylesheet into the document.
+   * Default: true. Disable to ship your own CSS.
+   */
+  injectStyles?: boolean;
   /** Custom measurement adapter (default: DOM layout measurement). */
   measurer?: MeasureAdapter;
 }

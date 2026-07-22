@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<!--
+  html-paginator example: invoice with per-page headers/footers, a splitting
+  table, and data-break controls.
+
+  Run `npm run build` first (imports ../dist/index.js), then either:
+  - open in a browser and print (Cmd+P), or
+  - generate a PDF headlessly: `node examples/generate-pdf.mjs`
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>html-paginator — Invoice Example</title>
+  <style>
+    body {
+      font-family: -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: #e8e8e8;
+      margin: 0;
+      padding: 24px 0;
+    }
+
+    /* ---- header/footer templates (rendered per page) ---- */
+    .invoice-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 0 12px;
+      border-bottom: 3px solid #1a56db;
+    }
+    .invoice-header h1 { margin: 0; font-size: 20px; color: #1a56db; }
+    .invoice-header .meta { text-align: right; font-size: 12px; color: #555; }
+
+    .invoice-footer {
+      padding: 12px 0 24px;
+      border-top: 1px solid #ccc;
+      font-size: 11px;
+      color: #777;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* ---- content ---- */
+    .items-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .items-table th {
+      text-align: left;
+      background: #f3f4f6;
+      padding: 8px;
+      border-bottom: 2px solid #d1d5db;
+    }
+    .items-table td { padding: 8px; border-bottom: 1px solid #e5e7eb; }
+    /* Continuation fragments (data-hp-continued) keep table styling via the
+       same class; style them differently if desired: */
+    .items-table[data-hp-continued] { border-top: 1px dashed #9ca3af; }
+
+    .totals {
+      margin-top: 16px;
+      margin-left: auto;
+      width: 40%;
+      font-size: 14px;
+    }
+    .totals .row { display: flex; justify-content: space-between; padding: 4px 0; }
+    .totals .grand { font-weight: bold; border-top: 2px solid #111; }
+
+    .terms {
+      margin-top: 24px;
+      font-size: 11px;
+      color: #666;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <!-- The one big body wrapper: content to paginate -->
+  <div id="content">
+    <p>Dear customer, please find below the itemized charges for services rendered in June 2026.</p>
+
+    <!-- The table splits at row level; thead repeats via repeatTableHead -->
+    <table class="items-table" data-break="auto">
+      <thead>
+        <tr><th>#</th><th>Description</th><th>Qty</th><th>Amount</th></tr>
+      </thead>
+      <tbody id="line-items"><!-- rows generated below --></tbody>
+    </table>
+
+    <!-- Totals must never split across pages -->
+    <div class="totals" data-break="avoid">
+      <div class="row"><span>Subtotal</span><span>$4,800.00</span></div>
+      <div class="row"><span>Tax (8.875%)</span><span>$426.00</span></div>
+      <div class="row grand"><span>Total</span><span>$5,226.00</span></div>
+    </div>
+
+    <div class="terms" data-break="avoid">
+      <strong>Terms &amp; Conditions</strong><br>
+      Payment is due within 30 days. Late payments accrue interest at 1.5% per
+      month. Please reference the invoice number in all correspondence.
+    </div>
+  </div>
+
+  <script type="module">
+    import { createPaginator } from '../dist/index.js';
+
+    // Generate enough line items to span multiple pages.
+    const tbody = document.getElementById('line-items');
+    for (let i = 1; i <= 60; i++) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${i}</td><td>Consulting services — sprint ${i}</td><td>1</td><td>$80.00</td>`;
+      tbody.appendChild(tr);
+    }
+
+    const paginator = createPaginator({
+      source: '#content',
+      page: {
+        size: 'letter',
+        margin: '0.6in',
+        header: ({ page, totalPages }) => `
+          <div class="invoice-header">
+            <h1>ACME Corp — Invoice #2026-0142</h1>
+            <div class="meta">June 30, 2026<br>Page ${page} of ${totalPages}</div>
+          </div>`,
+        footer: ({ page, totalPages }) => `
+          <div class="invoice-footer">
+            <span>ACME Corp · 123 Example Ave, Brooklyn NY</span>
+            <span>${page} / ${totalPages}</span>
+          </div>`,
+      },
+      repeatTableHead: true,
+    });
+
+    paginator.paginate();
+
+    // Signal readiness for the Puppeteer script.
+    document.documentElement.dataset.paginated = 'true';
+  </script>
+</body>
+</html>

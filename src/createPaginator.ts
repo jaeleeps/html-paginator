@@ -3,6 +3,8 @@ import { buildPages, CLASS_NAMES } from './buildPages';
 import { distribute } from './distribute';
 import { BREAK_ATTRIBUTE, createDomBreaker, warnNestedBreakAttributes } from './domBreak';
 import { createDomMeasurer } from './measure';
+import { resolveSize } from './pageConfig';
+import { injectStyles } from './styles';
 
 export const DEFAULT_PAGE_SIZE = 'letter' as const;
 
@@ -23,6 +25,7 @@ function resolveElement(
 export function createPaginator(config: PaginatorConfig): Paginator {
   const resolved: PaginatorConfig = {
     repeatTableHead: false,
+    injectStyles: true,
     ...config,
     page: {
       size: DEFAULT_PAGE_SIZE,
@@ -93,6 +96,10 @@ export function createPaginator(config: PaginatorConfig): Paginator {
             item.querySelector(`[${BREAK_ATTRIBUTE}="clip"]`) !== null;
           if (clip) body.style.overflow = 'hidden';
         });
+
+        if (resolved.injectStyles !== false) {
+          injectStyles(doc, resolveSize(resolved.page?.size));
+        }
 
         // Render: user always sees exactly one final copy.
         if (resolved.target !== undefined) {
