@@ -54,6 +54,9 @@ export function buildPages(
     pageEl.style.width = config.size.width;
     pageEl.style.height = config.size.height;
     pageEl.style.padding = config.margin;
+    // Margin lives inside the sheet size; inline so geometry holds even with
+    // injectStyles: false.
+    pageEl.style.boxSizing = 'border-box';
 
     const header = renderTemplate(config.header, ctx, doc);
     if (header) {

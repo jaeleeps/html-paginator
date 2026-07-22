@@ -85,6 +85,9 @@ export function createDomMeasurer(options: DomMeasurerOptions): DomMeasurer {
     pageEl.style.width = config.size.width;
     pageEl.style.height = config.size.height;
     pageEl.style.padding = config.margin;
+    // Must match the real page geometry (buildPages + stylesheet): padding
+    // inside the sheet size, not added to it.
+    pageEl.style.boxSizing = 'border-box';
     // Hidden but rendered, so layout happens without being visible.
     pageEl.style.position = 'absolute';
     pageEl.style.visibility = 'hidden';
