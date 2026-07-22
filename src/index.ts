@@ -26,6 +26,7 @@ export type { DomMeasurer, DomMeasurerOptions } from './measure';
 export type {
   BreakBehavior,
   HeaderFooterTemplate,
+  MeasureAdapter,
   PageConfig,
   PageContext,
   PageDimensions,
