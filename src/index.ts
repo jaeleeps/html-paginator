@@ -18,6 +18,13 @@ export {
 export type { DomWrapOptions } from './domBreak';
 export { PAGE_SIZE_PRESETS, resolvePageConfig, resolveSize } from './pageConfig';
 export type { ResolvedPageConfig } from './pageConfig';
+export {
+  autoPaginate,
+  bindPrintPagination,
+  DECLARATIVE_ATTRIBUTES,
+  parseDeclarativeConfig,
+} from './declarative';
+export type { PrintPaginationHandle } from './declarative';
 export { renderTemplate } from './renderTemplate';
 export { buildPages, CLASS_NAMES } from './buildPages';
 export type { BuildPagesOptions } from './buildPages';
