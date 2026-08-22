@@ -248,13 +248,25 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 
 ## How it works
 
-1. **Measure** -- A hidden probe page with the same dimensions, margins, header, and footer is mounted in the document. Content elements are temporarily placed inside it to get accurate heights from the browser's layout engine.
+> See the [interactive algorithm diagram](distribution-algorithm.html) for a visual walkthrough.
 
-2. **Distribute** -- A greedy first-fit algorithm walks the content top-to-bottom, filling each page until the next element doesn't fit. Splittable elements (like tables) are recursively split at child boundaries; atomic elements that exceed page height overflow in place rather than leaving blank pages.
+The pipeline has two passes:
 
-3. **Render** -- Pages are assembled as flex-column divs with the configured dimensions, headers, footers, and content. The original source is hidden; a single final copy is shown.
+### Pass 1 -- Distribution (greedy first-fit)
 
-4. **Print** -- An injected `@page` rule sets the CSS page size and zeroes browser margins, so the library's own header/footer/margin configuration is authoritative. Each page gets `page-break-after: always`.
+1. **Measure** -- A hidden probe page with the same dimensions, margins, header, and footer is mounted in the document. Each content element is temporarily placed inside it to get an accurate height from the browser's layout engine. Available body height is computed per page (it varies when headers/footers differ).
+
+2. **Distribute** -- Items are walked top-to-bottom, filling the current page until the next element doesn't fit. Order is always preserved; items are never reordered to fill gaps.
+
+3. **Split or place** -- When an item doesn't fit:
+   - **Splittable** (`data-break="auto"` with children): `splitToFit` recursively splits the container at child boundaries. The head fragment stays on the current page; the tail is re-queued for the next page. Tables split at row level with optional `<thead>` repetition. If no children fit an empty page, `forceSplit` takes the first (deepest splittable) child so pagination can continue.
+   - **Atomic** (`avoid`, `clip`, or leaf): the item is placed alone on a new page. If it exceeds the page height, it overflows in place (`overflows: true`). For `clip` items, `overflow: hidden` is applied to the page body.
+
+### Pass 2 -- Rendering
+
+4. **Build pages** -- Distribution determines the final page count. Pages are assembled as flex-column divs; headers and footers are rendered with complete `{ page, totalPages }` context. Continuation fragments are marked with `data-hp-continued`.
+
+5. **Print stylesheet** -- An injected `@page` rule sets the CSS page size and zeroes browser margins, so the library's own margin configuration is authoritative. Each page gets `page-break-after: always`.
 
 ## License
 
