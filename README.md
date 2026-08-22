@@ -248,7 +248,9 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 
 ## How it works
 
-> See the [interactive algorithm diagram](distribution-algorithm.html) for a visual walkthrough.
+<p align="center">
+  <img src="assets/distribution-algorithm.svg" alt="Distribution algorithm flowchart" width="720">
+</p>
 
 The pipeline has two passes:
 
