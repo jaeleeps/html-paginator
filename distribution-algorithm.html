@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>html-paginator — Distribution Algorithm</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #eb6c36;
+      --color-soft:    #7a8399;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1200px; width: 100%; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem; font-weight: 500;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--color-muted); margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400; letter-spacing: -0.02em; line-height: 1.15;
+      color: var(--color-ink); margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 960px; display: block; }
+    .cards {
+      display: grid; grid-template-columns: 1.1fr 1fr 0.9fr;
+      gap: 1rem; margin-top: 2rem;
+    }
+    .card {
+      background: #fff; border: 1px solid rgba(45,49,66,0.12);
+      border-radius: 6px; padding: 1.25rem;
+    }
+    .card .card-eyebrow {
+      font-family: var(--font-mono); font-size: 0.6rem; font-weight: 500;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--color-muted); margin-bottom: 0.5rem;
+    }
+    .card .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .card .card-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .card .card-dot.coral { background: #eb6c36; }
+    .card .card-dot.ink   { background: #2d3142; }
+    .card .card-dot.muted { background: #4f5d75; }
+    .card h3 { font-family: var(--font-sans); font-size: 0.85rem; font-weight: 600; }
+    .card ul { list-style: none; font-size: 0.8rem; color: var(--color-muted); line-height: 1.6; }
+    .card ul li::before { content: '·'; margin-right: 0.4em; color: var(--color-soft); }
+    .colophon {
+      margin-top: 2rem; padding-top: 1rem;
+      border-top: 1px solid rgba(45,49,66,0.12);
+      font-family: var(--font-mono); font-size: 0.6rem;
+      color: var(--color-soft); letter-spacing: 0.06em;
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Flowchart · html-paginator internals</p>
+    <h1>How the page-break distribution algorithm works</h1>
+
+    <!--
+      Layout (4px grid):
+        Left column  cx=280 — happy path: Start → Measure → Fits? → Place → loop
+        Right column cx=660 — split/fallback: Splittable? → splitToFit → Place alone
+        Bottom       cx=420 — Render → End
+        Right edge   x=900/916 — loop-back rails
+    -->
+    <svg viewBox="0 0 960 856" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="dist-title dist-desc">
+      <title id="dist-title">html-paginator distribution algorithm</title>
+      <desc id="dist-desc">Flowchart showing how content elements are distributed across fixed-size pages using greedy first-fit with recursive splitting at child boundaries, break-behavior control, and two-pass rendering with headers and footers.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+      <!-- ============================================================ -->
+      <!-- CONNECTORS (drawn first — z-behind nodes)                    -->
+      <!-- ============================================================ -->
+
+      <!-- 1. START → Measure -->
+      <line x1="280" y1="64" x2="280" y2="100" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- 2. Measure → Fits? -->
+      <line x1="280" y1="164" x2="280" y2="196" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- 3. Fits? YES ↓ → Place (coral) -->
+      <line x1="280" y1="292" x2="280" y2="328" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+
+      <!-- 4. Place → loop back to Measure left edge (coral) -->
+      <path d="M 280,392 L 280,416 Q 280,424 272,424 L 108,424 Q 100,424 100,416 L 100,136 Q 100,128 108,128 L 196,128"
+            stroke="#eb6c36" stroke-width="1.4" fill="none" marker-end="url(#arrow-accent)"/>
+
+      <!-- 5. Fits? NO → Splittable? (horizontal right) -->
+      <path d="M 376,244 L 564,244"
+            stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+
+      <!-- 6. Splittable? YES ↓ → splitToFit -->
+      <line x1="660" y1="292" x2="660" y2="328" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- 7. splitToFit → loop back to Measure right edge at y=120 -->
+      <path d="M 660,400 L 660,420 Q 660,428 668,428 L 892,428 Q 900,428 900,420 L 900,128 Q 900,120 892,120 L 364,120"
+            stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+
+      <!-- 8. Splittable? NO → elbow right then down → Place alone -->
+      <path d="M 756,244 L 852,244 Q 860,244 860,252 L 860,456"
+            stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+
+      <!-- 9. Place alone → loop back to Measure right edge at y=140 -->
+      <path d="M 860,528 L 860,548 Q 860,556 868,556 L 908,556 Q 916,556 916,548 L 916,148 Q 916,140 908,140 L 364,140"
+            stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+
+      <!-- 10. Merge dot → Render -->
+      <line x1="280" y1="468" x2="280" y2="584" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- 11. Render → END (coral) -->
+      <line x1="420" y1="656" x2="420" y2="692" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+
+      <!-- ============================================================ -->
+      <!-- ARROW LABELS (mask rect + text, 6–10px above connector)      -->
+      <!-- ============================================================ -->
+
+      <!-- Fits? YES -->
+      <rect x="256" y="298" width="32" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="272" y="307" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">YES</text>
+
+      <!-- Fits? NO -->
+      <rect x="448" y="230" width="24" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="460" y="239" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">NO</text>
+
+      <!-- Splittable? YES -->
+      <rect x="636" y="298" width="32" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="652" y="307" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">YES</text>
+
+      <!-- Splittable? NO (beside horizontal segment) -->
+      <rect x="788" y="230" width="24" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="800" y="239" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">NO</text>
+
+      <!-- Coral loop: NEXT ITEM (on left vertical rail) -->
+      <rect x="112" y="268" width="64" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="144" y="277" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">NEXT ITEM</text>
+
+      <!-- splitToFit loop: TAIL REQUEUED (beside right loop rail, 8px above connector at y=428) -->
+      <rect x="776" y="408" width="88" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="820" y="417" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">TAIL REQUEUED</text>
+
+      <!-- Queue empty: label on merge-to-render segment -->
+      <rect x="288" y="504" width="76" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="326" y="513" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.04em">QUEUE EMPTY</text>
+
+      <!-- ============================================================ -->
+      <!-- NODES                                                        -->
+      <!-- ============================================================ -->
+
+      <!-- 1. START oval -->
+      <rect x="180" y="20" width="200" height="44" rx="22" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <text x="280" y="46" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Content children (queue)</text>
+
+      <!-- 2. Measure step -->
+      <rect x="196" y="100" width="168" height="64" rx="6" fill="#f5f5f5"/>
+      <rect x="196" y="100" width="168" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="204" y="108" width="52" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="230" y="117" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">MEASURE</text>
+      <text x="280" y="140" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Measure item height</text>
+      <text x="280" y="156" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">via hidden probe page</text>
+
+      <!-- 3. Fits? diamond -->
+      <polygon points="280,196 376,244 280,292 184,244" fill="#f5f5f5"/>
+      <polygon points="280,196 376,244 280,292 184,244" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="280" y="240" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Fits remaining</text>
+      <text x="280" y="254" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">space?</text>
+
+      <!-- 4. Place on page (CORAL focal) -->
+      <rect x="196" y="328" width="168" height="64" rx="6" fill="#f5f5f5"/>
+      <rect x="196" y="328" width="168" height="64" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+      <text x="280" y="356" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Place on page</text>
+      <text x="280" y="372" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">usedHeight += height</text>
+      <text x="280" y="384" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">advance to next item</text>
+
+      <!-- Merge dot (queue-empty exit point) -->
+      <circle cx="280" cy="460" r="4" fill="#2d3142"/>
+
+      <!-- 5. Splittable? diamond -->
+      <polygon points="660,196 756,244 660,292 564,244" fill="#f5f5f5"/>
+      <polygon points="660,196 756,244 660,292 564,244" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="660" y="238" fill="#2d3142" font-size="11" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Splittable?</text>
+      <text x="660" y="254" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">auto + children</text>
+
+      <!-- 6. splitToFit step -->
+      <rect x="568" y="328" width="184" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="568" y="328" width="184" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="576" y="336" width="68" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="610" y="345" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">RECURSIVE</text>
+      <text x="660" y="368" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">splitToFit</text>
+      <text x="660" y="384" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">head → page, tail → queue</text>
+      <text x="660" y="396" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">forceSplit if empty page</text>
+
+      <!-- 7. Place alone step -->
+      <rect x="776" y="456" width="168" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="776" y="456" width="168" height="72" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="784" y="464" width="52" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="810" y="473" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ATOMIC</text>
+      <text x="860" y="496" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Place alone</text>
+      <text x="860" y="512" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">new page if needed</text>
+      <text x="860" y="524" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">may overflow (clip hides)</text>
+
+      <!-- 8. Two-pass render (CORAL focal) -->
+      <rect x="300" y="584" width="240" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="300" y="584" width="240" height="72" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+      <rect x="308" y="592" width="48" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.40)" stroke-width="0.8"/>
+      <text x="332" y="601" fill="rgba(235,108,54,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">RENDER</text>
+      <text x="420" y="624" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Two-pass page assembly</text>
+      <text x="420" y="640" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">headers/footers get {page, totalPages}</text>
+      <text x="420" y="652" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">@page size · print stylesheet</text>
+
+      <!-- 9. END oval -->
+      <rect x="320" y="692" width="200" height="44" rx="22" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+      <text x="420" y="718" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Paginated output</text>
+
+      <!-- ============================================================ -->
+      <!-- LEGEND                                                       -->
+      <!-- ============================================================ -->
+
+      <line x1="40" y1="764" x2="920" y2="764" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="40" y="780" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+      <rect x="40" y="796" width="24" height="12" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <text x="72" y="806" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Start / end</text>
+
+      <rect x="168" y="796" width="24" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="200" y="806" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Step</text>
+
+      <polygon points="276,802 284,796 292,802 284,808" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="300" y="806" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Decision</text>
+
+      <circle cx="392" cy="802" r="3" fill="#2d3142"/>
+      <text x="404" y="806" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Merge / exit</text>
+
+      <line x1="504" y1="802" x2="532" y2="802" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <text x="540" y="806" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Happy path</text>
+
+      <line x1="648" y1="802" x2="676" y2="802" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <text x="684" y="806" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Branch / loop</text>
+
+      <rect x="808" y="796" width="24" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+      <text x="840" y="806" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Focal step</text>
+    </svg>
+
+    <div class="cards">
+      <div class="card">
+        <p class="card-eyebrow">Pass 1 — Distribution</p>
+        <div class="card-header">
+          <span class="card-dot coral"></span>
+          <h3>Greedy first-fit</h3>
+        </div>
+        <ul>
+          <li>Sequential, order-preserving — items never reorder to fill gaps</li>
+          <li>Probe page mounted with real CSS for accurate height measurement</li>
+          <li>Available height varies per page (different header/footer heights)</li>
+          <li>Tables split at row boundaries; <code>thead</code> optionally repeated</li>
+        </ul>
+      </div>
+      <div class="card">
+        <p class="card-eyebrow">Break control</p>
+        <div class="card-header">
+          <span class="card-dot ink"></span>
+          <h3>data-break attribute</h3>
+        </div>
+        <ul>
+          <li><code>auto</code> — split at child boundaries (recursive)</li>
+          <li><code>avoid</code> — keep together; overflows visibly if too tall</li>
+          <li><code>clip</code> — keep together; <code>overflow: hidden</code> if too tall</li>
+          <li>Nested avoid/clip disallowed — outer wins, warning emitted</li>
+        </ul>
+      </div>
+      <div class="card">
+        <p class="card-eyebrow">Pass 2 — Rendering</p>
+        <div class="card-header">
+          <span class="card-dot muted"></span>
+          <h3>Page assembly</h3>
+        </div>
+        <ul>
+          <li>Distribution determines final page count first</li>
+          <li>Headers/footers rendered with complete <code>{page, totalPages}</code></li>
+          <li>Continuation fragments marked with <code>data-hp-continued</code></li>
+          <li><code>@page</code> rule + <code>page-break-after</code> for print</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="colophon">html-paginator · distribution algorithm · greedy sequential first-fit with recursive boundary splitting</p>
+  </div>
+</body>
+</html>
