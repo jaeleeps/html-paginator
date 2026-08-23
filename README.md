@@ -91,7 +91,7 @@ For the JS API, call `paginator.paginate()` directly (pagination is synchronous)
 Add `data-break` to content elements to control how they split across pages:
 
 <p align="center">
-  <img src="assets/break-behavior.svg" alt="Break behavior: auto splits tables at rows, avoid moves blocks intact, clip hides overflow" width="720">
+  <img src="https://raw.githubusercontent.com/jaeleeps/html-paginator/main/assets/break-behavior.svg" alt="Break behavior: auto splits tables at rows, avoid moves blocks intact, clip hides overflow" width="720">
 </p>
 
 | Value | Behavior |
@@ -162,7 +162,7 @@ In declarative mode, `{{page}}` and `{{totalPages}}` are interpolated in the tem
 Override any page property for specific pages (1-based). Omitted properties inherit from the default. This is how you get different headers or footers on page 1 vs. the rest -- a common requirement for cover pages, footnotes, and org-specific disclaimers.
 
 <p align="center">
-  <img src="assets/variable-footer.svg" alt="Variable footer: page 1 gets a cover footer with footnotes, pages 2+ get the standard disclaimer" width="720">
+  <img src="https://raw.githubusercontent.com/jaeleeps/html-paginator/main/assets/variable-footer.svg" alt="Variable footer: page 1 gets a cover footer with footnotes, pages 2+ get the standard disclaimer" width="720">
 </p>
 
 **JS API:**
@@ -276,7 +276,7 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 ## How it works
 
 <p align="center">
-  <img src="assets/distribution-algorithm.svg" alt="Distribution algorithm flowchart" width="720">
+  <img src="https://raw.githubusercontent.com/jaeleeps/html-paginator/main/assets/distribution-algorithm.svg" alt="Distribution algorithm flowchart" width="720">
 </p>
 
 The pipeline has two passes:
