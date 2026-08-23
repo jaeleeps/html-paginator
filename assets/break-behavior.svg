@@ -1,0 +1,154 @@
+<svg viewBox="0 0 880 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="break-title break-desc">
+  <title id="break-title">Break behavior: auto, avoid, and clip</title>
+  <desc id="break-desc">Visual showing how data-break auto splits a table across pages, avoid moves a block intact to the next page, and clip hides overflow when content exceeds page height.</desc>
+  <defs>
+    <style>
+      text { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+      .mono { font-family: ui-monospace, 'SFMono-Regular', 'SF Mono', Menlo, monospace; }
+    </style>
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+    <marker id="arr-a" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+    <!-- page dashed outline -->
+    <rect id="page" width="120" height="180" rx="4" fill="#ffffff" stroke="#bfc0c0" stroke-width="1"/>
+  </defs>
+
+  <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 1: data-break="auto" (left)                          -->
+  <!-- ============================================================ -->
+
+  <!-- Label -->
+  <rect x="24" y="20" width="80" height="16" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+  <text x="64" y="31" fill="rgba(45,49,66,0.8)" font-size="7" class="mono" text-anchor="middle" letter-spacing="0.08em">AUTO</text>
+  <text x="24" y="56" fill="#2d3142" font-size="12" font-weight="600">Table splits at rows</text>
+  <text x="24" y="72" fill="#7a8399" font-size="9" class="mono">data-break="auto"</text>
+
+  <!-- Source: tall table -->
+  <rect x="24" y="88" width="120" height="160" rx="4" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+  <!-- thead -->
+  <rect x="24" y="88" width="120" height="24" rx="4" fill="rgba(45,49,66,0.06)"/>
+  <rect x="24" y="108" width="120" height="4" fill="none" stroke="rgba(45,49,66,0.12)" stroke-width="0.5"/>
+  <text x="84" y="104" fill="#2d3142" font-size="8" font-weight="600" text-anchor="middle">thead</text>
+  <!-- rows -->
+  <text x="84" y="128" fill="#4f5d75" font-size="8" text-anchor="middle" class="mono">Row 1</text>
+  <text x="84" y="144" fill="#4f5d75" font-size="8" text-anchor="middle" class="mono">Row 2</text>
+  <text x="84" y="160" fill="#4f5d75" font-size="8" text-anchor="middle" class="mono">Row 3</text>
+  <line x1="28" y1="152" x2="140" y2="152" stroke="rgba(45,49,66,0.08)" stroke-width="0.5"/>
+  <!-- page boundary indicator -->
+  <line x1="20" y1="168" x2="148" y2="168" stroke="#eb6c36" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="84" y="180" fill="#4f5d75" font-size="8" text-anchor="middle" class="mono">Row 4</text>
+  <text x="84" y="196" fill="#4f5d75" font-size="8" text-anchor="middle" class="mono">Row 5</text>
+  <text x="84" y="212" fill="#4f5d75" font-size="8" text-anchor="middle" class="mono">Row 6</text>
+  <text x="84" y="228" fill="#4f5d75" font-size="8" text-anchor="middle" class="mono">Row 7</text>
+  <text x="150" y="172" fill="#eb6c36" font-size="7" class="mono">PAGE BREAK</text>
+
+  <!-- Arrow -->
+  <line x1="168" y1="168" x2="240" y2="168" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arr)"/>
+
+  <!-- Page 1 -->
+  <use href="#page" x="248" y="88"/>
+  <text x="308" y="82" fill="#7a8399" font-size="7" class="mono" text-anchor="middle" letter-spacing="0.08em">PAGE 1</text>
+  <rect x="252" y="92" width="112" height="20" rx="2" fill="rgba(45,49,66,0.06)"/>
+  <text x="308" y="106" fill="#2d3142" font-size="8" font-weight="600" text-anchor="middle">thead</text>
+  <text x="308" y="124" fill="#4f5d75" font-size="8" text-anchor="middle" class="mono">Row 1</text>
+  <text x="308" y="140" fill="#4f5d75" font-size="8" text-anchor="middle" class="mono">Row 2</text>
+  <text x="308" y="156" fill="#4f5d75" font-size="8" text-anchor="middle" class="mono">Row 3</text>
+
+  <!-- Page 2 -->
+  <use href="#page" x="248" y="280"/>
+  <text x="308" y="274" fill="#7a8399" font-size="7" class="mono" text-anchor="middle" letter-spacing="0.08em">PAGE 2</text>
+  <!-- repeated thead (coral highlight) -->
+  <rect x="252" y="284" width="112" height="20" rx="2" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="0.8"/>
+  <text x="308" y="298" fill="#eb6c36" font-size="8" font-weight="600" text-anchor="middle">thead (repeated)</text>
+  <text x="308" y="316" fill="#4f5d75" font-size="8" text-anchor="middle" class="mono">Row 4</text>
+  <text x="308" y="332" fill="#4f5d75" font-size="8" text-anchor="middle" class="mono">Row 5</text>
+  <text x="308" y="348" fill="#4f5d75" font-size="8" text-anchor="middle" class="mono">Row 6</text>
+  <text x="308" y="364" fill="#4f5d75" font-size="8" text-anchor="middle" class="mono">Row 7</text>
+  <!-- data-hp-continued marker -->
+  <rect x="252" y="380" width="84" height="12" rx="2" fill="rgba(45,49,66,0.06)"/>
+  <text x="294" y="389" fill="#7a8399" font-size="6" class="mono" text-anchor="middle">data-hp-continued</text>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 2: data-break="avoid" (center)                       -->
+  <!-- ============================================================ -->
+
+  <rect x="420" y="20" width="80" height="16" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+  <text x="460" y="31" fill="rgba(45,49,66,0.8)" font-size="7" class="mono" text-anchor="middle" letter-spacing="0.08em">AVOID</text>
+  <text x="420" y="56" fill="#2d3142" font-size="12" font-weight="600">Moves intact</text>
+  <text x="420" y="72" fill="#7a8399" font-size="9" class="mono">data-break="avoid"</text>
+
+  <!-- Page 1 with partial content + avoid block that doesn't fit -->
+  <use href="#page" x="420" y="88"/>
+  <text x="480" y="82" fill="#7a8399" font-size="7" class="mono" text-anchor="middle" letter-spacing="0.08em">PAGE 1</text>
+  <!-- existing content fills most of page -->
+  <rect x="428" y="96" width="104" height="80" rx="2" fill="rgba(45,49,66,0.04)" stroke="rgba(45,49,66,0.15)" stroke-width="0.8"/>
+  <text x="480" y="140" fill="#7a8399" font-size="8" text-anchor="middle">...content...</text>
+  <!-- remaining space indicator -->
+  <rect x="428" y="184" width="104" height="32" rx="0" fill="none" stroke="rgba(45,49,66,0.10)" stroke-width="0.8" stroke-dasharray="3,2"/>
+  <text x="480" y="204" fill="#bfc0c0" font-size="7" text-anchor="middle" class="mono">not enough room</text>
+
+  <!-- Arrow down to page 2 -->
+  <path d="M 540,216 L 576,216 Q 584,216 584,224 L 584,284" stroke="#eb6c36" stroke-width="1.2" fill="none" marker-end="url(#arr-a)"/>
+  <rect x="552" y="236" width="56" height="12" rx="2" fill="#f5f5f5"/>
+  <text x="580" y="245" fill="#eb6c36" font-size="7" class="mono" text-anchor="middle">MOVED ↓</text>
+
+  <!-- Page 2 with the avoid block placed intact -->
+  <use href="#page" x="420" y="296"/>
+  <text x="480" y="290" fill="#7a8399" font-size="7" class="mono" text-anchor="middle" letter-spacing="0.08em">PAGE 2</text>
+  <!-- the avoid block, intact -->
+  <rect x="428" y="304" width="104" height="60" rx="4" fill="rgba(235,108,54,0.06)" stroke="#eb6c36" stroke-width="1"/>
+  <text x="480" y="328" fill="#2d3142" font-size="9" font-weight="600" text-anchor="middle">Totals</text>
+  <text x="480" y="344" fill="#4f5d75" font-size="8" text-anchor="middle" class="mono">Subtotal: $4,800</text>
+  <text x="480" y="356" fill="#4f5d75" font-size="8" text-anchor="middle" class="mono">Tax: $426</text>
+
+  <!-- ============================================================ -->
+  <!-- SECTION 3: data-break="clip" (right)                         -->
+  <!-- ============================================================ -->
+
+  <rect x="660" y="20" width="80" height="16" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+  <text x="700" y="31" fill="rgba(45,49,66,0.8)" font-size="7" class="mono" text-anchor="middle" letter-spacing="0.08em">CLIP</text>
+  <text x="660" y="56" fill="#2d3142" font-size="12" font-weight="600">Overflow hidden</text>
+  <text x="660" y="72" fill="#7a8399" font-size="9" class="mono">data-break="clip"</text>
+
+  <!-- Page with oversized chart, clipped -->
+  <use href="#page" x="660" y="88"/>
+  <text x="720" y="82" fill="#7a8399" font-size="7" class="mono" text-anchor="middle" letter-spacing="0.08em">PAGE 1</text>
+  <!-- chart that exceeds page -->
+  <rect x="668" y="96" width="104" height="168" rx="4" fill="rgba(45,49,66,0.04)" stroke="#2d3142" stroke-width="1"/>
+  <text x="720" y="120" fill="#2d3142" font-size="9" font-weight="600" text-anchor="middle">Large Chart</text>
+  <!-- fake chart bars -->
+  <rect x="684" y="136" width="12" height="60" rx="1" fill="rgba(45,49,66,0.15)"/>
+  <rect x="700" y="148" width="12" height="48" rx="1" fill="rgba(45,49,66,0.15)"/>
+  <rect x="716" y="132" width="12" height="64" rx="1" fill="rgba(45,49,66,0.15)"/>
+  <rect x="732" y="156" width="12" height="40" rx="1" fill="rgba(45,49,66,0.15)"/>
+  <rect x="748" y="140" width="12" height="56" rx="1" fill="rgba(45,49,66,0.15)"/>
+  <!-- clip indicator: fade-to-white at bottom -->
+  <rect x="664" y="236" width="112" height="28" fill="url(#clip-fade)"/>
+  <defs>
+    <linearGradient id="clip-fade" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.95"/>
+    </linearGradient>
+  </defs>
+  <!-- scissors / clip indicator -->
+  <text x="720" y="260" fill="#eb6c36" font-size="8" font-weight="600" text-anchor="middle" class="mono">overflow: hidden</text>
+
+  <!-- ============================================================ -->
+  <!-- LEGEND                                                       -->
+  <!-- ============================================================ -->
+
+  <line x1="24" y1="484" x2="856" y2="484" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+
+  <rect x="24" y="500" width="16" height="8" rx="1" fill="rgba(235,108,54,0.10)" stroke="#eb6c36" stroke-width="0.8"/>
+  <text x="48" y="508" fill="#4f5d75" font-size="8">Focal / moved element</text>
+
+  <line x1="184" y1="504" x2="208" y2="504" stroke="#eb6c36" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="216" y="508" fill="#4f5d75" font-size="8">Page boundary</text>
+
+  <rect x="344" y="500" width="16" height="8" rx="1" fill="rgba(45,49,66,0.04)" stroke="rgba(45,49,66,0.15)" stroke-width="0.8"/>
+  <text x="368" y="508" fill="#4f5d75" font-size="8">Existing content</text>
+
+  <rect x="504" y="500" width="16" height="8" rx="1" fill="#ffffff" stroke="#bfc0c0" stroke-width="0.8"/>
+  <text x="528" y="508" fill="#4f5d75" font-size="8">Page</text>
+</svg>
