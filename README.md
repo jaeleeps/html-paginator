@@ -90,11 +90,15 @@ For the JS API, call `paginator.paginate()` directly (pagination is synchronous)
 
 Add `data-break` to content elements to control how they split across pages:
 
+<p align="center">
+  <img src="assets/break-behavior.svg" alt="Break behavior: auto splits tables at rows, avoid moves blocks intact, clip hides overflow" width="720">
+</p>
+
 | Value | Behavior |
 |-------|----------|
 | `auto` | Default. Content can split at child boundaries. Tables split at row level. |
-| `avoid` | Keep the entire element on one page. If it doesn't fit, it overflows onto the next page. |
-| `clip` | Like `avoid`, but clips overflow with `overflow: hidden` when the element exceeds page height. |
+| `avoid` | Keep the entire element on one page. If it doesn't fit on the current page, it moves intact to the next page. |
+| `clip` | Like `avoid`, but applies `overflow: hidden` when the element exceeds a full page height. |
 
 ```html
 <table data-break="auto">...</table>         <!-- rows split across pages -->
@@ -102,9 +106,21 @@ Add `data-break` to content elements to control how they split across pages:
 <div data-break="clip">...</div>             <!-- never split; clips if too tall -->
 ```
 
-Nested `avoid`/`clip` is not supported -- the outer value wins and a console warning is emitted.
+**Grouping elements together:** Wrap a heading + its chart/table in a `<div data-break="avoid">` to prevent the heading from orphaning at the bottom of a page while the content moves to the next:
 
-Leaf elements (those with no child elements) are inherently atomic and never split.
+```html
+<div data-break="avoid">
+  <h4>EXHIBIT 1. Revenue by Quarter</h4>
+  <div class="chart-wrapper">
+    <img src="chart.png"/>
+  </div>
+</div>
+```
+
+**Rules:**
+- Nested `avoid`/`clip` is not supported -- the outer value wins and a console warning is emitted.
+- Leaf elements (those with no child elements) are inherently atomic and never split.
+- Elements without `data-break` default to `auto` (splittable at child boundaries).
 
 ## Page configuration
 
@@ -143,7 +159,11 @@ In declarative mode, `{{page}}` and `{{totalPages}}` are interpolated in the tem
 
 ### Per-page overrides
 
-Override any page property for specific pages (1-based). Omitted properties inherit from the default.
+Override any page property for specific pages (1-based). Omitted properties inherit from the default. This is how you get different headers or footers on page 1 vs. the rest -- a common requirement for cover pages, footnotes, and org-specific disclaimers.
+
+<p align="center">
+  <img src="assets/variable-footer.svg" alt="Variable footer: page 1 gets a cover footer with footnotes, pages 2+ get the standard disclaimer" width="720">
+</p>
 
 **JS API:**
 
@@ -158,19 +178,26 @@ pageOverrides: {
 
 ```html
 <template data-hp-config data-hp-size="letter" data-hp-margin="0.6in">
+  <!-- Shared: applies to all pages by default -->
   <div data-hp-header>Default header — {{page}}</div>
-  <div data-hp-footer>{{page}} / {{totalPages}}</div>
+  <div data-hp-footer>Standard disclaimer text.</div>
 
+  <!-- Page 1 override: different footer with footnotes, no header change needed -->
   <div data-hp-page="1" data-hp-margin="1in">
-    <div data-hp-header><h1>Cover</h1></div>
-    <div data-hp-footer="none"></div>
+    <div data-hp-footer>¹ Net of fees. ² Dividends reinvested. Full disclaimer...</div>
   </div>
 
+  <!-- Page 2 override: slim header, inherits the shared footer -->
   <div data-hp-page="2">
     <div data-hp-header>Slim header</div>
   </div>
 </template>
 ```
+
+**Key behaviors:**
+- A page override only replaces the properties it declares -- omitted slots inherit from the shared default.
+- `data-hp-footer="none"` explicitly removes the footer for that page (useful for full-bleed cover pages).
+- Footer/header height can vary per page -- the available body height is recomputed automatically, so content distributes correctly even when page 1 has a taller footer than pages 2+.
 
 ## Table splitting
 
