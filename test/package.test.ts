@@ -44,8 +44,9 @@ describe('npm package contents', () => {
         f.startsWith('test/') ||
         f.startsWith('src/') ||
         f.startsWith('examples/') ||
-        /\.test\.[cm]?[jt]s$/.test(f) ||
-        /^(tsconfig|vitest\.config)\./.test(f),
+        f.startsWith('e2e/') ||
+        /\.(test|spec)\.[cm]?[jt]s$/.test(f) ||
+        /^(tsconfig|vitest\.config|playwright\.config)\./.test(f),
     );
     expect(leaked).toEqual([]);
   });
