@@ -12,6 +12,7 @@ export interface ResolvedPageConfig {
   margin: string;
   header: PageConfig['header'];
   footer: PageConfig['footer'];
+  watermark: PageConfig['watermark'];
 }
 
 export const DEFAULT_MARGIN = '0';
@@ -95,5 +96,6 @@ export function mergePageLayers(...layers: (PageConfig | undefined)[]): Resolved
     margin: merged.margin ?? DEFAULT_MARGIN,
     header: merged.header,
     footer: merged.footer,
+    watermark: merged.watermark,
   };
 }

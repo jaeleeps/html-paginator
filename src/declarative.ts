@@ -37,6 +37,7 @@ import { createPaginator } from './createPaginator';
  *   evenPages (Word's different first page and odd & even pages).
  * - A page group inherits shared header/footer for slots it omits;
  *   `data-hp-header="none"` / `data-hp-footer="none"` removes them.
+ * - `data-hp-watermark` slots work the same way (a layer behind the page).
  * - `data-hp-orientation="landscape"` turns pages (or a section) sideways.
  * - `data-hp-size` accepts a preset ('letter', 'a4', ...) or explicit
  *   dimensions as "<width> <height>" (e.g. "8.5in 11in").
@@ -56,6 +57,7 @@ export const DECLARATIVE_ATTRIBUTES = {
   content: 'data-hp-content',
   header: 'data-hp-header',
   footer: 'data-hp-footer',
+  watermark: 'data-hp-watermark',
   page: 'data-hp-page',
   size: 'data-hp-size',
   margin: 'data-hp-margin',
@@ -141,22 +143,24 @@ function findSharedSlot(root: ParentNode, attr: string, owner: Element | null): 
   return null;
 }
 
-/** Page config of a group: size/margin attributes plus its header/footer slots. */
+const SLOTS = ['header', 'footer', 'watermark'] as const;
+
+/** Page config of a group: size/margin attributes plus its header/footer/watermark slots. */
 function parseGroup(group: Element): PageConfig {
   const config = parsePageAttrs(group);
-  const h = group.querySelector(`[${A.header}]`);
-  if (h) config.header = slotToTemplate(h, A.header);
-  const f = group.querySelector(`[${A.footer}]`);
-  if (f) config.footer = slotToTemplate(f, A.footer);
+  for (const slot of SLOTS) {
+    const el = group.querySelector(`[${A[slot]}]`);
+    if (el) config[slot] = slotToTemplate(el, A[slot]);
+  }
   return config;
 }
 
 /** Shared slots of a scope, applied onto its page config. */
 function applySharedSlots(root: ParentNode, page: PageConfig, owner: Element | null): void {
-  const header = findSharedSlot(root, A.header, owner);
-  if (header) page.header = slotToTemplate(header, A.header);
-  const footer = findSharedSlot(root, A.footer, owner);
-  if (footer) page.footer = slotToTemplate(footer, A.footer);
+  for (const slot of SLOTS) {
+    const el = findSharedSlot(root, A[slot], owner);
+    if (el) page[slot] = slotToTemplate(el, A[slot]);
+  }
 }
 
 const SECTION_STARTS = new Set(['next', 'odd', 'even']);

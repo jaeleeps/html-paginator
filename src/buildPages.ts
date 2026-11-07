@@ -12,6 +12,7 @@ export const CLASS_NAMES = {
   header: 'hp-header',
   body: 'hp-body',
   footer: 'hp-footer',
+  watermark: 'hp-watermark',
 } as const;
 
 export interface BuildPagesOptions extends PageVariants {
@@ -36,6 +37,7 @@ export interface BuildPagesOptions extends PageVariants {
  * Structure:
  *   .hp-pages
  *     .hp-page        (width/height/margin from resolved page config)
+ *       .hp-watermark (only when the page has a watermark; absolute, behind)
  *       .hp-header    (only when the page has a header)
  *       .hp-body      (distributed items, moved — not cloned)
  *       .hp-footnotes (only when the page has footnotes)
@@ -70,6 +72,24 @@ export function buildPages(
     pageEl.style.boxSizing = 'border-box';
     // Print on the sheet of this page's size (CSS named page).
     pageEl.style.setProperty('page', pageSizeName(config.size));
+
+    // Behind everything, over the whole sheet (margins included); out of
+    // flow, so it never affects layout.
+    const watermark = renderTemplate(config.watermark, ctx, doc);
+    if (watermark) {
+      const layer = doc.createElement('div');
+      layer.className = CLASS_NAMES.watermark;
+      Object.assign(layer.style, {
+        position: 'absolute',
+        inset: '0',
+        zIndex: '0',
+        pointerEvents: 'none',
+        overflow: 'hidden',
+      });
+      layer.appendChild(watermark);
+      pageEl.style.position = 'relative';
+      pageEl.appendChild(layer);
+    }
 
     const header = renderTemplate(config.header, ctx, doc);
     if (header) {

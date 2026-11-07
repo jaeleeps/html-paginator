@@ -100,6 +100,12 @@ export interface PageConfig {
   margin?: string;
   header?: HeaderFooterTemplate;
   footer?: HeaderFooterTemplate;
+  /**
+   * Watermark or page background (Word: "DRAFT"), rendered behind the page
+   * content across the whole sheet; it never affects pagination. Same
+   * templates and context as header/footer.
+   */
+  watermark?: HeaderFooterTemplate;
 }
 
 /** Values accepted by the `data-break` attribute on content elements. */
