@@ -3,6 +3,7 @@ import type { PageConfig } from './types';
 import type { PageVariants } from './pageConfig';
 import { createPageLayout } from './layout';
 import { pageSizeName } from './pageConfig';
+import { pagePadding, slotArea } from './pageFrame';
 import type { PageLayout } from './layout';
 import { renderTemplate } from './renderTemplate';
 
@@ -100,7 +101,9 @@ export function buildPages(
     pageEl.dataset.page = String(dist.page);
     pageEl.style.width = config.size.width;
     pageEl.style.height = config.size.height;
-    pageEl.style.padding = config.margin;
+    const header = renderTemplate(config.header, ctx, doc);
+    const footer = renderTemplate(config.footer, ctx, doc);
+    pageEl.style.padding = pagePadding(config, header !== null, footer !== null);
     // Margin lives inside the sheet size; inline so geometry holds even with
     // injectStyles: false.
     pageEl.style.boxSizing = 'border-box';
@@ -125,10 +128,9 @@ export function buildPages(
       pageEl.appendChild(layer);
     }
 
-    const header = renderTemplate(config.header, ctx, doc);
     if (header) {
       header.classList.add(CLASS_NAMES.header);
-      pageEl.appendChild(header);
+      pageEl.appendChild(slotArea(header, 'header', config));
     }
 
     const body = doc.createElement('div');
@@ -188,10 +190,9 @@ export function buildPages(
       if (area) pageEl.appendChild(area);
     }
 
-    const footer = renderTemplate(config.footer, ctx, doc);
     if (footer) {
       footer.classList.add(CLASS_NAMES.footer);
-      pageEl.appendChild(footer);
+      pageEl.appendChild(slotArea(footer, 'footer', config));
     }
 
     container.appendChild(pageEl);

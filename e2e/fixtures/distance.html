@@ -1,0 +1,48 @@
+<!doctype html>
+<!--
+  Header/footer placed by distance from the sheet edge (Word: "Header from
+  top" / "Footer from bottom"). Letter, 1in margins, header and footer at
+  0.5in from the edges. Section "short": one-line header and footer, so the
+  body spans exactly the margins. Section "tall": a header taller than the
+  top margin pushes the body down, as in Word.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>html-paginator header distance fixture</title>
+<style>
+  body { margin: 0; font: 12px/18px Helvetica, Arial, sans-serif; }
+  p { margin: 0 0 6px; }
+  .hp-header, .hp-footer { font-size: 10px; line-height: 14px; }
+</style>
+</head>
+<body>
+<div id="src">
+  <section data-section="short" id="short"></section>
+  <section data-section="tall" id="tall"></section>
+</div>
+<script src="/dist/index.global.js"></script>
+<script>
+  const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.';
+  const paras = (p, n) => Array.from({ length: n }, (_, i) => `<p>${p}${i + 1} ${lorem} ${lorem}</p>`).join('');
+  document.getElementById('short').innerHTML = paras('S', 50);
+  document.getElementById('tall').innerHTML = paras('T', 40);
+  htmlPaginator.createPaginator({
+    source: '#src',
+    page: {
+      size: 'letter',
+      margin: '1in',
+      headerDistance: '0.5in',
+      footerDistance: '0.5in',
+      header: '<div>HEADER short</div>',
+      footer: ({ pageLabel }) => `<div style="text-align:center">FOOTER ${pageLabel}</div>`,
+    },
+    sections: {
+      short: {},
+      tall: { page: { header: '<div>HEADER tall<br>line 2<br>line 3<br>line 4<br>line 5<br>line 6</div>' } },
+    },
+  }).paginate();
+  document.documentElement.dataset.paginated = 'true';
+</script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 import type { PageConfig } from './types';
 import { CLASS_NAMES } from './buildPages';
 import { columnWidth } from './pageConfig';
+import { pagePadding, slotArea } from './pageFrame';
 import type { PageVariants } from './pageConfig';
 import { createPageLayout } from './layout';
 import type { PageLayout } from './layout';
@@ -98,7 +99,9 @@ export function createDomMeasurer(options: DomMeasurerOptions): DomMeasurer {
     pageEl.className = CLASS_NAMES.page;
     pageEl.style.width = config.size.width;
     pageEl.style.height = config.size.height;
-    pageEl.style.padding = config.margin;
+    const header = renderTemplate(config.header, ctx, doc);
+    const footer = renderTemplate(config.footer, ctx, doc);
+    pageEl.style.padding = pagePadding(config, header !== null, footer !== null);
     // Must match the real page geometry (buildPages + stylesheet): padding
     // inside the sheet size, not added to it.
     pageEl.style.boxSizing = 'border-box';
@@ -108,10 +111,11 @@ export function createDomMeasurer(options: DomMeasurerOptions): DomMeasurer {
     pageEl.style.left = '-9999px';
     pageEl.style.top = '0';
 
-    const header = renderTemplate(config.header, ctx, doc);
+    // Header/footer areas (with distances) are what takes the height.
+    const headerArea = header && slotArea(header, 'header', config);
     if (header) {
       header.classList.add(CLASS_NAMES.header);
-      pageEl.appendChild(header);
+      pageEl.appendChild(headerArea!);
     }
 
     const body = doc.createElement('div');
@@ -128,14 +132,14 @@ export function createDomMeasurer(options: DomMeasurerOptions): DomMeasurer {
     if (config.columns > 1) body.style.width = columnWidth(config.columns, config.columnGap);
     pageEl.appendChild(body);
 
-    const footer = renderTemplate(config.footer, ctx, doc);
+    const footerArea = footer && slotArea(footer, 'footer', config);
     if (footer) {
       footer.classList.add(CLASS_NAMES.footer);
-      pageEl.appendChild(footer);
+      pageEl.appendChild(footerArea!);
     }
 
     doc.body.appendChild(pageEl);
-    return { pageEl, header, body, footer };
+    return { pageEl, header: headerArea, body, footer: footerArea };
   };
 
   // Temporarily move the item into the probe body so it is laid out at the
