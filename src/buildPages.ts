@@ -20,6 +20,8 @@ export interface BuildPagesOptions extends PageVariants {
   pageOverrides?: Record<number, PageConfig>;
   /** Page layout recorded during distribution (built from the options otherwise). */
   layout?: PageLayout;
+  /** Footnote area for a page's notes, placed between body and footer. */
+  renderNotes?: (notes: HTMLElement[]) => HTMLElement;
   document: Document;
 }
 
@@ -35,6 +37,7 @@ export interface BuildPagesOptions extends PageVariants {
  *     .hp-page        (width/height/margin from resolved page config)
  *       .hp-header    (only when the page has a header)
  *       .hp-body      (distributed items, moved — not cloned)
+ *       .hp-footnotes (only when the page has footnotes)
  *       .hp-footer    (only when the page has a footer)
  */
 export function buildPages(
@@ -77,6 +80,12 @@ export function buildPages(
       body.appendChild(item);
     }
     pageEl.appendChild(body);
+
+    if (dist.notes && dist.notes.length > 0 && options.renderNotes) {
+      const area = options.renderNotes(dist.notes);
+      area.style.flex = '0 0 auto';
+      pageEl.appendChild(area);
+    }
 
     const footer = renderTemplate(config.footer, ctx, doc);
     if (footer) {

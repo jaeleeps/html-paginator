@@ -82,6 +82,14 @@ export interface DistributeOptions<T, S = string> {
    * widow/orphan rules forbid every split): the item then moves on whole.
    */
   fragment?: (item: T, fits: (head: T) => boolean, info: FragmentInfo) => Fragment<T> | null;
+  /**
+   * Footnotes an item brings to its page (Word footnotes): they go to the
+   * page where the item lands, and their area takes height from the body.
+   * Requires `notesHeight`.
+   */
+  notes?: (item: T) => readonly T[];
+  /** Height of the footnote area holding `notes` on `page` (not called when empty). */
+  notesHeight?: (notes: readonly T[], page: number) => number;
 }
 
 export interface FragmentInfo {
@@ -110,6 +118,10 @@ export interface DistributedPage<T, S = string> {
   sectionStart?: boolean;
   /** Blank page inserted by `blankPageBefore`. */
   blank?: boolean;
+  /** Footnotes of the page's items, in order (only with the `notes` hook). */
+  notes?: T[];
+  /** Height of the page's footnote area (0 without notes). */
+  notesHeight?: number;
 }
 
 interface Pending<T> {
@@ -296,13 +308,47 @@ export function distribute<T, S = string>(
 
   const pages: DistributedPage<T, S>[] = [];
   let current: DistributedPage<T, S> | null = null;
-  /** Per page, what each placed item was queued as and measured at. */
-  const placed = new Map<DistributedPage<T, S>, { entry: Pending<T>; height: number }[]>();
+  /** Per page, what each placed item was queued as, measured at, and the notes it added. */
+  const placed = new Map<
+    DistributedPage<T, S>,
+    { entry: Pending<T>; height: number; notes: T[] }[]
+  >();
+
+  /** Notes of `item` not yet on `page`. */
+  const newNotes = (page: DistributedPage<T, S>, item: T): T[] => {
+    if (!options.notes) return [];
+    const onPage = page.notes ?? [];
+    return options.notes(item).filter((note, i, all) => !onPage.includes(note) && all.indexOf(note) === i);
+  };
+
+  const notesArea = (notes: readonly T[], page: number): number => {
+    if (notes.length === 0) return 0;
+    const height = options.notesHeight?.(notes, page) ?? 0;
+    if (!Number.isFinite(height) || height < 0) {
+      throw new Error(
+        `html-paginator: notesHeight() must return a non-negative finite number, got ${height}`,
+      );
+    }
+    return height;
+  };
+
+  /** Whether `item` (of flow height `height`) and its notes fit what is left of `page`. */
+  const fitsOn = (page: DistributedPage<T, S>, item: T, height: number): boolean => {
+    const extra = newNotes(page, item);
+    const notes =
+      extra.length === 0 ? (page.notesHeight ?? 0) : notesArea([...(page.notes ?? []), ...extra], page.page);
+    return page.usedHeight + height + notes <= page.availableHeight;
+  };
 
   const place = (page: DistributedPage<T, S>, entry: Pending<T>, height: number): void => {
+    const notes = newNotes(page, entry.item);
     page.items.push(entry.item);
     page.usedHeight += height;
-    placed.get(page)!.push({ entry, height });
+    if (notes.length > 0) {
+      page.notes!.push(...notes);
+      page.notesHeight = notesArea(page.notes!, page.page);
+    }
+    placed.get(page)!.push({ entry, height, notes });
   };
 
   /**
@@ -316,6 +362,10 @@ export function distribute<T, S = string>(
       page.items.pop();
       const last = log.pop()!;
       page.usedHeight -= last.height;
+      if (last.notes.length > 0) {
+        page.notes = page.notes!.filter((note) => !last.notes.includes(note));
+        page.notesHeight = notesArea(page.notes, page.page);
+      }
       kept.unshift(last.entry);
     }
     return kept;
@@ -343,6 +393,10 @@ export function distribute<T, S = string>(
       opened.sectionStart = slot.sectionStart;
     }
     if (slot.blank) opened.blank = true;
+    if (options.notes) {
+      opened.notes = [];
+      opened.notesHeight = 0;
+    }
     pages.push(opened);
     placed.set(opened, []);
     return opened;
@@ -377,7 +431,7 @@ export function distribute<T, S = string>(
     const height = measure(entry.item, current.page);
 
     // Fits in the remaining space — place and continue.
-    if (current.usedHeight + height <= current.availableHeight && !breaksInside(entry.item)) {
+    if (fitsOn(current, entry.item, height) && !breaksInside(entry.item)) {
       place(current, entry, height);
       continue;
     }
@@ -386,7 +440,7 @@ export function distribute<T, S = string>(
     if (canSplit(entry.item)) {
       const page = current;
       const { head, tail } = splitToFit(entry.item, entry.continuation, page.page, (candidate) => {
-        return page.usedHeight + measure(candidate, page.page) <= page.availableHeight;
+        return fitsOn(page, candidate, measure(candidate, page.page));
       });
 
       if (head) {
@@ -424,7 +478,7 @@ export function distribute<T, S = string>(
       const page = current;
       const fragment = options.fragment!(
         entry.item,
-        (candidate) => page.usedHeight + measure(candidate, page.page) <= page.availableHeight,
+        (candidate) => fitsOn(page, candidate, measure(candidate, page.page)),
         { page: page.page },
       );
       if (fragment) {
@@ -447,8 +501,8 @@ export function distribute<T, S = string>(
 
     place(current, entry, height);
 
-    if (height > current.availableHeight) {
-      // Taller than an empty page: placed alone, mark overflow.
+    if (height + (current.notesHeight ?? 0) > current.availableHeight) {
+      // Taller than an empty page (with its notes): placed alone, mark overflow.
       current.overflows = true;
       current = null; // Force the next item onto a fresh page.
     }

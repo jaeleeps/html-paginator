@@ -13,6 +13,14 @@ export type {
   PageSlot,
   WrapInfo,
 } from './distribute';
+export {
+  createFootnotes,
+  FOOTNOTE_ATTRIBUTE,
+  FOOTNOTE_CLASS_NAMES,
+  injectFootnoteStyles,
+  NOTE_ATTRIBUTE,
+} from './footnotes';
+export type { Footnotes } from './footnotes';
 export { createRowSplitter } from './rowSplit';
 export { FROZEN_COLUMNS_ATTRIBUTE, freezeTableColumns } from './tableColumns';
 export { createTextSplitter } from './textSplit';
