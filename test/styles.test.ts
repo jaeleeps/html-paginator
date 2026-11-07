@@ -23,6 +23,12 @@ describe('buildStylesheet', () => {
     expect(css).toContain('page-break-after: auto');
     expect(css).toContain('@media print');
   });
+
+  it('cancels author forced breaks inside page bodies under print', () => {
+    const print = buildStylesheet(SIZE).split('@media print')[1] ?? '';
+    expect(print).toMatch(/\.hp-body \*\s*\{[^}]*break-before: auto !important/);
+    expect(print).toMatch(/\.hp-body \*\s*\{[^}]*page-break-after: auto !important/);
+  });
 });
 
 describe('injectStyles', () => {

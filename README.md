@@ -124,6 +124,26 @@ Add `data-break` to content elements to control how they split across pages:
 - Loose text placed directly in the content wrapper is wrapped in a `<div>` and paginated like any other block.
 - Elements without `data-break` default to `auto` (splittable at child boundaries).
 
+### Forced page breaks
+
+Start content on a new page, like Word's page break (Ctrl+Enter):
+
+```html
+<h2 data-break-before="page">Chapter 2</h2>          <!-- starts a new page -->
+<p data-break-after="page">End of section.</p>        <!-- next content starts a new page -->
+```
+
+Standard CSS works too, from stylesheets or inline styles: `break-before` / `break-after` with `page`, `left` or `right`, and the legacy `page-break-before` / `page-break-after: always`:
+
+```css
+h2.chapter { break-before: page; }
+```
+
+- Breaks apply at any depth: containers and tables (at a row) are split where the break is.
+- A break never creates a blank page. A break at the top of a page does nothing.
+- Breaks inside `data-break="avoid"`/`"clip"` elements are ignored, because those elements are never split.
+- The print stylesheet cancels these breaks inside generated pages, since pagination has already applied them. Without that, the browser would start extra sheets when printing.
+
 ## Page configuration
 
 ### Size presets

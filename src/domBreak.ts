@@ -7,6 +7,62 @@ export const BREAK_ATTRIBUTE = 'data-break';
 /** Marker added to continuation fragments (for styling, e.g. hiding borders). */
 export const CONTINUED_ATTRIBUTE = 'data-hp-continued';
 
+/** `data-break-before="page"`: start this element on a new page. */
+export const PAGE_BREAK_BEFORE_ATTRIBUTE = 'data-break-before';
+
+/** `data-break-after="page"`: start the content after this element on a new page. */
+export const PAGE_BREAK_AFTER_ATTRIBUTE = 'data-break-after';
+
+/** CSS break values that force a page break (`break-*` and legacy `page-break-*`). */
+const FORCED_BREAK_VALUES = new Set(['page', 'always', 'left', 'right', 'recto', 'verso']);
+
+function cssForcesBreak(style: CSSStyleDeclaration | undefined, side: 'before' | 'after'): boolean {
+  if (!style) return false;
+  return (
+    FORCED_BREAK_VALUES.has(style.getPropertyValue(`break-${side}`)) ||
+    FORCED_BREAK_VALUES.has(style.getPropertyValue(`page-break-${side}`))
+  );
+}
+
+/** Next element after `el` in document order that is not inside it, within `root`. */
+function nextElementAfter(el: Element, root: Element): Element | null {
+  for (let node: Element | null = el; node && node !== root; node = node.parentElement) {
+    if (node.nextElementSibling) return node.nextElementSibling;
+  }
+  return null;
+}
+
+/** True when the element starts on a new page (normalized marker). */
+export function hasPageBreakBefore(el: HTMLElement): boolean {
+  return el.getAttribute(PAGE_BREAK_BEFORE_ATTRIBUTE) === 'page';
+}
+
+/**
+ * Normalize forced page breaks of `source` onto its deep clone `copy` as
+ * `data-break-before="page"` markers, which survive fragment wrapping.
+ *
+ * Sources: `data-break-before/after="page"` and CSS `break-before/after`
+ * (`page`, `left`, `right`, ...) or legacy `page-break-before/after: always`,
+ * read from the live source so stylesheets apply. A break after an element
+ * becomes a break before the next element in document order.
+ */
+export function markForcedBreaks(source: HTMLElement, copy: HTMLElement): void {
+  const view = source.ownerDocument.defaultView;
+  const sources = source.querySelectorAll('*');
+  const copies = copy.querySelectorAll('*');
+  sources.forEach((src, i) => {
+    const el = copies[i];
+    if (!el) return;
+    const style = view?.getComputedStyle(src);
+    if (src.getAttribute(PAGE_BREAK_BEFORE_ATTRIBUTE) === 'page' || cssForcesBreak(style, 'before')) {
+      el.setAttribute(PAGE_BREAK_BEFORE_ATTRIBUTE, 'page');
+    }
+    if (src.getAttribute(PAGE_BREAK_AFTER_ATTRIBUTE) === 'page' || cssForcesBreak(style, 'after')) {
+      nextElementAfter(el, copy)?.setAttribute(PAGE_BREAK_BEFORE_ATTRIBUTE, 'page');
+    }
+  });
+}
+
 const VALID_BEHAVIORS: readonly BreakBehavior[] = ['auto', 'avoid', 'clip'];
 
 function isBreakBehavior(value: string): value is BreakBehavior {
@@ -146,10 +202,12 @@ export function createDomBreaker(options: DomWrapOptions = {}): {
   breakBehavior: (el: HTMLElement) => BreakBehavior;
   children: (el: HTMLElement) => HTMLElement[];
   wrap: (el: HTMLElement, children: HTMLElement[], info: WrapInfo) => HTMLElement;
+  pageBreakBefore: (el: HTMLElement) => boolean;
 } {
   return {
     breakBehavior: getBreakBehavior,
     children: domChildren,
     wrap: (el, children, info) => domWrap(el, children, info, options),
+    pageBreakBefore: hasPageBreakBefore,
   };
 }

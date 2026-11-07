@@ -13,6 +13,10 @@ export {
   domChildren,
   domWrap,
   getBreakBehavior,
+  hasPageBreakBefore,
+  markForcedBreaks,
+  PAGE_BREAK_AFTER_ATTRIBUTE,
+  PAGE_BREAK_BEFORE_ATTRIBUTE,
   warnNestedBreakAttributes,
 } from './domBreak';
 export type { DomWrapOptions } from './domBreak';

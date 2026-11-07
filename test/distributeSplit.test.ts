@@ -14,6 +14,8 @@ interface Item {
   behavior?: BreakBehavior;
   pad?: number;
   continuation?: boolean;
+  /** Forced page break before this item. */
+  brk?: boolean;
 }
 
 function measure(item: Item): number {
@@ -29,6 +31,7 @@ function run(items: Item[], pageHeight: number | ((page: number) => number)) {
     breakBehavior: (i) => i.behavior ?? (i.kids ? 'auto' : 'avoid'),
     children: (i) => i.kids ?? [],
     wrap: (i, kids, info) => ({ ...i, kids, continuation: info.continuation }),
+    pageBreakBefore: (i) => i.brk === true,
   });
 }
 
@@ -247,5 +250,87 @@ describe('distribute with a destructive wrap (DOM move semantics)', () => {
   it('keeps the retried fragment non-continued', () => {
     const pages = runDestructive([{ h: 50 }, { kids: [{ h: 40 }, { h: 40 }] }], 60);
     expect(pages.slice(1).map((p) => p.items[0]?.continuation)).toEqual([false, true]);
+  });
+});
+
+describe('distribute with forced page breaks', () => {
+  it('starts a new page before a breaking item', () => {
+    const pages = run([{ h: 10 }, { h: 10, brk: true }, { h: 10 }], 60);
+    expect(pageLeaves(pages)).toEqual([[10], [10, 10]]);
+  });
+
+  it('never creates a blank first page', () => {
+    const pages = run([{ h: 10, brk: true }, { h: 10 }], 60);
+    expect(pageLeaves(pages)).toEqual([[10, 10]]);
+  });
+
+  it('does not add a blank page after an overflowing page', () => {
+    const pages = run([{ h: 100 }, { h: 10, brk: true }], 60);
+    expect(pageLeaves(pages)).toEqual([[100], [10]]);
+  });
+
+  it('honors consecutive breaks', () => {
+    const pages = run([{ h: 10 }, { h: 10, brk: true }, { h: 10, brk: true }], 60);
+    expect(pageLeaves(pages)).toEqual([[10], [10], [10]]);
+  });
+
+  it('splits a container that would fit at a nested break', () => {
+    const pages = run([{ kids: [{ h: 10 }, { h: 10, brk: true }, { h: 10 }] }], 60);
+    expect(pageLeaves(pages)).toEqual([[10], [10, 10]]);
+    expect(pages.map((p) => p.items[0]?.continuation)).toEqual([false, true]);
+  });
+
+  it('splits through several levels to reach a deep break', () => {
+    const pages = run([{ kids: [{ h: 10 }, { kids: [{ h: 10 }, { h: 10, brk: true }] }] }], 60);
+    expect(pageLeaves(pages)).toEqual([[10, 10], [10]]);
+  });
+
+  it('treats a break on a first child as a break before its container', () => {
+    const pages = run([{ h: 10 }, { kids: [{ h: 10, brk: true }, { h: 10 }] }], 60);
+    expect(pageLeaves(pages)).toEqual([[10], [10, 10]]);
+    // Moved whole: one unsplit fragment.
+    expect(pages[1]?.items[0]?.continuation).toBeUndefined();
+  });
+
+  it('ignores breaks inside avoid containers', () => {
+    const pages = run([{ h: 10 }, { behavior: 'avoid', kids: [{ h: 10 }, { h: 10, brk: true }] }], 60);
+    expect(pageLeaves(pages)).toEqual([[10, 10, 10]]);
+  });
+
+  it('combines fit splits and forced breaks', () => {
+    const pages = run([{ kids: [{ h: 30 }, { h: 30 }, { h: 30 }, { h: 10, brk: true }] }], 60);
+    expect(pageLeaves(pages)).toEqual([[30, 30], [30], [10]]);
+  });
+
+  it('does not double-break when a split tail starts with a break', () => {
+    // Head [30, 30] fills page 1; the tail begins with the breaking child.
+    const pages = run([{ kids: [{ h: 30 }, { h: 30 }, { h: 10, brk: true }] }], 60);
+    expect(pageLeaves(pages)).toEqual([[30, 30], [10]]);
+  });
+
+  it('works with a destructive wrap', () => {
+    const parent = new Map<Item, Item>();
+    const root: Item = { kids: [{ h: 10 }, { kids: [{ h: 10 }, { h: 10, brk: true }, { h: 10 }] }] };
+    const adopt = (i: Item): void => i.kids?.forEach((k) => (parent.set(k, i), adopt(k)));
+    adopt(root);
+    const pages = distribute<Item>({
+      items: [root],
+      measure,
+      pageHeight: () => 60,
+      breakBehavior: (i) => (i.kids ? 'auto' : 'avoid'),
+      children: (i) => [...(i.kids ?? [])],
+      wrap: (i, kids, info) => {
+        const fragment: Item = { ...i, kids: [], continuation: info.continuation };
+        for (const kid of kids) {
+          const old = parent.get(kid);
+          if (old?.kids) old.kids = old.kids.filter((k) => k !== kid);
+          fragment.kids!.push(kid);
+          parent.set(kid, fragment);
+        }
+        return fragment;
+      },
+      pageBreakBefore: (i) => i.brk === true,
+    });
+    expect(pageLeaves(pages)).toEqual([[10, 10], [10, 10]]);
   });
 });

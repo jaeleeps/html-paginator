@@ -6,6 +6,8 @@ import {
   domChildren,
   domWrap,
   getBreakBehavior,
+  hasPageBreakBefore,
+  markForcedBreaks,
   warnNestedBreakAttributes,
 } from '../src/domBreak';
 import { distribute } from '../src/distribute';
@@ -237,5 +239,61 @@ describe('integration: distribute + createDomBreaker', () => {
     expect(pages[1]?.items[0]?.hasAttribute(CONTINUED_ATTRIBUTE)).toBe(true);
     // avoid block intact inside the continuation
     expect(pages[1]?.items[0]?.querySelector(`[${BREAK_ATTRIBUTE}="avoid"]`)).not.toBeNull();
+  });
+});
+
+describe('markForcedBreaks', () => {
+  /** Mount `markup` as a live source, clone it, mark breaks on the clone. */
+  function marked(markup: string, css = ''): HTMLElement {
+    document.head.innerHTML = css ? `<style>${css}</style>` : '';
+    document.body.innerHTML = `<div id="src">${markup}</div>`;
+    const source = document.getElementById('src') as HTMLElement;
+    const copy = source.cloneNode(true) as HTMLElement;
+    markForcedBreaks(source, copy);
+    return copy;
+  }
+
+  const breaking = (copy: HTMLElement) =>
+    Array.from(copy.querySelectorAll<HTMLElement>('*'))
+      .filter(hasPageBreakBefore)
+      .map((el) => el.id);
+
+  afterEach(() => {
+    document.head.innerHTML = '';
+  });
+
+  it('keeps data-break-before="page"', () => {
+    expect(breaking(marked('<p id="a"></p><p id="b" data-break-before="page"></p>'))).toEqual(['b']);
+  });
+
+  it('moves data-break-after="page" onto the next element', () => {
+    expect(breaking(marked('<p id="a" data-break-after="page"></p><p id="b"></p>'))).toEqual(['b']);
+  });
+
+  it('climbs out of containers to find the element after a break', () => {
+    const copy = marked('<div id="a"><p id="a1"></p><p id="a2" data-break-after="page"></p></div><p id="b"></p>');
+    expect(breaking(copy)).toEqual(['b']);
+  });
+
+  it('ignores a break after the very last element', () => {
+    expect(breaking(marked('<p id="a"></p><p id="b" data-break-after="page"></p>'))).toEqual([]);
+  });
+
+  it('reads CSS break-before/after and legacy page-break-* from stylesheets', () => {
+    const copy = marked(
+      '<h2 id="a" class="chapter"></h2><p id="b" class="end"></p><p id="c"></p><p id="d" style="break-before: page"></p>',
+      '.chapter { page-break-before: always } .end { break-after: page }',
+    );
+    expect(breaking(copy)).toEqual(['a', 'c', 'd']);
+  });
+
+  it('ignores non-forcing values', () => {
+    const copy = marked('<p id="a" style="break-before: auto"></p><p id="b" style="break-after: avoid"></p><p id="c"></p>');
+    expect(breaking(copy)).toEqual([]);
+  });
+
+  it('does not touch the source', () => {
+    marked('<p id="a" data-break-after="page"></p><p id="b"></p>');
+    expect(document.querySelectorAll('[data-break-before]')).toHaveLength(0);
   });
 });

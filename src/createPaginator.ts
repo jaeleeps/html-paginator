@@ -1,7 +1,12 @@
 import type { MeasureAdapter, PaginateResult, Paginator, PaginatorConfig } from './types';
 import { buildPages, CLASS_NAMES } from './buildPages';
 import { distribute } from './distribute';
-import { BREAK_ATTRIBUTE, createDomBreaker, warnNestedBreakAttributes } from './domBreak';
+import {
+  BREAK_ATTRIBUTE,
+  createDomBreaker,
+  markForcedBreaks,
+  warnNestedBreakAttributes,
+} from './domBreak';
 import { createDomMeasurer } from './measure';
 import { resolveSize } from './pageConfig';
 import { injectStyles } from './styles';
@@ -57,12 +62,15 @@ export function createPaginator(config: PaginatorConfig): Paginator {
 
       warnNestedBreakAttributes(source);
 
-      // Work on clones so the source stays intact for reset()/re-pagination.
+      // Work on a clone so the source stays intact for reset()/re-pagination.
+      const copy = source.cloneNode(true) as HTMLElement;
+      markForcedBreaks(source, copy);
+
       // Loose top-level text gets a <div> so it is paginated, not dropped.
       const items: HTMLElement[] = [];
-      for (const node of Array.from(source.childNodes)) {
+      for (const node of Array.from(copy.childNodes)) {
         if (node instanceof HTMLElement) {
-          items.push(node.cloneNode(true) as HTMLElement);
+          items.push(node);
         } else if (node.nodeType === Node.TEXT_NODE && (node.textContent ?? '').trim() !== '') {
           const div = doc.createElement('div');
           div.textContent = node.textContent;
