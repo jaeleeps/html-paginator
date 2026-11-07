@@ -20,7 +20,7 @@ import { createPaginator } from './createPaginator';
  *     <div data-hp-header>Report — Page {{page}} of {{totalPages}}</div>
  *     <div data-hp-footer>{{page}} / {{totalPages}}</div>
  *
- *     <!-- per-page override group (1-based) -->
+ *     <!-- per-page override group: 1-based number, or first | odd | even -->
  *     <div data-hp-page="1" data-hp-margin="1in">
  *       <div data-hp-header><h1>Cover</h1></div>
  *       <div data-hp-footer="none"></div>  <!-- remove the shared footer -->
@@ -32,6 +32,8 @@ import { createPaginator } from './createPaginator';
  * Semantics:
  * - The config lives in a <template>, so it is inert and never rendered.
  *   (A plain hidden element with data-hp-config also works.)
+ * - `data-hp-page="first"`, `"odd"`, `"even"` map to firstPage / oddPages /
+ *   evenPages (Word's different first page and odd & even pages).
  * - A page group inherits shared header/footer for slots it omits;
  *   `data-hp-header="none"` / `data-hp-footer="none"` removes them.
  * - `data-hp-size` accepts a preset ('letter', 'a4', ...) or explicit
@@ -154,17 +156,24 @@ export function parseDeclarativeConfig(doc: Document): PaginatorConfig | null {
 
     const overrides: Record<number, PageConfig> = {};
     for (const group of root.querySelectorAll(`[${A.page}]`)) {
-      const n = Number.parseInt(group.getAttribute(A.page) ?? '', 10);
-      if (!Number.isInteger(n) || n < 1) {
-        console.warn(`html-paginator: invalid ${A.page} value, group ignored`, group);
-        continue;
-      }
+      const value = (group.getAttribute(A.page) ?? '').trim();
       const override = parsePageAttrs(group);
       const h = group.querySelector(`[${A.header}]`);
       if (h) override.header = slotToTemplate(h, A.header);
       const f = group.querySelector(`[${A.footer}]`);
       if (f) override.footer = slotToTemplate(f, A.footer);
-      overrides[n] = override;
+
+      if (value === 'first') config.firstPage = override;
+      else if (value === 'odd') config.oddPages = override;
+      else if (value === 'even') config.evenPages = override;
+      else {
+        const n = Number.parseInt(value, 10);
+        if (!Number.isInteger(n) || n < 1) {
+          console.warn(`html-paginator: invalid ${A.page} value, group ignored`, group);
+          continue;
+        }
+        overrides[n] = override;
+      }
     }
     if (Object.keys(overrides).length > 0) config.pageOverrides = overrides;
   }

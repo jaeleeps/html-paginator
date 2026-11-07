@@ -1,6 +1,7 @@
 import type { DistributedPage } from './distribute';
-import type { PageConfig, PageNumbering } from './types';
+import type { PageConfig } from './types';
 import { resolvePageConfig } from './pageConfig';
+import type { PageVariants } from './pageConfig';
 import { pageContext } from './pageNumbers';
 import { renderTemplate } from './renderTemplate';
 
@@ -12,13 +13,11 @@ export const CLASS_NAMES = {
   footer: 'hp-footer',
 } as const;
 
-export interface BuildPagesOptions {
+export interface BuildPagesOptions extends PageVariants {
   /** Default page definition. */
   page?: PageConfig;
   /** Per-page overrides (1-based). */
   pageOverrides?: Record<number, PageConfig>;
-  /** Displayed page numbering. */
-  pageNumbers?: PageNumbering;
   document: Document;
 }
 
@@ -49,7 +48,7 @@ export function buildPages(
   const pages: HTMLElement[] = [];
 
   for (const dist of distributed) {
-    const config = resolvePageConfig(dist.page, options.page, options.pageOverrides);
+    const config = resolvePageConfig(dist.page, options.page, options.pageOverrides, options);
     const ctx = pageContext(dist.page, totalPages, options.pageNumbers);
 
     const pageEl = doc.createElement('div');

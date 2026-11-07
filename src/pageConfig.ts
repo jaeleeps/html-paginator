@@ -1,4 +1,4 @@
-import type { PageConfig, PageDimensions, PageSizePreset } from './types';
+import type { PageConfig, PageDimensions, PageNumbering, PageSizePreset } from './types';
 
 export const PAGE_SIZE_PRESETS: Record<PageSizePreset, PageDimensions> = {
   letter: { width: '8.5in', height: '11in' },
@@ -30,19 +30,38 @@ export function resolveSize(size: PageConfig['size']): PageDimensions {
 }
 
 /**
- * Resolve the effective config for one page: the per-page override (if any)
- * merged over the default page config.
+ * Word-style page variants ("Different First Page", "Different Odd & Even
+ * Pages"). Odd/even follows the displayed page number, so it depends on
+ * `pageNumbers.start`.
+ */
+export interface PageVariants {
+  firstPage?: PageConfig;
+  oddPages?: PageConfig;
+  evenPages?: PageConfig;
+  pageNumbers?: PageNumbering;
+}
+
+/**
+ * Resolve the effective config for one page. Later layers win:
+ * default page → odd/even variant → first-page variant → `overrides[page]`.
  *
- * `header: null` / `footer: null` in an override explicitly removes the
- * default header/footer for that page; an absent key inherits the default.
+ * `header: null` / `footer: null` in a layer explicitly removes the
+ * header/footer for that page; an absent key inherits from earlier layers.
  */
 export function resolvePageConfig(
   page: number,
   defaults: PageConfig | undefined,
   overrides: Record<number, PageConfig> | undefined,
+  variants: PageVariants = {},
 ): ResolvedPageConfig {
-  const override = overrides?.[page];
-  const merged: PageConfig = { ...defaults, ...override };
+  const pageNumber = (variants.pageNumbers?.start ?? 1) + page - 1;
+  const parity = pageNumber % 2 === 0 ? variants.evenPages : variants.oddPages;
+  const merged: PageConfig = {
+    ...defaults,
+    ...parity,
+    ...(page === 1 ? variants.firstPage : undefined),
+    ...overrides?.[page],
+  };
   return {
     size: resolveSize(merged.size),
     margin: merged.margin ?? DEFAULT_MARGIN,

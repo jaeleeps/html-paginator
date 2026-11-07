@@ -78,6 +78,23 @@ describe('createDomMeasurer', () => {
     measurer.dispose();
   });
 
+  it('builds probes from first/odd/even variants', () => {
+    const measurer = createDomMeasurer({
+      document,
+      page: { footer: '<footer>f</footer>' },
+      firstPage: { footer: null, margin: '30px' },
+      evenPages: { header: '<header>even</header>' },
+    });
+    measurer.pageHeight(1);
+    measurer.pageHeight(2);
+    const [first, even] = Array.from(document.querySelectorAll<HTMLElement>(`.${CLASS_NAMES.page}`));
+    expect(first?.style.padding).toBe('30px');
+    expect(first?.querySelector(`.${CLASS_NAMES.footer}`)).toBeNull();
+    expect(even?.querySelector(`.${CLASS_NAMES.header}`)?.textContent).toBe('even');
+    expect(even?.querySelector(`.${CLASS_NAMES.footer}`)).not.toBeNull();
+    measurer.dispose();
+  });
+
   it('subtracts page padding (margin config)', () => {
     const measurer = createDomMeasurer({ document, page: { margin: '20px' } });
     measurer.pageHeight(1);

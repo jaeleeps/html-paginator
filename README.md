@@ -247,6 +247,31 @@ pageOverrides: {
 - `data-hp-footer="none"` explicitly removes the footer for that page (useful for full-bleed cover pages).
 - Footer/header height can vary per page -- the available body height is recomputed automatically, so content distributes correctly even when page 1 has a taller footer than pages 2+.
 
+### Different first page, odd & even pages
+
+Word's "Different First Page" and "Different Odd & Even Pages":
+
+```js
+createPaginator({
+  source: '#content',
+  pageNumbers: { start: 0 },                       // unnumbered cover
+  page: {
+    margin: '1in 0.75in 1in 1.25in',               // odd pages: inside margin on the left
+    footer: ({ pageLabel, lastPageLabel }) => `<div>Page ${pageLabel} of ${lastPageLabel}</div>`,
+  },
+  firstPage: { header: null, footer: null, margin: '2in 1in' },
+  oddPages: { header: '<div class="right">Chapter title</div>' },
+  evenPages: {
+    header: '<div class="left">Book title</div>',
+    margin: '1in 1.25in 1in 0.75in',               // mirrored margins
+  },
+});
+```
+
+- Layers are applied in this order, later ones winning: `page` → `oddPages` / `evenPages` → `firstPage` → `pageOverrides[n]`. Each layer replaces only the properties it declares, and `null` removes a header or footer.
+- As in Word, odd/even follows the **displayed** page number. With `pageNumbers: { start: 0 }`, the page after the cover shows "1" and is odd.
+- Declaratively: `data-hp-page="first"`, `"odd"` or `"even"` groups (next to numbered groups) in the config template.
+
 ## Table splitting
 
 Tables with `data-break="auto"` split at row boundaries. The `<caption>` stays on the first fragment and `<tfoot>` goes on the fragment holding the last row (its height counts toward that page). Use `repeatTableHead` to repeat `<thead>` on continuation pages:
@@ -315,7 +340,7 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-hp-content` | any | Content wrapper to paginate |
 | `data-hp-header` | inside config | Header template. Set `="none"` to remove. |
 | `data-hp-footer` | inside config | Footer template. Set `="none"` to remove. |
-| `data-hp-page="N"` | inside config | Per-page override group (1-based) |
+| `data-hp-page="N"` | inside config | Per-page override group: page number (1-based), or `first`, `odd`, `even` |
 | `data-hp-size` | config or content | Page size preset or `"<width> <height>"` |
 | `data-hp-margin` | config, content, or page group | CSS margin shorthand |
 | `data-hp-repeat-table-head` | config or content | Repeat `<thead>` on split tables |

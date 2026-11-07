@@ -52,6 +52,9 @@ export interface PageInfo {
   heightIn: number;
   /** Pixels by which any body descendant extends past the body's bottom. */
   overflowPx: number;
+  /** Body inset from the page's left / right edge, in inches. */
+  bodyLeftIn: number;
+  bodyRightIn: number;
   clipped: boolean;
   tables: number;
   theads: number;
@@ -69,7 +72,9 @@ export function inspectPages(page: Page): Promise<PageInfo[]> {
     return Array.from(document.querySelectorAll<HTMLElement>('.hp-pages > .hp-page'), (pg, i) => {
       const body = pg.querySelector<HTMLElement>('.hp-body')!;
       const rect = pg.getBoundingClientRect();
-      const bodyBottom = body.getBoundingClientRect().bottom;
+      const bodyRect = body.getBoundingClientRect();
+      const bodyBottom = bodyRect.bottom;
+      const inches = (px: number) => Math.round((px / 96) * 100) / 100;
       let maxBottom = -Infinity;
       for (const el of body.querySelectorAll('*')) {
         const r = el.getBoundingClientRect();
@@ -80,6 +85,8 @@ export function inspectPages(page: Page): Promise<PageInfo[]> {
         widthIn: Math.round((rect.width / 96) * 100) / 100,
         heightIn: Math.round((rect.height / 96) * 100) / 100,
         overflowPx: Math.max(0, Math.round(maxBottom - bodyBottom)),
+        bodyLeftIn: inches(bodyRect.left - rect.left),
+        bodyRightIn: inches(rect.right - bodyRect.right),
         clipped: body.style.overflow === 'hidden',
         tables: body.querySelectorAll('table').length,
         theads: body.querySelectorAll('thead').length,

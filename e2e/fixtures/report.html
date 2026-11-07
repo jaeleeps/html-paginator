@@ -1,0 +1,60 @@
+<!doctype html>
+<!--
+  Word-style report, configured declaratively and paginated through the
+  zero-config `html-paginator/auto` entry:
+  - cover page: different first page (no header/footer, larger margins)
+  - odd/even headers with mirrored margins (inside 1.25in, outside 0.75in)
+  - numbering starts at 0, so the cover is unnumbered and page 2 shows "1"
+  - chapters start on a new page (CSS break-before)
+  Markers: COVER, CH1.., S1-01.. (paragraphs).
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>html-paginator report fixture</title>
+<style>
+  body { margin: 0; font: 13px/1.55 Georgia, serif; }
+  .odd-hd { text-align: right; border-bottom: 1px solid #444; margin-bottom: 12px; font-size: 11px; }
+  .even-hd { text-align: left; border-bottom: 1px solid #444; margin-bottom: 12px; font-size: 11px; }
+  .ft { text-align: center; font-size: 11px; margin-top: 12px; }
+  .cover { text-align: center; padding-top: 2in; }
+  .cover h1 { font-size: 36px; margin: 0 0 12px; }
+  h2 { break-before: page; font-size: 20px; margin: 0 0 10px; }
+  p { margin: 0 0 9px; text-align: justify; }
+</style>
+</head>
+<body>
+<template data-hp-config data-hp-size="letter" data-hp-margin="1in 0.75in 1in 1.25in" data-hp-page-start="0">
+  <div class="ft" data-hp-footer>Page {{pageLabel}} of {{lastPageLabel}}</div>
+  <div data-hp-page="first" data-hp-margin="1in">
+    <div data-hp-header="none"></div>
+    <div data-hp-footer="none"></div>
+  </div>
+  <div data-hp-page="odd">
+    <div class="odd-hd" data-hp-header>CHAPTER-HDR Annual Report</div>
+  </div>
+  <div data-hp-page="even" data-hp-margin="1in 1.25in 1in 0.75in">
+    <div class="even-hd" data-hp-header>TITLE-HDR ACME Corp</div>
+  </div>
+</template>
+
+<div id="content" data-hp-content>
+  <div class="cover"><h1>COVER Annual Report</h1><p>Prepared for the board.</p></div>
+</div>
+
+<script type="module">
+  const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.';
+  const pad = (n) => String(n).padStart(2, '0');
+  const content = document.getElementById('content');
+  for (let c = 1; c <= 3; c++) {
+    content.insertAdjacentHTML('beforeend', `<h2>CH${c} Chapter ${c}</h2>` +
+      Array.from({ length: c === 2 ? 4 : 22 }, (_, i) => `<p>S${c}-${pad(i + 1)} ${lorem}</p>`).join(''));
+  }
+  window.sourceText = content.innerText;
+
+  await import('/dist/auto.js');
+  window.htmlPaginator.run();
+  document.documentElement.dataset.paginated = 'true';
+</script>
+</body>
+</html>
