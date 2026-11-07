@@ -1,5 +1,6 @@
 import type {
   HeaderFooterTemplate,
+  PageBorder,
   PageConfig,
   PageContext,
   PageNumberFormat,
@@ -78,6 +79,9 @@ export const DECLARATIVE_ATTRIBUTES = {
   headerDistance: 'data-hp-header-distance',
   footerDistance: 'data-hp-footer-distance',
   verticalAlign: 'data-hp-vertical-align',
+  pageBorder: 'data-hp-page-border',
+  pageBorderFrom: 'data-hp-page-border-from',
+  pageBorderOffset: 'data-hp-page-border-offset',
   lineNumbers: 'data-hp-line-numbers',
   lineNumbersStart: 'data-hp-line-numbers-start',
   lineNumbersCountBy: 'data-hp-line-numbers-count-by',
@@ -172,6 +176,16 @@ function parsePageAttrs(el: Element): PageConfig {
   if (footerDistance) config.footerDistance = footerDistance;
   const verticalAlign = el.getAttribute(A.verticalAlign);
   if (verticalAlign) config.verticalAlign = verticalAlign.trim() as PageConfig['verticalAlign'];
+  const pageBorder = el.getAttribute(A.pageBorder)?.trim();
+  if (pageBorder === 'none') config.pageBorder = null;
+  else if (pageBorder) {
+    const border: PageBorder = { border: pageBorder };
+    const from = el.getAttribute(A.pageBorderFrom);
+    if (from) border.from = from.trim() as PageBorder['from'];
+    const offset = el.getAttribute(A.pageBorderOffset);
+    if (offset) border.offset = offset;
+    config.pageBorder = border;
+  }
   const columns = el.getAttribute(A.columns);
   if (columns) config.columns = Number(columns.trim());
   const columnGap = el.getAttribute(A.columnGap);

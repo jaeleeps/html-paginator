@@ -292,6 +292,22 @@ createPaginator({
 - Word's "justified" alignment is not supported.
 - Declaratively: `data-hp-vertical-align="center"` on the config, content or a `data-hp-section` group.
 
+### Page borders
+
+`pageBorder` draws a border around the page (Word: Design > Page Borders), as a CSS border. As in Word, it is measured from the edge of the sheet (24pt in by default) or from the text (4pt outside the margins by default):
+
+```js
+createPaginator({
+  source: '#doc',
+  page: { pageBorder: '1px solid #000' },                               // 24pt from the edge
+  firstPage: { pageBorder: null },                                       // none on the cover
+  sections: { appendix: { page: { pageBorder: { border: '3px double', from: 'text', offset: '6pt' } } } },
+});
+```
+
+- It is drawn in `div.hp-page-border`, out of the flow, so it never affects pagination. From the text it is an outline around the margin box, so a header or footer inside the margins (no `headerDistance` / `footerDistance`) is inside the border, like Word's "Surround header/footer" option.
+- Declaratively: `data-hp-page-border="1px solid #000"` (or `none`), with `data-hp-page-border-from="text"` and `data-hp-page-border-offset`.
+
 ### Headers and footers
 
 In the JS API, `header` and `footer` accept:
@@ -690,6 +706,7 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-hp-columns` / `data-hp-column-gap` / `data-hp-column-rule` | config / content / section group | Newspaper columns, the space and line between them |
 | `data-hp-header-distance` / `data-hp-footer-distance` | config / content / section group | Header/footer distance from the sheet edge (Word layout) |
 | `data-hp-vertical-align` | config / content / section group | `top`, `center` or `bottom` (Word's vertical alignment) |
+| `data-hp-page-border` / `-from` / `-offset` | config / content / section group | Page border (CSS border or `none`), measured from `edge` or `text` |
 | `data-hp-line-numbers` (+ `-start`, `-count-by`, `-distance`) | config / content / section group | Line numbers: `page`, `section`, `continuous` restart, or `none` |
 | `data-hp-suppress-line-numbers` | content elements | Leave the element's lines unnumbered |
 | `data-hp-running` | content elements | Set a running header value of that name (headings set `h1`…`h6` on their own) |

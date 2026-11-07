@@ -1,4 +1,4 @@
-import type { PageConfig, PageDimensions, PageNumbering, PageSizePreset } from './types';
+import type { PageBorder, PageConfig, PageDimensions, PageNumbering, PageSizePreset } from './types';
 
 export const PAGE_SIZE_PRESETS: Record<PageSizePreset, PageDimensions> = {
   letter: { width: '8.5in', height: '11in' },
@@ -21,6 +21,7 @@ export interface ResolvedPageConfig {
   headerDistance?: string;
   footerDistance?: string;
   verticalAlign: NonNullable<PageConfig['verticalAlign']>;
+  pageBorder?: Required<PageBorder>;
 }
 
 export const DEFAULT_COLUMN_GAP = '0.5in';
@@ -127,7 +128,18 @@ export function mergePageLayers(...layers: (PageConfig | undefined)[]): Resolved
     headerDistance: merged.headerDistance,
     footerDistance: merged.footerDistance,
     verticalAlign: resolveVerticalAlign(merged.verticalAlign),
+    pageBorder: resolvePageBorder(merged.pageBorder),
   };
+}
+
+function resolvePageBorder(value: PageConfig['pageBorder']): Required<PageBorder> | undefined {
+  if (value === undefined || value === null) return undefined;
+  const border = typeof value === 'string' ? { border: value } : value;
+  const from = border.from ?? 'edge';
+  if (from !== 'edge' && from !== 'text') {
+    throw new Error(`html-paginator: pageBorder.from must be edge or text, got "${String(from)}"`);
+  }
+  return { border: border.border, from, offset: border.offset ?? (from === 'edge' ? '24pt' : '4pt') };
 }
 
 const VERTICAL_ALIGNS = ['top', 'center', 'bottom'] as const;

@@ -103,6 +103,7 @@ export type {
   BreakBehavior,
   HeaderFooterTemplate,
   MeasureAdapter,
+  PageBorder,
   PageConfig,
   PageContext,
   PageDimensions,
