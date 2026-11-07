@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { collectEndnotes, createPaginator } from '../src/index';
+import { collectEndnotes, createPaginator, parseDeclarativeConfig } from '../src/index';
 import type { MeasureAdapter } from '../src/index';
 
 afterEach(() => {
@@ -80,6 +80,25 @@ describe('collectEndnotes', () => {
     document.body.innerHTML = '<div id="r"><p>x</p></div>';
     expect(collectEndnotes(document.getElementById('r')!)).toBe(0);
     expect(document.querySelector('.hp-endnotes')).toBeNull();
+  });
+});
+
+describe('declarative note options', () => {
+  it('reads footnote and endnote options from the config element', () => {
+    document.body.innerHTML = `
+      <template data-hp-config data-hp-footnote-restart="page" data-hp-footnote-format="lower-alpha"
+        data-hp-endnote-location="section" data-hp-endnote-restart="section" data-hp-endnote-format="decimal"></template>
+      <div data-hp-content><p>a</p></div>`;
+    const config = parseDeclarativeConfig(document)!;
+    expect(config.footnotes).toEqual({ restart: 'page', format: 'lower-alpha' });
+    expect(config.endnotes).toEqual({ location: 'section', restart: 'section', format: 'decimal' });
+  });
+
+  it('reads them from the content without a config element, and leaves them out when absent', () => {
+    document.body.innerHTML = `<div data-hp-content data-hp-endnote-format="upper-alpha"><p>a</p></div>`;
+    const config = parseDeclarativeConfig(document)!;
+    expect(config.endnotes).toEqual({ format: 'upper-alpha' });
+    expect(config.footnotes).toBeUndefined();
   });
 });
 

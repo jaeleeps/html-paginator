@@ -720,6 +720,8 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-hp-columns` / `data-hp-column-gap` / `data-hp-column-rule` | config / content / section group | Newspaper columns, the space and line between them |
 | `data-hp-header-distance` / `data-hp-footer-distance` | config / content / section group | Header/footer distance from the sheet edge (Word layout) |
 | `data-hp-mirror-margins` / `data-hp-gutter` | config / content / section group | Facing-page margins and binding gutter |
+| `data-hp-footnote-restart` / `data-hp-footnote-format` | config / content | Footnote numbering: `continuous`, `section` or `page`; number style |
+| `data-hp-endnote-location` / `-restart` / `-format` | config / content | Endnotes at the end of the `document` or each `section`; `continuous` or `section` numbering; number style |
 | `data-hp-vertical-align` | config / content / section group | `top`, `center` or `bottom` (Word's vertical alignment) |
 | `data-hp-page-border` / `-from` / `-offset` | config / content / section group | Page border (CSS border or `none`), measured from `edge` or `text` |
 | `data-hp-line-numbers` (+ `-start`, `-count-by`, `-distance`) | config / content / section group | Line numbers: `page`, `section`, `continuous` restart, or `none` |

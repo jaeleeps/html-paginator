@@ -10,6 +10,8 @@ import type {
   SectionConfig,
 } from './types';
 import type { LineNumberOptions } from './lineNumbers';
+import type { FootnoteOptions } from './footnotes';
+import type { EndnoteOptions } from './endnotes';
 import { createPaginator } from './createPaginator';
 
 /**
@@ -58,6 +60,8 @@ import { createPaginator } from './createPaginator';
  *   (e.g. `data-hp-page-start="0"`, `data-hp-page-format="lower-roman"`);
  *   `data-hp-page-chapter="1"` (+ `-separator`) prefixes the chapter number.
  * - `data-hp-repeat-table-head` (boolean attribute) enables repeatTableHead.
+ * - `data-hp-footnote-restart` / `-format` and `data-hp-endnote-location` /
+ *   `-restart` / `-format` set the footnote and endnote options.
  * - `<div data-hp-section="name">` groups describe `sections[name]` (started
  *   in content by `data-section="name"`): their own slots, size/margin,
  *   numbering attributes, `data-hp-section-start="odd|even|continuous"`, and nested
@@ -96,6 +100,11 @@ export const DECLARATIVE_ATTRIBUTES = {
   section: 'data-hp-section',
   sectionStart: 'data-hp-section-start',
   balanceColumns: 'data-hp-balance-columns',
+  footnoteRestart: 'data-hp-footnote-restart',
+  footnoteFormat: 'data-hp-footnote-format',
+  endnoteLocation: 'data-hp-endnote-location',
+  endnoteRestart: 'data-hp-endnote-restart',
+  endnoteFormat: 'data-hp-endnote-format',
 } as const;
 
 const A = DECLARATIVE_ATTRIBUTES;
@@ -298,6 +307,24 @@ export function parseDeclarativeConfig(doc: Document): PaginatorConfig | null {
 
   const numbering = parseNumbering(configEl, content);
   if (numbering) config.pageNumbers = numbering;
+
+  // Footnote and endnote options, from the config element or the content.
+  const option = (attr: string): string | undefined =>
+    (configEl?.getAttribute(attr) ?? content.getAttribute(attr))?.trim() || undefined;
+  const footnotes: FootnoteOptions = {};
+  const footnoteRestart = option(A.footnoteRestart);
+  if (footnoteRestart) footnotes.restart = footnoteRestart as FootnoteOptions['restart'];
+  const footnoteFormat = option(A.footnoteFormat);
+  if (footnoteFormat) footnotes.format = footnoteFormat as PageNumberFormat;
+  if (Object.keys(footnotes).length > 0) config.footnotes = footnotes;
+  const endnotes: EndnoteOptions = {};
+  const endnoteLocation = option(A.endnoteLocation);
+  if (endnoteLocation) endnotes.location = endnoteLocation as EndnoteOptions['location'];
+  const endnoteRestart = option(A.endnoteRestart);
+  if (endnoteRestart) endnotes.restart = endnoteRestart as EndnoteOptions['restart'];
+  const endnoteFormat = option(A.endnoteFormat);
+  if (endnoteFormat) endnotes.format = endnoteFormat as PageNumberFormat;
+  if (Object.keys(endnotes).length > 0) config.endnotes = endnotes;
 
   if (root) {
     applySharedSlots(root, page, null);
