@@ -332,6 +332,18 @@ createPaginator({
 - Templates also receive `section`, `sectionPage` and `sectionPages`. `lastPageNumber` / `lastPageLabel` refer to the last page of the current numbering run, so "Page X of Y" works inside a restarted body.
 - Declaratively: `<div data-hp-section="name">` groups in the config template, with their own header/footer slots, `data-hp-margin`, `data-hp-page-start`, `data-hp-page-format`, `data-hp-section-start="odd"`, and nested `data-hp-page="first|odd|even"` groups.
 
+### Page fields in content
+
+Word's PAGE / NUMPAGES fields, inside the body text: an element with `data-hp-field` shows a value of its page's context, the same values headers and footers get:
+
+```html
+<p>This letter has <span data-hp-field="totalPages"></span> pages.</p>
+<p class="continued">Page <span data-hp-field="pageLabel"></span> of <span data-hp-field="lastPageLabel"></span></p>
+```
+
+- The field names are `page`, `totalPages`, `pageNumber`, `pageLabel`, `lastPageNumber`, `lastPageLabel`, `section`, `sectionPage` and `sectionPages`. An unknown name logs a warning and the element is left as is.
+- Values are measured as `000` and filled in after rendering, so they never change pagination. A long value, such as a section name, may make its line slightly wider than measured.
+
 ### Footnotes
 
 Wrap a note's text in `data-footnote` where its reference goes. The note moves to the bottom of the page where the reference lands, as in Word:
@@ -461,6 +473,7 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-break` | content elements | Break behavior: `auto`, `avoid`, or `clip` |
 | `data-break-before` / `data-break-after` | content elements | `="page"` forces a page break |
 | `data-keep-with-next` | content elements | Keep on the same page as the next element (`="false"` opts a heading out) |
+| `data-hp-field` | inline content | Page field: `pageLabel`, `totalPages`, `sectionPage`, … of the page it lands on |
 | `data-footnote` | inline content | Footnote: replaced by a numbered reference, its content shown at the bottom of the page |
 | `data-hp-toc` | content container | Fill with a table of contents (`data-hp-toc-levels="1-3"`) |
 | `data-hp-toc-level` / `data-hp-toc-skip` | content elements | Add an element to the TOC at a level / leave a heading out |
