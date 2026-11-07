@@ -197,6 +197,14 @@ describe('domWrap', () => {
     expect(frag.tHead).not.toBeNull();
     expect(frag.caption).toBeNull();
   });
+
+  it('data-repeat-head on a table overrides repeatTableHead either way', () => {
+    const on = html(tableMarkup.replace('<table', '<table data-repeat-head'));
+    expect((domWrap(on, [domChildren(on)[1]!], { continuation: true }) as HTMLTableElement).tHead).not.toBeNull();
+    const off = html(tableMarkup.replace('<table', '<table data-repeat-head="false"'));
+    const frag = domWrap(off, [domChildren(off)[1]!], { continuation: true }, { repeatTableHead: true });
+    expect((frag as HTMLTableElement).tHead).toBeNull();
+  });
 });
 
 describe('integration: distribute + createDomBreaker', () => {

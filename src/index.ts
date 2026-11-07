@@ -55,6 +55,7 @@ export {
   markBreakHints,
   PAGE_BREAK_AFTER_ATTRIBUTE,
   PAGE_BREAK_BEFORE_ATTRIBUTE,
+  REPEAT_HEAD_ATTRIBUTE,
   warnNestedBreakAttributes,
 } from './domBreak';
 export type { BreakHintOptions, DomWrapOptions } from './domBreak';

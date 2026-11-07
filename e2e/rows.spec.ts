@@ -37,6 +37,9 @@ test.describe('table rows across pages', () => {
     // Header repeats on every part; the footer follows the last part only.
     const dPages = rowOf('D').map((r) => info[r.page - 1]!);
     for (const p of dPages) expect(p.theads).toBe(1);
+    // Other tables do not repeat theirs (no repeatTableHead).
+    const aPages = rowOf('A').map((r) => info[r.page - 1]!);
+    expect(aPages.map((p) => p.theads)).toEqual([1, 0]);
     expect(dPages.map((p) => p.tfoots)).toEqual([...dPages.slice(1).map(() => 0), 1]);
 
     // Every part of a table has the same column grid.

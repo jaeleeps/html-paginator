@@ -220,6 +220,19 @@ export function domChildren(el: HTMLElement): HTMLElement[] {
   return Array.from(el.children).filter((c): c is HTMLElement => c instanceof HTMLElement);
 }
 
+/**
+ * Per-table "Repeat as header row" (Word): `data-repeat-head` repeats the
+ * table's <thead> on continuation pages, `="false"` opts out of the
+ * `repeatTableHead` default.
+ */
+export const REPEAT_HEAD_ATTRIBUTE = 'data-repeat-head';
+
+function repeatsHead(table: HTMLTableElement, options: DomWrapOptions): boolean {
+  const own = table.getAttribute(REPEAT_HEAD_ATTRIBUTE);
+  if (own !== null) return own !== 'false';
+  return options.repeatTableHead === true;
+}
+
 export interface DomWrapOptions {
   /** Repeat <thead> on table continuation fragments. Default: false. */
   repeatTableHead?: boolean;
@@ -233,7 +246,7 @@ export interface DomWrapOptions {
  *
  * Tables are reassembled properly: caption on the first fragment; colgroups
  * on every fragment; <thead> on the first (and on continuations when
- * `repeatTableHead` is set); rows go
+ * `repeatTableHead` or the table's `data-repeat-head` says so); rows go
  * into a fresh <tbody>; <tfoot> goes on the fragment holding the last row.
  */
 export function domWrap(
@@ -249,7 +262,7 @@ export function domWrap(
 
   if (el instanceof HTMLTableElement) {
     const table = clone as HTMLTableElement;
-    const includeChrome = !info.continuation || options.repeatTableHead === true;
+    const includeChrome = !info.continuation || repeatsHead(el, options);
     if (el.caption && !info.continuation) {
       table.appendChild(el.caption.cloneNode(true));
     }
