@@ -127,6 +127,17 @@ export interface PageConfig {
   /** Any CSS margin shorthand (e.g. '0.5in', '10mm 20mm'). */
   margin?: string;
   /**
+   * Mirror margins for facing pages (Word: Multiple pages > Mirror margins):
+   * on even pages the left and right margins swap, so `margin`'s left side
+   * is the inside margin throughout. Default: false.
+   */
+  mirrorMargins?: boolean;
+  /**
+   * Extra space for binding (Word: Gutter), added to the left margin, or
+   * with `mirrorMargins` to the inside one (CSS length). Default: none.
+   */
+  gutter?: string;
+  /**
    * Distance from the top edge of the sheet to the header (Word: "Header
    * from top", e.g. '0.5in'). The header then sits inside the top margin and
    * the body starts at the margin, lower only if the header is taller.

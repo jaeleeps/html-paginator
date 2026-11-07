@@ -266,6 +266,17 @@ Any CSS margin shorthand:
 
 In declarative mode: `data-hp-margin="0.6in"`.
 
+#### Mirror margins and gutter (facing pages)
+
+For printed books, `mirrorMargins: true` swaps the left and right margins on even pages, so the margin's left side is the inside margin on every page (Word: Multiple pages > Mirror margins). `gutter` adds binding space to the left margin, or with mirror margins to the inside one (Word: Gutter):
+
+```js
+{ margin: '15mm 12mm 15mm 15mm', mirrorMargins: true, gutter: '5mm' }
+// odd pages: 20mm inside (left), 12mm outside; even pages: the reverse
+```
+
+Odd and even go by the page number, as for odd/even headers, so a numbering restart can shift them. Both are page settings (per section, etc.). Declaratively: `data-hp-mirror-margins` and `data-hp-gutter="5mm"`.
+
 #### Header and footer distance (Word layout)
 
 By default the header and footer sit inside the margins, above and below the body. Word instead places them *in* the margins: the header at a distance from the top edge ("Header from top"), the footer at a distance from the bottom edge, with the body between the margins. `headerDistance` / `footerDistance` do the same:
@@ -455,15 +466,13 @@ createPaginator({
   source: '#content',
   pageNumbers: { start: 0 },                       // unnumbered cover
   page: {
-    margin: '1in 0.75in 1in 1.25in',               // odd pages: inside margin on the left
+    margin: '1in 0.75in 1in 1.25in',               // inside margin on the left...
+    mirrorMargins: true,                           // ...and on the right of even pages
     footer: ({ pageLabel, lastPageLabel }) => `<div>Page ${pageLabel} of ${lastPageLabel}</div>`,
   },
   firstPage: { header: null, footer: null, margin: '2in 1in' },
   oddPages: { header: '<div class="right">Chapter title</div>' },
-  evenPages: {
-    header: '<div class="left">Book title</div>',
-    margin: '1in 1.25in 1in 0.75in',               // mirrored margins
-  },
+  evenPages: { header: '<div class="left">Book title</div>' },
 });
 ```
 
@@ -705,6 +714,7 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-hp-orientation` | config / content / section group | `landscape` or `portrait` |
 | `data-hp-columns` / `data-hp-column-gap` / `data-hp-column-rule` | config / content / section group | Newspaper columns, the space and line between them |
 | `data-hp-header-distance` / `data-hp-footer-distance` | config / content / section group | Header/footer distance from the sheet edge (Word layout) |
+| `data-hp-mirror-margins` / `data-hp-gutter` | config / content / section group | Facing-page margins and binding gutter |
 | `data-hp-vertical-align` | config / content / section group | `top`, `center` or `bottom` (Word's vertical alignment) |
 | `data-hp-page-border` / `-from` / `-offset` | config / content / section group | Page border (CSS border or `none`), measured from `edge` or `text` |
 | `data-hp-line-numbers` (+ `-start`, `-count-by`, `-distance`) | config / content / section group | Line numbers: `page`, `section`, `continuous` restart, or `none` |

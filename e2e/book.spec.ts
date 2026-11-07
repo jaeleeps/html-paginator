@@ -118,4 +118,33 @@ test.describe('book with sections', () => {
       if (pages[i]!.footer) expect(p.text).toContain(pages[i]!.footer);
     });
   });
+
+  test('mirrors the margins of facing pages, the gutter inside (Word)', async ({ page }) => {
+    await openPaginated(page, 'e2e/fixtures/book.html');
+    const sheets = await page.evaluate(() =>
+      Array.from(document.querySelectorAll<HTMLElement>('.hp-pages > .hp-page'), (pg) => {
+        const sheet = pg.getBoundingClientRect();
+        const body = pg.querySelector('.hp-body')!.getBoundingClientRect();
+        return {
+          label: (pg.querySelector('.hp-footer')?.textContent ?? '').split(' / ')[0]!.trim(),
+          left: body.left - sheet.left,
+          right: sheet.right - body.right,
+        };
+      }),
+    );
+    const MM = 96 / 25.4;
+    const roman: Record<string, number> = { i: 1, ii: 2, iii: 3, iv: 4, v: 5, vi: 6, vii: 7, viii: 8 };
+    const labelled = sheets.filter((s) => s.label !== '');
+    expect(labelled.length).toBeGreaterThan(10);
+    for (const s of labelled) {
+      const n = roman[s.label] ?? Number(s.label);
+      expect(Number.isInteger(n), s.label).toBe(true);
+      // Odd pages (recto) have the inside margin on the left, even pages on the right.
+      const [inside, outside] = n % 2 === 1 ? [s.left, s.right] : [s.right, s.left];
+      expect(inside, `page ${s.label}`).toBeCloseTo(20 * MM, 0);
+      expect(outside, `page ${s.label}`).toBeCloseTo(12 * MM, 0);
+    }
+    // Every page has the same text width.
+    for (const s of sheets) expect(s.left + s.right).toBeCloseTo(32 * MM, 0);
+  });
 });

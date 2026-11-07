@@ -47,7 +47,10 @@
     source: '#src',
     page: {
       size: 'a5',
-      margin: '15mm',
+      // Facing pages: 12mm outside, 15mm + a 5mm gutter inside.
+      margin: '15mm 12mm 15mm 15mm',
+      mirrorMargins: true,
+      gutter: '5mm',
       header: ({ section, sectionPage }) => `<div class="hd">${section ?? 'none'} p${sectionPage}</div>`,
       footer: ({ pageLabel, lastPageLabel }) => `<div class="ft">${pageLabel} / ${lastPageLabel}</div>`,
     },

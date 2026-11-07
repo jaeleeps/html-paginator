@@ -1,4 +1,5 @@
 import type { PageBorder, PageConfig, PageDimensions, PageNumbering, PageSizePreset } from './types';
+import { marginSides } from './pageFrame';
 
 export const PAGE_SIZE_PRESETS: Record<PageSizePreset, PageDimensions> = {
   letter: { width: '8.5in', height: '11in' },
@@ -9,7 +10,10 @@ export const PAGE_SIZE_PRESETS: Record<PageSizePreset, PageDimensions> = {
 
 export interface ResolvedPageConfig {
   size: PageDimensions;
+  /** The margin, with the gutter and mirroring applied. */
   margin: string;
+  mirrorMargins: boolean;
+  gutter?: string;
   header: PageConfig['header'];
   footer: PageConfig['footer'];
   watermark: PageConfig['watermark'];
@@ -100,13 +104,25 @@ export function resolvePageConfig(
   variants: PageVariants = {},
 ): ResolvedPageConfig {
   const pageNumber = (variants.pageNumbers?.start ?? 1) + page - 1;
-  const parity = pageNumber % 2 === 0 ? variants.evenPages : variants.oddPages;
-  return mergePageLayers(
-    defaults,
-    parity,
-    page === 1 ? variants.firstPage : undefined,
-    overrides?.[page],
+  const even = pageNumber % 2 === 0;
+  return bookMargins(
+    mergePageLayers(defaults, even ? variants.evenPages : variants.oddPages, page === 1 ? variants.firstPage : undefined, overrides?.[page]),
+    even,
   );
+}
+
+/**
+ * Apply the gutter and mirror margins of a page (numbered `even` or odd) to
+ * its resolved margin.
+ */
+export function bookMargins(config: ResolvedPageConfig, even: boolean): ResolvedPageConfig {
+  if (!config.gutter && !config.mirrorMargins) return config;
+  let [top, right, bottom, left] = marginSides(config.margin);
+  if (config.mirrorMargins && even) [left, right] = [right, left];
+  const inside = (side: string) => (config.gutter ? `calc(${side} + ${config.gutter})` : side);
+  if (config.mirrorMargins && even) right = inside(right);
+  else left = inside(left);
+  return { ...config, margin: [top, right, bottom, left].join(' ') };
 }
 
 /**
@@ -118,6 +134,8 @@ export function mergePageLayers(...layers: (PageConfig | undefined)[]): Resolved
   return {
     size: resolveSize(merged.size, merged.orientation),
     margin: merged.margin ?? DEFAULT_MARGIN,
+    mirrorMargins: merged.mirrorMargins === true,
+    gutter: merged.gutter,
     header: merged.header,
     footer: merged.footer,
     watermark: merged.watermark,

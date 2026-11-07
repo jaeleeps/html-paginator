@@ -1,5 +1,5 @@
 import type { PageSlot } from './distribute';
-import { mergePageLayers } from './pageConfig';
+import { bookMargins, mergePageLayers } from './pageConfig';
 import type { ResolvedPageConfig } from './pageConfig';
 import { formatPageNumber } from './pageNumbers';
 import type { RunningValues } from './running';
@@ -166,15 +166,19 @@ export function createPageLayout(config: PageLayoutConfig): PageLayout {
     config(page) {
       const p = plan(page);
       const section = sectionConfig(p.section);
-      const parity = p.number % 2 === 0 ? 'evenPages' : 'oddPages';
-      return mergePageLayers(
-        config.page,
-        section?.page,
-        config[parity],
-        section?.[parity],
-        page === 1 ? config.firstPage : undefined,
-        p.sectionPage === 1 ? section?.firstPage : undefined,
-        config.pageOverrides?.[page],
+      const even = p.number % 2 === 0;
+      const parity = even ? 'evenPages' : 'oddPages';
+      return bookMargins(
+        mergePageLayers(
+          config.page,
+          section?.page,
+          config[parity],
+          section?.[parity],
+          page === 1 ? config.firstPage : undefined,
+          p.sectionPage === 1 ? section?.firstPage : undefined,
+          config.pageOverrides?.[page],
+        ),
+        even,
       );
     },
 

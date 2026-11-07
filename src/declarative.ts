@@ -79,6 +79,8 @@ export const DECLARATIVE_ATTRIBUTES = {
   headerDistance: 'data-hp-header-distance',
   footerDistance: 'data-hp-footer-distance',
   verticalAlign: 'data-hp-vertical-align',
+  mirrorMargins: 'data-hp-mirror-margins',
+  gutter: 'data-hp-gutter',
   pageBorder: 'data-hp-page-border',
   pageBorderFrom: 'data-hp-page-border-from',
   pageBorderOffset: 'data-hp-page-border-offset',
@@ -174,6 +176,10 @@ function parsePageAttrs(el: Element): PageConfig {
   if (headerDistance) config.headerDistance = headerDistance;
   const footerDistance = el.getAttribute(A.footerDistance);
   if (footerDistance) config.footerDistance = footerDistance;
+  const mirror = el.getAttribute(A.mirrorMargins);
+  if (mirror !== null) config.mirrorMargins = mirror.trim() !== 'false';
+  const gutter = el.getAttribute(A.gutter);
+  if (gutter) config.gutter = gutter;
   const verticalAlign = el.getAttribute(A.verticalAlign);
   if (verticalAlign) config.verticalAlign = verticalAlign.trim() as PageConfig['verticalAlign'];
   const pageBorder = el.getAttribute(A.pageBorder)?.trim();
