@@ -132,3 +132,59 @@ describe('distribute with splitting', () => {
     expect(pageLeaves(pages)).toEqual([[25], [20, 20, 20]]);
   });
 });
+
+describe('distribute with a destructive wrap (DOM move semantics)', () => {
+  /**
+   * Mimics DOM wrapping: putting a child into a new fragment removes it from
+   * its previous parent, so trial wraps can empty the original container.
+   */
+  function runDestructive(items: Item[], pageHeight: number) {
+    const parent = new Map<Item, Item>();
+    const adopt = (item: Item): void => {
+      for (const kid of item.kids ?? []) {
+        parent.set(kid, item);
+        adopt(kid);
+      }
+    };
+    items.forEach(adopt);
+
+    return distribute<Item>({
+      items,
+      measure,
+      pageHeight: () => pageHeight,
+      breakBehavior: (i) => i.behavior ?? (i.kids ? 'auto' : 'avoid'),
+      children: (i) => [...(i.kids ?? [])],
+      wrap: (i, kids, info) => {
+        const fragment: Item = { ...i, kids: [], continuation: info.continuation };
+        for (const kid of kids) {
+          const old = parent.get(kid);
+          if (old?.kids) old.kids = old.kids.filter((k) => k !== kid);
+          fragment.kids!.push(kid);
+          parent.set(kid, fragment);
+        }
+        return fragment;
+      },
+    });
+  }
+
+  it('keeps all children when a container retries on a fresh page', () => {
+    const pages = runDestructive([{ h: 50 }, { kids: [{ h: 40 }, { h: 40 }] }], 60);
+    expect(pageLeaves(pages)).toEqual([[50], [40], [40]]);
+  });
+
+  it('keeps nested children when the boundary child is a container', () => {
+    const pages = runDestructive([{ h: 50 }, { kids: [{ kids: [{ h: 40 }, { h: 40 }] }] }], 60);
+    expect(pageLeaves(pages)).toEqual([[50], [40], [40]]);
+  });
+
+  it('keeps all children when a retry ends in a forced split', () => {
+    const pages = runDestructive([{ h: 50 }, { kids: [{ h: 100 }, { h: 20 }] }], 60);
+    expect(pageLeaves(pages)).toEqual([[50], [100], [20]]);
+    expect(pages[1]?.overflows).toBe(true);
+  });
+
+  it('keeps the retried fragment non-continued', () => {
+    const pages = runDestructive([{ h: 50 }, { kids: [{ h: 40 }, { h: 40 }] }], 60);
+    expect(pages.slice(1).map((p) => p.items[0]?.continuation)).toEqual([false, true]);
+  });
+});
