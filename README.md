@@ -361,6 +361,8 @@ createPaginator({ source: '#content', repeatTableHead: true });
 
 Or declaratively: add `data-hp-repeat-table-head` on `<template data-hp-config>` or `<div data-hp-content>`.
 
+**Columns stay aligned across pages.** Each fragment of a split table is a separate table, so under auto layout each would size its own columns. When a table is first measured, its auto-layout column widths are frozen: a `<colgroup>` with percentage widths and `table-layout: fixed` (the table gets `data-hp-cols`). Tables that already declare `<colgroup>`/`<col>` keep the author's columns, which are now copied to every fragment.
+
 **Rows break across pages**, like Word's "Allow row to break across pages" (on by default). A row that does not fit is cut across all its cells at one line: each cell's lines above the cut stay, and the rest continue in a matching row on the next page. Rows taller than a whole page no longer overflow.
 
 - Per cell, CSS `orphans`/`widows` apply (default 2). A cell that would keep fewer lines moves whole, so rows of 3 lines or fewer never split.

@@ -14,6 +14,7 @@ export type {
   WrapInfo,
 } from './distribute';
 export { createRowSplitter } from './rowSplit';
+export { FROZEN_COLUMNS_ATTRIBUTE, freezeTableColumns } from './tableColumns';
 export { createTextSplitter } from './textSplit';
 export {
   buildTableOfContents,

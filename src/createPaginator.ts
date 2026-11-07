@@ -14,6 +14,7 @@ import { createDomMeasurer } from './measure';
 import { resolveSize } from './pageConfig';
 import { injectStyles } from './styles';
 import { createRowSplitter } from './rowSplit';
+import { freezeTableColumns } from './tableColumns';
 import { createTextSplitter } from './textSplit';
 import { buildTableOfContents, resolvePageRefs } from './toc';
 
@@ -129,10 +130,20 @@ export function createPaginator(config: PaginatorConfig): Paginator {
                 : (splitText?.(el, fits, info) ?? null)
           : undefined;
 
+      const measured = new WeakSet<HTMLElement>();
+
       try {
         const distributed = distribute<HTMLElement>({
           items,
-          measure: (el, page) => measurer.measure(el, page),
+          measure: (el, page) => {
+            // First measurement of an item: freeze its tables' columns at
+            // the width of the page it is laid out on.
+            if (layoutIn && !measured.has(el)) {
+              measured.add(el);
+              freezeTableColumns(el, (fn) => layoutIn(el, page, fn));
+            }
+            return measurer.measure(el, page);
+          },
           pageHeight: (page, slot) => {
             layout.open(page, slot);
             return measurer.pageHeight(page);
