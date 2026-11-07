@@ -44,6 +44,13 @@ function parseLevels(raw: string | null): [number, number] {
   return low <= high ? [low, high] : [high, low];
 }
 
+/** Text of a heading without footnote reference numbers. */
+function headingText(heading: HTMLElement): string {
+  const copy = heading.cloneNode(true) as HTMLElement;
+  copy.querySelectorAll('.hp-footnote-ref').forEach((ref) => ref.remove());
+  return (copy.textContent ?? '').replace(/\s+/g, ' ').trim();
+}
+
 /** Outline level of an element, or undefined when it is not an outline entry. */
 function outlineLevel(el: Element): number | undefined {
   const explicit = el.getAttribute(TOC_LEVEL_ATTRIBUTE);
@@ -101,7 +108,7 @@ export function buildTableOfContents(root: HTMLElement): void {
       const link = doc.createElement('a');
       link.href = `#${idOf(heading)}`;
       link.className = TOC_CLASS_NAMES.text;
-      link.textContent = (heading.textContent ?? '').replace(/\s+/g, ' ').trim();
+      link.textContent = headingText(heading);
 
       const leader = doc.createElement('span');
       leader.className = TOC_CLASS_NAMES.leader;

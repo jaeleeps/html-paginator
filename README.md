@@ -332,6 +332,27 @@ createPaginator({
 - Templates also receive `section`, `sectionPage` and `sectionPages`. `lastPageNumber` / `lastPageLabel` refer to the last page of the current numbering run, so "Page X of Y" works inside a restarted body.
 - Declaratively: `<div data-hp-section="name">` groups in the config template, with their own header/footer slots, `data-hp-margin`, `data-hp-page-start`, `data-hp-page-format`, `data-hp-section-start="odd"`, and nested `data-hp-page="first|odd|even"` groups.
 
+### Footnotes
+
+Wrap a note's text in `data-footnote` where its reference goes. The note moves to the bottom of the page where the reference lands, as in Word:
+
+```html
+<p>Revenue grew 12%<span data-footnote>Unaudited, see the <i>Q3 report</i>.</span> year over year.</p>
+```
+
+- The note is replaced by a numbered reference (`sup.hp-footnote-ref`). Its content becomes `div.hp-footnote` inside the page's `div.hp-footnotes` area, which sits between the body and the footer and starts with `div.hp-footnote-separator` (a short rule).
+- Numbering is continuous through the document.
+- The footnote area takes its height from the body. Pagination keeps every reference on the same page as its note: a paragraph or table row splits before the line with the reference, or moves on, rather than leave its note behind.
+- Default styles are small text and a one-third-width separator. They use zero specificity, so any rule of yours wins:
+
+  ```css
+  .hp-footnotes { font-size: 9pt; }
+  .hp-footnote-separator { width: 2in; }
+  ```
+
+- An `id` on the `data-footnote` element moves to the note, so you can link to it. Footnote reference numbers are left out of TOC entries.
+- A note longer than the space left on a page is not continued on the next page (Word can do that). The note and its reference move on together.
+
 ### Table of contents and page references
 
 Word's TOC and PAGEREF fields. Mark a container with `data-hp-toc` and it is filled with one entry per heading: the heading text, a dot leader, and the page it lands on. Any element with `data-hp-page-ref` shows the page of its target:
@@ -440,6 +461,7 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-break` | content elements | Break behavior: `auto`, `avoid`, or `clip` |
 | `data-break-before` / `data-break-after` | content elements | `="page"` forces a page break |
 | `data-keep-with-next` | content elements | Keep on the same page as the next element (`="false"` opts a heading out) |
+| `data-footnote` | inline content | Footnote: replaced by a numbered reference, its content shown at the bottom of the page |
 | `data-hp-toc` | content container | Fill with a table of contents (`data-hp-toc-levels="1-3"`) |
 | `data-hp-toc-level` / `data-hp-toc-skip` | content elements | Add an element to the TOC at a level / leave a heading out |
 | `data-hp-page-ref` | content elements | Replace the text with the page label of `#id` (attribute value or `href`) |

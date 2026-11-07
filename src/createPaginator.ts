@@ -14,6 +14,7 @@ import { createDomMeasurer } from './measure';
 import { resolveSize } from './pageConfig';
 import { injectStyles } from './styles';
 import { createRowSplitter } from './rowSplit';
+import { createFootnotes, injectFootnoteStyles } from './footnotes';
 import { freezeTableColumns } from './tableColumns';
 import { createTextSplitter } from './textSplit';
 import { buildTableOfContents, resolvePageRefs } from './toc';
@@ -89,6 +90,9 @@ export function createPaginator(config: PaginatorConfig): Paginator {
       // Work on a clone so the source stays intact for reset()/re-pagination.
       const copy = source.cloneNode(true) as HTMLElement;
       markBreakHints(source, copy, { keepHeadingsWithNext: resolved.keepHeadingsWithNext });
+      // Footnotes first: TOC entries leave their reference numbers out.
+      const footnotes = createFootnotes(copy);
+      if (footnotes && resolved.injectStyles !== false) injectFootnoteStyles(doc);
       buildTableOfContents(copy);
 
       // Loose top-level text gets a <div> so it is paginated, not dropped.
@@ -151,9 +155,17 @@ export function createPaginator(config: PaginatorConfig): Paginator {
           blankPageBefore: (section, page) => layout.blankPageBefore(section, page),
           ...createDomBreaker({ repeatTableHead: resolved.repeatTableHead }),
           fragment,
+          notes: footnotes ? (el) => footnotes.notesOf(el) : undefined,
+          notesHeight: footnotes
+            ? (notes, page) => measurer.measure(footnotes.area(notes), page)
+            : undefined,
         });
 
-        const built = buildPages(distributed, { document: doc, layout });
+        const built = buildPages(distributed, {
+          document: doc,
+          layout,
+          renderNotes: footnotes ? (notes) => footnotes.area(notes) : undefined,
+        });
         const total = built.pages.length;
         resolvePageRefs(built.pages, (index) => layout.context(index + 1, total).pageLabel);
 

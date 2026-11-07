@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  Footnotes. Letter page, 0.5in margins, 40px footer → body 920px. Lines
+  are 20px; author CSS makes a footnote area 20px + 20px per one-line note
+  (and overrides the library defaults).
+  A  840px filler leaves 80px: a 1-line paragraph with note 1 (20 + 40)
+     fits; the next paragraph (5 lines, note 2 on its last line) gets the
+     remaining 20px... less than 2 lines (orphans), so it moves whole.
+  B  840px filler: 4-line paragraph with note 3 on line 1 → 2 lines + area
+     (40) = 80px: the head keeps 2 lines and the note.
+  C  5 paragraphs with 3 notes each, filling pages; every note must sit on
+     its reference's page, and nothing may overflow.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>html-paginator footnotes fixture</title>
+<style>
+  body { margin: 0; font: 14px/20px Helvetica, Arial, sans-serif; }
+  p { margin: 0; }
+  .fill { margin: 0; background: #eef; }
+  .ft { height: 40px; line-height: 40px; text-align: center; }
+  .hp-footnotes { margin-top: 10px; font-size: 12px; line-height: 20px; }
+  .hp-footnote-separator { margin-bottom: 9px; width: 120px; }
+  .hp-footnote { margin: 0; }
+</style>
+</head>
+<body>
+<div id="src">
+  <div class="fill" style="height:840px">FILL-A</div>
+  <p>A-ONE short<span data-footnote>NOTE-A1 first note.</span></p>
+  <p>A-TWO l1<br>l2<br>l3<br>l4<br>l5<span data-footnote>NOTE-A2 on the last line.</span></p>
+
+  <div class="fill" style="height:840px" data-break-before="page">FILL-B</div>
+  <p>B-ONE l1<span data-footnote>NOTE-B1 on line one.</span><br>l2<br>l3<br>l4</p>
+
+  <div id="many" data-break-before="page"></div>
+</div>
+<script src="/dist/index.global.js"></script>
+<script>
+  const words = 'lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore'.split(' ');
+  const text = (n, s) => Array.from({ length: n }, (_, i) => words[(i * 5 + s) % words.length]).join(' ');
+  document.getElementById('many').innerHTML = Array.from({ length: 5 }, (_, p) =>
+    `<p>C${p + 1}_START ${text(120, p)}<span data-footnote>NOTE-C${p + 1}a ${text(25, p)}</span> ${text(120, p + 1)}` +
+    `<span data-footnote>NOTE-C${p + 1}b short.</span> ${text(150, p + 2)}<span data-footnote>NOTE-C${p + 1}c ${text(8, p)}</span> C${p + 1}_END</p>`,
+  ).join('');
+  htmlPaginator.createPaginator({
+    source: '#src',
+    page: { size: 'letter', margin: '0.5in', footer: ({ page }) => `<div class="ft">PAGE-${page}</div>` },
+  }).paginate();
+  document.documentElement.dataset.paginated = 'true';
+</script>
+</body>
+</html>
