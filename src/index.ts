@@ -5,7 +5,16 @@
 
 export { createPaginator, DEFAULT_PAGE_SIZE } from './createPaginator';
 export { distribute } from './distribute';
-export type { DistributeOptions, DistributedPage, PageSlot, WrapInfo } from './distribute';
+export type {
+  DistributeOptions,
+  DistributedPage,
+  Fragment,
+  FragmentInfo,
+  PageSlot,
+  WrapInfo,
+} from './distribute';
+export { createTextSplitter } from './textSplit';
+export type { TextSplitterOptions } from './textSplit';
 export { createPageLayout } from './layout';
 export type { PageLayout, PageLayoutConfig } from './layout';
 export {

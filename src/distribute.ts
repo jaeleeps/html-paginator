@@ -74,6 +74,24 @@ export interface DistributeOptions<T, S = string> {
    * to the previous section.
    */
   blankPageBefore?: (section: S, page: number) => boolean;
+  /**
+   * Split an `'auto'` item that has no children (e.g. a paragraph) inside
+   * itself, the way Word splits a paragraph between lines. `fits` tells
+   * whether a candidate head fits the space left on `page`. Returns the
+   * largest valid head and its continuation, or null when no head fits (or
+   * widow/orphan rules forbid every split): the item then moves on whole.
+   */
+  fragment?: (item: T, fits: (head: T) => boolean, info: FragmentInfo) => Fragment<T> | null;
+}
+
+export interface FragmentInfo {
+  /** Page (1-based) the head is for. */
+  page: number;
+}
+
+export interface Fragment<T> {
+  head: T;
+  tail: T;
 }
 
 export interface DistributedPage<T, S = string> {
@@ -139,6 +157,8 @@ export function distribute<T, S = string>(
 
   const canSplit = (item: T): boolean =>
     wrap !== undefined && getBehavior(item) === 'auto' && getChildren(item).length > 0;
+  const canFragment = (item: T): boolean =>
+    options.fragment !== undefined && getBehavior(item) === 'auto' && !canSplit(item);
 
   const hasBreakHook = options.pageBreakBefore !== undefined || options.section !== undefined;
   const startsSection = (item: T): boolean => options.section?.(item) !== undefined;
@@ -178,7 +198,12 @@ export function distribute<T, S = string>(
    * fragment), so after trial wraps `item` itself may be missing children —
    * always continue with the returned fragments, never with `item`.
    */
-  const splitToFit = (item: T, continuation: boolean, fits: (candidate: T) => boolean): Split<T> => {
+  const splitToFit = (
+    item: T,
+    continuation: boolean,
+    page: number,
+    fits: (candidate: T) => boolean,
+  ): Split<T> => {
     const kids = getChildren(item);
     const headKids: T[] = [];
     let index = 0;
@@ -204,7 +229,7 @@ export function distribute<T, S = string>(
     if (index < kids.length && !forced) {
       const boundary = kids[index] as T;
       if (canSplit(boundary)) {
-        const sub = splitToFit(boundary, false, (candidate) =>
+        const sub = splitToFit(boundary, false, page, (candidate) =>
           fits(wrap!(item, [...headKids, candidate], { continuation })),
         );
         if (sub.head) {
@@ -214,6 +239,17 @@ export function distribute<T, S = string>(
         } else {
           // Trial wraps may have emptied `boundary`; use its rebuilt copy.
           tailKids = [sub.tail as T, ...kids.slice(index + 1)];
+        }
+      } else if (canFragment(boundary)) {
+        const fragment = options.fragment!(
+          boundary,
+          (candidate) => fits(wrap!(item, [...headKids, candidate], { continuation })),
+          { page },
+        );
+        if (fragment) {
+          headKids.push(fragment.head);
+          headEndsWithFragment = true;
+          tailKids = [fragment.tail, ...kids.slice(index + 1)];
         }
       }
     }
@@ -349,7 +385,7 @@ export function distribute<T, S = string>(
     // Try splitting an 'auto' container at child boundaries.
     if (canSplit(entry.item)) {
       const page = current;
-      const { head, tail } = splitToFit(entry.item, entry.continuation, (candidate) => {
+      const { head, tail } = splitToFit(entry.item, entry.continuation, page.page, (candidate) => {
         return page.usedHeight + measure(candidate, page.page) <= page.availableHeight;
       });
 
@@ -381,6 +417,23 @@ export function distribute<T, S = string>(
       if (forced.tail) pending.unshift({ item: forced.tail, continuation: true });
       current = null;
       continue;
+    }
+
+    // Split a leaf inside itself (paragraph lines) to fill the page.
+    if (canFragment(entry.item)) {
+      const page = current;
+      const fragment = options.fragment!(
+        entry.item,
+        (candidate) => page.usedHeight + measure(candidate, page.page) <= page.availableHeight,
+        { page: page.page },
+      );
+      if (fragment) {
+        const head = { item: fragment.head, continuation: entry.continuation };
+        place(current, head, measure(fragment.head, current.page));
+        pending.unshift({ item: fragment.tail, continuation: true });
+        current = null;
+        continue;
+      }
     }
 
     // Atomic path ('avoid'/'clip'/leaf, or unsplittable remainder):

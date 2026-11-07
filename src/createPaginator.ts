@@ -12,6 +12,7 @@ import { createPageLayout } from './layout';
 import { createDomMeasurer } from './measure';
 import { resolveSize } from './pageConfig';
 import { injectStyles } from './styles';
+import { createTextSplitter } from './textSplit';
 
 export const DEFAULT_PAGE_SIZE = 'letter' as const;
 
@@ -105,6 +106,13 @@ export function createPaginator(config: PaginatorConfig): Paginator {
       const measurer: MeasureAdapter =
         resolved.measurer ?? createDomMeasurer({ document: doc, layout });
 
+      // Paragraphs split between lines when the measurer can lay them out.
+      const layoutIn = measurer.layout?.bind(measurer);
+      const fragment =
+        resolved.splitParagraphs !== false && layoutIn
+          ? createTextSplitter({ layout: layoutIn, root: copy })
+          : undefined;
+
       try {
         const distributed = distribute<HTMLElement>({
           items,
@@ -115,6 +123,7 @@ export function createPaginator(config: PaginatorConfig): Paginator {
           },
           blankPageBefore: (section, page) => layout.blankPageBefore(section, page),
           ...createDomBreaker({ repeatTableHead: resolved.repeatTableHead }),
+          fragment,
         });
 
         const built = buildPages(distributed, { document: doc, layout });

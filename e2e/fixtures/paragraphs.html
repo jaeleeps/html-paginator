@@ -1,0 +1,67 @@
+<!doctype html>
+<!--
+  Paragraph splitting fixture (Word: paragraphs break between lines, with
+  widow/orphan control). Letter page body: 960px. Lines are 20px; split heads
+  drop their bottom margin. Each scenario starts a fresh page with a filler:
+  fill    900px filler, 60px left → a wrapping paragraph splits after 3 lines
+  orphan  940px filler, 20px left → 1 line < orphans (2): moves whole
+  widow   880px filler, 80px left, 5-line paragraph → 3 lines stay (widows 2)
+  custom  820px filler, 140px left, 8 lines, orphans 4 / widows 3 → 5 + 3
+  avoid   900px filler, break-inside: avoid → moves whole
+  nested  inside a padded section: justified, indented, bold across lines
+  long    one paragraph spanning several pages
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>html-paginator paragraphs fixture</title>
+<style>
+  body { margin: 0; font: 14px/20px Helvetica, Arial, sans-serif; }
+  .fill { margin: 0; background: #eef; }
+  p { margin: 0 0 10px; }
+  .custom { orphans: 4; widows: 3; }
+  .avoid { break-inside: avoid; }
+  section { padding: 0 60px; border-left: 4px solid #ccc; }
+  .justify { text-align: justify; text-indent: 2em; }
+</style>
+</head>
+<body>
+<div id="src">
+  <div class="fill" style="height:900px">FILL</div>
+  <p data-p="fill">FILL-START <span class="words" data-n="160"></span> FILL-END</p>
+
+  <div class="fill" style="height:940px" data-break-before="page">ORPHAN-FILL</div>
+  <p data-p="orphan">ORPHAN-START <span class="words" data-n="160"></span> ORPHAN-END</p>
+
+  <div class="fill" style="height:880px" data-break-before="page">WIDOW-FILL</div>
+  <p data-p="widow">WIDOW-START one<br>two<br>three<br>four<br>five WIDOW-END</p>
+
+  <div class="fill" style="height:820px" data-break-before="page">CUSTOM-FILL</div>
+  <p data-p="custom" class="custom">CUSTOM-START 1<br>2<br>3<br>4<br>5<br>6<br>7<br>8 CUSTOM-END</p>
+
+  <div class="fill" style="height:900px" data-break-before="page">AVOID-FILL</div>
+  <p data-p="avoid" class="avoid">AVOID-START <span class="words" data-n="120"></span> AVOID-END</p>
+
+  <section data-break-before="page">
+    <div class="fill" style="height:860px">NESTED-FILL</div>
+    <p data-p="nested" class="justify">NESTED-START <span class="words" data-n="60"></span>
+      <b>BOLD-START <span class="words" data-n="40"></span> BOLD-END</b>
+      <span class="words" data-n="60"></span> NESTED-END</p>
+  </section>
+
+  <p data-p="long" data-break-before="page">LONG-START <span class="words" data-n="2400"></span> LONG-END</p>
+</div>
+<script src="/dist/index.global.js"></script>
+<script>
+  // Deterministic filler words, unwrapped into plain text (keeps <b> intact).
+  const vocab = 'lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua'.split(' ');
+  document.querySelectorAll('.words').forEach((span, s) => {
+    const n = Number(span.dataset.n);
+    const words = Array.from({ length: n }, (_, i) => vocab[(i * 7 + s) % vocab.length]);
+    span.replaceWith(document.createTextNode(words.join(' ')));
+  });
+  htmlPaginator.createPaginator({ source: '#src', page: { size: 'letter', margin: '0.5in' } }).paginate();
+  document.documentElement.dataset.paginated = 'true';
+</script>
+</body>
+</html>

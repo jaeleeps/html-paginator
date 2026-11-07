@@ -34,14 +34,14 @@ export function getSection(el: HTMLElement): string | undefined {
 /** CSS break values that force a page break (`break-*` and legacy `page-break-*`). */
 const FORCED_BREAK_VALUES = new Set(['page', 'always', 'left', 'right', 'recto', 'verso']);
 
-/** CSS `break-after: avoid` is the standard spelling of keep-with-next. */
+/** CSS `break-after: avoid` is keep-with-next; `break-inside: avoid` keeps together. */
 const AVOID_BREAK_VALUES = new Set(['avoid', 'avoid-page']);
 
-function cssAvoidsBreakAfter(style: CSSStyleDeclaration | undefined): boolean {
+function cssAvoidsBreak(style: CSSStyleDeclaration | undefined, side: 'after' | 'inside'): boolean {
   if (!style) return false;
   return (
-    AVOID_BREAK_VALUES.has(style.getPropertyValue('break-after')) ||
-    AVOID_BREAK_VALUES.has(style.getPropertyValue('page-break-after'))
+    AVOID_BREAK_VALUES.has(style.getPropertyValue(`break-${side}`)) ||
+    AVOID_BREAK_VALUES.has(style.getPropertyValue(`page-break-${side}`))
   );
 }
 
@@ -87,6 +87,9 @@ export interface BreakHintOptions {
  *   `left`, `right`, ...) or legacy `page-break-before/after: always`. A break
  *   after an element becomes a break before the next element in document
  *   order.
+ * - Keep together → `data-break="avoid"` (unless the element sets
+ *   `data-break`). Source: CSS `break-inside: avoid` (or legacy
+ *   `page-break-inside: avoid`).
  * - Keep with next → `data-keep-with-next`. Sources: the attribute, CSS
  *   `break-after: avoid` (or legacy `page-break-after: avoid`), and headings
  *   unless `keepHeadingsWithNext` is false or the heading says `="false"`.
@@ -113,11 +116,15 @@ export function markBreakHints(
       nextElementAfter(el, copy)?.setAttribute(PAGE_BREAK_BEFORE_ATTRIBUTE, 'page');
     }
 
+    if (!src.hasAttribute(BREAK_ATTRIBUTE) && cssAvoidsBreak(style, 'inside')) {
+      el.setAttribute(BREAK_ATTRIBUTE, 'avoid');
+    }
+
     const keepAttr = src.getAttribute(KEEP_WITH_NEXT_ATTRIBUTE);
     const keep =
       keepAttr === 'false'
         ? false
-        : keepAttr !== null || cssAvoidsBreakAfter(style) || (keepHeadings && HEADING.test(src.tagName));
+        : keepAttr !== null || cssAvoidsBreak(style, 'after') || (keepHeadings && HEADING.test(src.tagName));
     if (keep) el.setAttribute(KEEP_WITH_NEXT_ATTRIBUTE, '');
     else el.removeAttribute(KEEP_WITH_NEXT_ATTRIBUTE);
   });
