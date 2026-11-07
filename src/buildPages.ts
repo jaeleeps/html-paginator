@@ -2,6 +2,7 @@ import type { DistributedPage } from './distribute';
 import type { PageConfig } from './types';
 import type { PageVariants } from './pageConfig';
 import { createPageLayout } from './layout';
+import { pageSizeName } from './pageConfig';
 import type { PageLayout } from './layout';
 import { renderTemplate } from './renderTemplate';
 
@@ -67,6 +68,8 @@ export function buildPages(
     // Margin lives inside the sheet size; inline so geometry holds even with
     // injectStyles: false.
     pageEl.style.boxSizing = 'border-box';
+    // Print on the sheet of this page's size (CSS named page).
+    pageEl.style.setProperty('page', pageSizeName(config.size));
 
     const header = renderTemplate(config.header, ctx, doc);
     if (header) {

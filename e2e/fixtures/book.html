@@ -38,7 +38,7 @@
   const paras = (prefix, n) => Array.from({ length: n }, (_, i) => `<p>${prefix}-${pad(i + 1)} ${lorem}</p>`).join('');
   document.getElementById('front').insertAdjacentHTML('beforeend', `<h2>Preface</h2>${paras('PRE', 30)}`);
   // Chapter lengths chosen so some chapters end on odd pages (forcing blanks).
-  document.getElementById('chapters').innerHTML = [[1, 'body', 14], [2, 'chapter', 30], [3, 'chapter', 8]]
+  document.getElementById('chapters').innerHTML = [[1, 'body', 14], [2, 'chapter', 20], [3, 'chapter', 8]]
     .map(([n, section, len]) => `<section data-section="${section}"><h2 id="ch${n}">CH${n} Chapter ${n}</h2>${n === 1 ? '<p>Opening<span data-endnote>ENDNOTE-ONE explained.</span></p>' : ''}${n > 1 ? `<figure id="fig${n}" style="margin:0 0 9px"><figcaption>Figure <span data-hp-seq="Figure"></span>. Diagram of part ${n}</figcaption></figure>` : ''}${paras(`C${n}`, len)}</section>`)
     .join('') + '<p>END of book. Chapter 2 starts on page <a id="ref" href="#ch2" data-hp-page-ref>?</a>. See <a id="xref" href="#fig3" data-hp-ref></a>. This is page <span id="field"><span data-hp-field="pageLabel"></span> / <span data-hp-field="lastPageLabel"></span></span>.</p><div data-hp-endnotes><h3>Notes</h3></div>';
   window.sourceText = document.getElementById('src').innerText;

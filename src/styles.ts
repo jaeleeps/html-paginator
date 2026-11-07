@@ -1,5 +1,6 @@
 import type { PageDimensions } from './types';
 import { CLASS_NAMES } from './buildPages';
+import { pageSizeName } from './pageConfig';
 
 /** Marker attribute on the injected <style> element. */
 export const STYLE_ATTRIBUTE = 'data-hp-styles';
@@ -13,8 +14,13 @@ export const STYLE_ATTRIBUTE = 'data-hp-styles';
  *   headers/footers are suppressed and the library's own header/footer/margin
  *   configuration is authoritative.
  */
-export function buildStylesheet(size: PageDimensions): string {
+export function buildStylesheet(size: PageDimensions, pageSizes: readonly PageDimensions[] = []): string {
   const c = CLASS_NAMES;
+  // One named page per sheet size (pages select theirs with `page:`), so
+  // mixed sizes and orientations print on matching sheets.
+  const named = Array.from(new Map(pageSizes.map((s) => [pageSizeName(s), s])))
+    .map(([name, s]) => `@page ${name} {\n  size: ${s.width} ${s.height};\n  margin: 0;\n}`)
+    .join('\n');
   return `
 .${c.container} {
   display: flex;
@@ -50,6 +56,7 @@ export function buildStylesheet(size: PageDimensions): string {
   size: ${size.width} ${size.height};
   margin: 0;
 }
+${named}
 @media print {
   html, body {
     margin: 0;
@@ -85,13 +92,17 @@ export function buildStylesheet(size: PageDimensions): string {
  * Insert (or refresh) the stylesheet in the document head.
  * Idempotent: a previously injected sheet is replaced.
  */
-export function injectStyles(doc: Document, size: PageDimensions): HTMLStyleElement {
+export function injectStyles(
+  doc: Document,
+  size: PageDimensions,
+  pageSizes: readonly PageDimensions[] = [],
+): HTMLStyleElement {
   let style = doc.head.querySelector<HTMLStyleElement>(`style[${STYLE_ATTRIBUTE}]`);
   if (!style) {
     style = doc.createElement('style');
     style.setAttribute(STYLE_ATTRIBUTE, '');
     doc.head.appendChild(style);
   }
-  style.textContent = buildStylesheet(size);
+  style.textContent = buildStylesheet(size, pageSizes);
   return style;
 }
