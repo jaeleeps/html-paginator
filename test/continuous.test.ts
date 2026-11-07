@@ -3,6 +3,8 @@ import { createPaginator, parseDeclarativeConfig } from '../src/index';
 import type { MeasureAdapter } from '../src/index';
 import { distribute } from '../src/distribute';
 import type { PageSlot } from '../src/distribute';
+import { createPageLayout } from '../src/layout';
+import { createSheetPlanner } from '../src/sheets';
 
 afterEach(() => {
   document.body.innerHTML = '';
@@ -163,18 +165,61 @@ describe('continuous sections', () => {
     expect(pages.map((p) => p.querySelector('.hp-footer')!.textContent)).toEqual(['- 1', 'b 1']);
   });
 
-  it('does not balance columns holding footnotes', () => {
+  it('balances columns holding footnotes, each note in its reference\'s column', () => {
+    // A footnote area is 10px per note.
+    const withNotes: MeasureAdapter = {
+      measure: (el) =>
+        el.classList.contains('hp-footnotes')
+          ? 10 * el.querySelectorAll('.hp-footnote').length
+          : Number(el.getAttribute('data-h') ?? 0),
+      pageHeight: () => 200,
+    };
     src(`<p data-h="30">intro</p>
       ${paras('c', 3, 20, 'cols')}<p data-h="20">n<span data-footnote>note</span></p>
       <p data-h="20" data-section="end">end</p>`);
     const { pages } = createPaginator({
       source: '#src',
-      measurer: measurer(),
+      measurer: withNotes,
       injectStyles: false,
       sections: { cols: { start: 'continuous', page: { columns: 2 } }, end: { start: 'continuous' } },
     }).paginate();
-    const cols = Array.from(pages[0]!.querySelectorAll('.hp-region')[1]!.querySelectorAll('.hp-column-body'), texts);
-    expect(cols).toEqual([['c1', 'c2', 'c3', 'n1'], []]);
+    const region = pages[0]!.querySelectorAll('.hp-region')[1]!;
+    expect(Array.from(region.querySelectorAll('.hp-column-body'), texts)).toEqual([
+      ['c1', 'c2'],
+      ['c3', 'n1'],
+    ]);
+    const notes = Array.from(region.querySelectorAll('.hp-column'), (c) => c.querySelectorAll('.hp-footnote').length);
+    expect(notes).toEqual([0, 1]);
+  });
+
+  it('leaves a region unbalanced when canBalance says no', () => {
+    const run = (canBalance: boolean) => {
+      const config = { sections: { cols: { page: { columns: 2 }, balanceColumns: true } } };
+      const planner = createSheetPlanner<number>({
+        layout: createPageLayout(config),
+        config,
+        bodyHeight: () => 100,
+        balance: (items, height) => {
+          const columns = distribute<number>({ items, measure: (h) => h, pageHeight: () => height });
+          if (columns.length > 2) return null;
+          return columns;
+        },
+        canBalance: () => canBalance,
+      });
+      distribute<number>({
+        items: [20, 21, 22, 23],
+        measure: (h) => h,
+        section: (h) => (h === 20 ? 'cols' : undefined),
+        pageHeight: (page, slot) => planner.pageHeight(page, slot),
+        opened: (page) => planner.opened(page),
+        partial: (page) => planner.partial(page),
+      });
+      planner.finish();
+      const region = planner.regions[0]!;
+      return (region.balanced ?? region.pages).map((page) => page.items.length);
+    };
+    expect(run(true)).toEqual([2, 2]);
+    expect(run(false)).toEqual([4]);
   });
 
   it('balances the last page of a section with balanceColumns, at the end or before a new page', () => {
