@@ -586,6 +586,11 @@ Word's SEQ and REF fields: number figures, tables or any other sequence in docum
 - References are numbered `i`, `ii`, `iii`… (Word's default). Change the style with `endnotes: { format: 'decimal' }`. Each reference links to its note.
 - Notes go into the `data-hp-endnotes` element after its existing content, or into a `div.hp-endnotes` appended to the content. Each note is a `div.hp-endnote` with `sup.hp-endnote-mark`.
 - Notes are ordinary content, so they paginate and split between lines like paragraphs. Long notes fit fine here, while a footnote has to fit on one page.
+- **End of section** (Word's endnote location): `endnotes: { location: 'section' }` collects each section's notes at its end, just before the next `data-section` element (so before its page break), or in a `data-hp-endnotes` element inside the section element. `restart: 'section'` starts numbering over in each section (Word: Restart each section), with either location:
+
+  ```js
+  createPaginator({ source: '#content', endnotes: { location: 'section', restart: 'section' } });
+  ```
 
 ### Table of contents and page references
 
