@@ -250,4 +250,8 @@ describe('footnote numbering', () => {
       { refs: 'ii', marks: 'ii' },
     ]);
   });
+
+  it('rejects an unknown restart', () => {
+    expect(() => numbers({ restart: 'chapter' as never })).toThrow(/footnotes.restart must be continuous, section or page/);
+  });
 });

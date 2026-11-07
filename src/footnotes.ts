@@ -162,6 +162,9 @@ export function renumberFootnotes(
   options: FootnoteOptions = {},
 ): void {
   const restart = options.restart ?? 'continuous';
+  if (!['continuous', 'section', 'page'].includes(restart)) {
+    throw new Error(`html-paginator: footnotes.restart must be continuous, section or page, got "${String(restart)}"`);
+  }
   if (restart === 'continuous' && options.format === undefined) return;
 
   let counter = 0;
