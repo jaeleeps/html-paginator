@@ -159,6 +159,13 @@ export interface PageConfig {
    * turns them off (e.g. in one section). Default: none.
    */
   lineNumbers?: LineNumberOptions | null;
+  /**
+   * Where the body's content sits when it does not fill the page (Word:
+   * Page Setup > Vertical alignment), e.g. `'center'` for a title page.
+   * Pages with several sections on them (continuous breaks) stay at the
+   * top, as do overflowing pages. Default: 'top'.
+   */
+  verticalAlign?: 'top' | 'center' | 'bottom';
 }
 
 /** Values accepted by the `data-break` attribute on content elements. */

@@ -1,6 +1,6 @@
 import type { DistributedPage } from './distribute';
 import type { PageConfig } from './types';
-import type { PageVariants } from './pageConfig';
+import type { PageVariants, ResolvedPageConfig } from './pageConfig';
 import { createPageLayout } from './layout';
 import { pageSizeName } from './pageConfig';
 import { pagePadding, slotArea } from './pageFrame';
@@ -13,6 +13,7 @@ export const CLASS_NAMES = {
   page: 'hp-page',
   header: 'hp-header',
   body: 'hp-body',
+  bodyContent: 'hp-body-content',
   footer: 'hp-footer',
   watermark: 'hp-watermark',
   column: 'hp-column',
@@ -50,7 +51,8 @@ export interface BuildPagesOptions extends PageVariants {
  *     .hp-page        (width/height/margin from resolved page config)
  *       .hp-watermark (only when the page has a watermark; absolute, behind)
  *       .hp-header    (only when the page has a header)
- *       .hp-body      (distributed items, moved — not cloned)
+ *       .hp-body      (distributed items, moved — not cloned; inside a
+ *                      .hp-body-content with `verticalAlign` center/bottom)
  *       .hp-footnotes (only when the page has footnotes)
  *       .hp-footer    (only when the page has a footer)
  *
@@ -104,10 +106,34 @@ export function buildPages(
   };
 
   /**
+   * Put `items` in `box`, at the top, or (vertical alignment) in a block
+   * pushed down by auto margins: margins between the items still collapse
+   * as they did when measured.
+   */
+  const fill = (box: HTMLElement, items: HTMLElement[], align: ResolvedPageConfig['verticalAlign']): void => {
+    if (align === 'top') {
+      for (const item of items) box.appendChild(item);
+      return;
+    }
+    const content = doc.createElement('div');
+    content.className = CLASS_NAMES.bodyContent;
+    content.style.marginTop = 'auto';
+    if (align === 'center') content.style.marginBottom = 'auto';
+    for (const item of items) content.appendChild(item);
+    Object.assign(box.style, { display: 'flex', flexDirection: 'column' });
+    box.appendChild(content);
+  };
+
+  /**
    * Equal columns filling `box` (inline geometry, so it holds with
    * injectStyles: false), each holding one entry and its footnotes.
    */
-  const fillColumns = (box: HTMLElement, entries: DistributedPage<HTMLElement>[], layout: RegionColumns): void => {
+  const fillColumns = (
+    box: HTMLElement,
+    entries: DistributedPage<HTMLElement>[],
+    layout: RegionColumns,
+    align: ResolvedPageConfig['verticalAlign'] = 'top',
+  ): void => {
     box.style.columnGap = layout.columnGap;
     // No line between columns that hold nothing (content moved on).
     const empty = entries.every((entry) => entry.items.length === 0 && (entry.notes?.length ?? 0) === 0);
@@ -141,7 +167,7 @@ export function buildPages(
       // Empty columns (the end of a section) still take their width.
       const entry = entries[i];
       if (entry) {
-        for (const item of entry.items) content.appendChild(item);
+        fill(content, entry.items, align);
         const area = notesArea(entry);
         if (area) column.appendChild(area);
         bodies.push(content);
@@ -209,11 +235,13 @@ export function buildPages(
 
     if (regions.length === 1) {
       const columns = columnsOf(group);
+      // An overflowing page stays at the top.
+      const align = group.some((entry) => entry.overflows) ? 'top' : config.verticalAlign;
       if (columns.columns > 1) {
         Object.assign(body.style, { display: 'flex', flex: '1 1 auto', minHeight: '0' });
-        fillColumns(body, group, columns);
+        fillColumns(body, group, columns, align);
       } else {
-        for (const item of dist.items) body.appendChild(item);
+        fill(body, dist.items, align);
         bodies.push(body);
         const area = notesArea(dist);
         if (area) pageEl.appendChild(area);

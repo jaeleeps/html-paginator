@@ -276,6 +276,22 @@ By default the header and footer sit inside the margins, above and below the bod
 
 The body then starts at the top margin, or lower only when the header is taller than the space in the margin (as in Word), and likewise at the bottom. The header and footer are wrapped in `div.hp-header-area` / `div.hp-footer-area`, which reach from the distance to the margin. Declaratively: `data-hp-header-distance` / `data-hp-footer-distance`.
 
+### Vertical alignment
+
+`verticalAlign: 'center'` centers the body's content on pages it does not fill, and `'bottom'` sets it at the bottom (Word: Page Setup > Vertical alignment). It is a page setting, so it can apply to only the first page or one section, e.g. a title page or a colophon:
+
+```js
+createPaginator({
+  source: '#doc',
+  sections: { cover: { page: { verticalAlign: 'center' } }, body: {} },
+});
+```
+
+- The content moves into a `div.hp-body-content` placed by auto margins, so margins between its elements collapse as usual and pagination is unchanged. Footnotes stay at the bottom of the page.
+- In columns, each column is aligned. Pages holding several sections (continuous breaks) and overflowing pages stay at the top.
+- Word's "justified" alignment is not supported.
+- Declaratively: `data-hp-vertical-align="center"` on the config, content or a `data-hp-section` group.
+
 ### Headers and footers
 
 In the JS API, `header` and `footer` accept:
@@ -673,6 +689,7 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-hp-orientation` | config / content / section group | `landscape` or `portrait` |
 | `data-hp-columns` / `data-hp-column-gap` / `data-hp-column-rule` | config / content / section group | Newspaper columns, the space and line between them |
 | `data-hp-header-distance` / `data-hp-footer-distance` | config / content / section group | Header/footer distance from the sheet edge (Word layout) |
+| `data-hp-vertical-align` | config / content / section group | `top`, `center` or `bottom` (Word's vertical alignment) |
 | `data-hp-line-numbers` (+ `-start`, `-count-by`, `-distance`) | config / content / section group | Line numbers: `page`, `section`, `continuous` restart, or `none` |
 | `data-hp-suppress-line-numbers` | content elements | Leave the element's lines unnumbered |
 | `data-hp-running` | content elements | Set a running header value of that name (headings set `h1`…`h6` on their own) |
