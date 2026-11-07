@@ -47,6 +47,8 @@
   htmlPaginator.createPaginator({
     source: '#src',
     page: { size: 'letter', margin: '0.5in', footer: ({ page }) => `<div class="ft">PAGE-${page}</div>` },
+    // ?restart=page: per-page lower-alpha numbering (Word: restart each page).
+    footnotes: location.search.includes('restart=page') ? { restart: 'page', format: 'lower-alpha' } : undefined,
   }).paginate();
   document.documentElement.dataset.paginated = 'true';
 </script>

@@ -180,3 +180,43 @@ describe('createPaginator: footnotes', () => {
     expect(pages[0]!.querySelector('.hp-toc-text')!.textContent).toBe('Title');
   });
 });
+
+describe('footnote numbering', () => {
+  const measurer = (): MeasureAdapter => ({
+    measure: (el) =>
+      el.classList.contains('hp-footnotes') ? 5 : Number(el.getAttribute('data-h') ?? 0),
+    pageHeight: () => 100,
+  });
+  const source = `<div id="src">
+    <p data-h="60">a<span data-footnote>n1</span> b<span data-footnote>n2</span></p>
+    <p data-h="60">c<span data-footnote>n3</span></p>
+    <p data-h="60" data-section="s">d<span data-footnote>n4</span></p>
+    <p data-h="60">e<span data-footnote>n5</span></p></div>`;
+  const numbers = (footnotes?: Parameters<typeof createPaginator>[0]['footnotes']) => {
+    document.body.innerHTML = source;
+    const { pages } = createPaginator({ source: '#src', measurer: measurer(), footnotes }).paginate();
+    return pages.map((p) => ({
+      refs: Array.from(p.querySelectorAll('.hp-footnote-ref'), (r) => r.textContent).join(','),
+      marks: Array.from(p.querySelectorAll('.hp-footnote-mark'), (r) => r.textContent).join(','),
+    }));
+  };
+
+  it('is continuous by default', () => {
+    expect(numbers()).toEqual([
+      { refs: '1,2', marks: '1,2' },
+      { refs: '3', marks: '3' },
+      { refs: '4', marks: '4' },
+      { refs: '5', marks: '5' },
+    ]);
+  });
+
+  it('restarts each page or each section, in any number format', () => {
+    expect(numbers({ restart: 'page', format: 'lower-alpha' }).map((p) => p.refs)).toEqual(['a,b', 'a', 'a', 'a']);
+    expect(numbers({ restart: 'section', format: 'lower-roman' })).toEqual([
+      { refs: 'i,ii', marks: 'i,ii' },
+      { refs: 'iii', marks: 'iii' },
+      { refs: 'i', marks: 'i' },
+      { refs: 'ii', marks: 'ii' },
+    ]);
+  });
+});
