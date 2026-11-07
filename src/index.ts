@@ -29,6 +29,7 @@ export {
   parseDeclarativeConfig,
 } from './declarative';
 export type { PrintPaginationHandle } from './declarative';
+export { formatPageNumber, pageContext } from './pageNumbers';
 export { renderTemplate } from './renderTemplate';
 export { buildPages, CLASS_NAMES } from './buildPages';
 export type { BuildPagesOptions } from './buildPages';
@@ -42,6 +43,8 @@ export type {
   PageConfig,
   PageContext,
   PageDimensions,
+  PageNumberFormat,
+  PageNumbering,
   PageSizePreset,
   PaginateResult,
   Paginator,

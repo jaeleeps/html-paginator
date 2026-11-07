@@ -1,4 +1,5 @@
 import type { HeaderFooterTemplate, PageContext } from './types';
+import { pageContext } from './pageNumbers';
 
 /**
  * Render a header/footer template into an element for one page.
@@ -16,14 +17,16 @@ import type { HeaderFooterTemplate, PageContext } from './types';
  */
 export function renderTemplate(
   template: HeaderFooterTemplate | undefined,
-  ctx: PageContext,
+  ctx: Pick<PageContext, 'page' | 'totalPages'> & Partial<PageContext>,
   doc: Document,
 ): HTMLElement | null {
   if (template === null || template === undefined) return null;
 
   if (typeof template === 'function') {
-    const result = template(ctx);
-    return renderTemplate(result, ctx, doc);
+    // Fill numbering fields a caller omitted (default decimal from 1).
+    const full: PageContext = { ...pageContext(ctx.page, ctx.totalPages), ...ctx };
+    const result = template(full);
+    return renderTemplate(result, full, doc);
   }
 
   if (template instanceof HTMLElement) {

@@ -1,6 +1,7 @@
 import type { DistributedPage } from './distribute';
-import type { PageConfig } from './types';
+import type { PageConfig, PageNumbering } from './types';
 import { resolvePageConfig } from './pageConfig';
+import { pageContext } from './pageNumbers';
 import { renderTemplate } from './renderTemplate';
 
 export const CLASS_NAMES = {
@@ -16,6 +17,8 @@ export interface BuildPagesOptions {
   page?: PageConfig;
   /** Per-page overrides (1-based). */
   pageOverrides?: Record<number, PageConfig>;
+  /** Displayed page numbering. */
+  pageNumbers?: PageNumbering;
   document: Document;
 }
 
@@ -23,7 +26,8 @@ export interface BuildPagesOptions {
  * Build the page DOM from distributed content.
  *
  * Two-pass by design: distribution has already produced the final page count,
- * so headers/footers render with a complete `{ page, totalPages }` context.
+ * so headers/footers render with a complete page context (`totalPages`,
+ * `lastPageLabel`, ...).
  *
  * Structure:
  *   .hp-pages
@@ -46,7 +50,7 @@ export function buildPages(
 
   for (const dist of distributed) {
     const config = resolvePageConfig(dist.page, options.page, options.pageOverrides);
-    const ctx = { page: dist.page, totalPages };
+    const ctx = pageContext(dist.page, totalPages, options.pageNumbers);
 
     const pageEl = doc.createElement('div');
     pageEl.className = CLASS_NAMES.page;

@@ -363,6 +363,39 @@ describe('paginate() edge cases', () => {
   });
 });
 
+describe('page numbering', () => {
+  it('passes formatted numbers to headers and footers', () => {
+    const source = mountSource('<p data-h="50">a</p><p data-h="50">b</p><p data-h="50">c</p>');
+    const { pages } = createPaginator({
+      source,
+      measurer: stubMeasurer(60),
+      pageNumbers: { start: 0, format: 'upper-roman' },
+      page: {
+        footer: ({ page, pageNumber, pageLabel, lastPageLabel }) =>
+          `<footer>${page}:${pageNumber}:${pageLabel}/${lastPageLabel}</footer>`,
+      },
+    }).paginate();
+    expect(pages.map((p) => p.querySelector(`.${CLASS_NAMES.footer}`)?.textContent)).toEqual([
+      '1:0:0/II',
+      '2:1:I/II',
+      '3:2:II/II',
+    ]);
+  });
+
+  it('numbers from 1 in decimal by default', () => {
+    const source = mountSource('<p data-h="50">a</p><p data-h="50">b</p>');
+    const { pages } = createPaginator({
+      source,
+      measurer: stubMeasurer(60),
+      page: { header: ({ pageLabel, lastPageLabel }) => `<h6>${pageLabel} of ${lastPageLabel}</h6>` },
+    }).paginate();
+    expect(pages.map((p) => p.querySelector(`.${CLASS_NAMES.header}`)?.textContent)).toEqual([
+      '1 of 2',
+      '2 of 2',
+    ]);
+  });
+});
+
 describe('forced page breaks', () => {
   function pageTexts(markup: string, pageHeight = 100): string[] {
     const source = mountSource(markup);
