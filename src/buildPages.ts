@@ -33,6 +33,11 @@ export interface BuildPagesOptions extends PageVariants {
   /** Footnote area for a page's notes, placed between body and footer. */
   renderNotes?: (notes: HTMLElement[]) => HTMLElement;
   /**
+   * Footnotes right below the text instead of at the bottom of the page
+   * (Word: footnote position "Beneath text").
+   */
+  notesBeneathText?: boolean;
+  /**
    * Columns of region `region` (0-based, see `DistributedPage.region`) of
    * page `page`. Default: the page's config.
    */
@@ -104,6 +109,8 @@ export function buildPages(
     if (!dist.notes || dist.notes.length === 0 || !options.renderNotes) return null;
     const area = options.renderNotes(dist.notes);
     area.style.flex = '0 0 auto';
+    // Beneath the text: what is left of the page goes below the notes.
+    if (options.notesBeneathText) area.style.marginBottom = 'auto';
     return area;
   };
 
@@ -171,7 +178,10 @@ export function buildPages(
       if (entry) {
         fill(content, entry.items, align);
         const area = notesArea(entry);
-        if (area) column.appendChild(area);
+        if (area) {
+          column.appendChild(area);
+          if (options.notesBeneathText) content.style.flex = '0 1 auto';
+        }
         bodies.push(content);
       }
       box.appendChild(column);
@@ -269,7 +279,10 @@ export function buildPages(
         fill(body, dist.items, align);
         bodies.push(body);
         const area = notesArea(dist);
-        if (area) pageEl.appendChild(area);
+        if (area) {
+          pageEl.appendChild(area);
+          if (options.notesBeneathText) body.style.flex = '0 1 auto';
+        }
       }
     } else {
       Object.assign(body.style, { display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: '0' });
@@ -302,7 +315,10 @@ export function buildPages(
         }
       });
       const area = notesArea({ ...dist, notes: pageNotes });
-      if (area) pageEl.appendChild(area);
+      if (area) {
+        pageEl.appendChild(area);
+        if (options.notesBeneathText) body.style.flex = '0 1 auto';
+      }
     }
 
     if (footer) {

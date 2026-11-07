@@ -99,4 +99,43 @@ test.describe('footnotes', () => {
       expect(p.refs, `page ${i + 1}`).toEqual(p.marks);
     }
   });
+
+  test('puts the notes right below the text with position: beneath-text, same pages', async ({ page }) => {
+    const layout = async (url: string) => {
+      expect(await openPaginated(page, url)).toEqual([]);
+      return page.evaluate(() =>
+        Array.from(document.querySelectorAll('.hp-pages > .hp-page'), (pg) => {
+          const body = pg.querySelector('.hp-body')!;
+          let contentBottom = 0;
+          for (const el of body.querySelectorAll('p, span, .hp-footnote-ref')) {
+            contentBottom = Math.max(contentBottom, el.getBoundingClientRect().bottom);
+          }
+          const area = pg.querySelector('.hp-footnotes')?.getBoundingClientRect() ?? null;
+          return {
+            notes: Array.from(pg.querySelectorAll('.hp-footnote'), (n) => n.textContent!.slice(0, 12)),
+            contentBottom,
+            areaTop: area?.top ?? null,
+            areaBottom: area?.bottom ?? null,
+            footerTop: pg.querySelector('.hp-footer')!.getBoundingClientRect().top,
+          };
+        }),
+      );
+    };
+    const atBottom = await layout('e2e/fixtures/footnotes.html');
+    const beneath = await layout('e2e/fixtures/footnotes.html?position=beneath');
+    // Pagination is unchanged: the same notes on the same pages.
+    expect(beneath.map((p) => p.notes)).toEqual(atBottom.map((p) => p.notes));
+    let moved = 0;
+    for (const [i, p] of beneath.entries()) {
+      expect(p.footerTop, `page ${i + 1}`).toBeCloseTo(atBottom[i]!.footerTop, 0);
+      if (p.areaTop === null) continue;
+      // Right below the last line of text (the area's own top margin aside).
+      expect(p.areaTop, `page ${i + 1}`).toBeGreaterThanOrEqual(p.contentBottom - 0.5);
+      expect(p.areaTop - p.contentBottom, `page ${i + 1}`).toBeLessThan(30);
+      expect(p.areaBottom!, `page ${i + 1}`).toBeLessThanOrEqual(p.footerTop + 0.5);
+      if (atBottom[i]!.areaTop! - p.areaTop > 50) moved++;
+    }
+    // Some pages end short of the bottom (sections, the last page): their notes moved up.
+    expect(moved).toBeGreaterThan(0);
+  });
 });
