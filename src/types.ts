@@ -166,6 +166,25 @@ export interface PageConfig {
    * top, as do overflowing pages. Default: 'top'.
    */
   verticalAlign?: 'top' | 'center' | 'bottom';
+  /**
+   * Border around the page (Word: Design > Page Borders): a CSS border
+   * (e.g. '1px solid #000'), or with where it is measured from. Drawn out
+   * of the flow, so it never affects pagination; `null` removes it (e.g.
+   * on the first page). Default: none.
+   */
+  pageBorder?: string | PageBorder | null;
+}
+
+export interface PageBorder {
+  /** CSS border shorthand, e.g. '3px double #333'. */
+  border: string;
+  /**
+   * 'edge' (Word's default): `offset` from the edge of the sheet to the
+   * border. 'text': `offset` from the body (the margins) out to the border.
+   */
+  from?: 'edge' | 'text';
+  /** Default: '24pt' from the edge, '4pt' from the text (Word's defaults). */
+  offset?: string;
 }
 
 /** Values accepted by the `data-break` attribute on content elements. */

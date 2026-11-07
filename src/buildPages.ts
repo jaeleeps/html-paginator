@@ -3,7 +3,7 @@ import type { PageConfig } from './types';
 import type { PageVariants, ResolvedPageConfig } from './pageConfig';
 import { createPageLayout } from './layout';
 import { pageSizeName } from './pageConfig';
-import { pagePadding, slotArea } from './pageFrame';
+import { marginSides, pagePadding, slotArea } from './pageFrame';
 import type { PageLayout } from './layout';
 import type { RegionColumns } from './sheets';
 import { renderTemplate } from './renderTemplate';
@@ -16,6 +16,7 @@ export const CLASS_NAMES = {
   bodyContent: 'hp-body-content',
   footer: 'hp-footer',
   watermark: 'hp-watermark',
+  pageBorder: 'hp-page-border',
   column: 'hp-column',
   columnBody: 'hp-column-body',
   columnRule: 'hp-column-rule',
@@ -49,6 +50,7 @@ export interface BuildPagesOptions extends PageVariants {
  * Structure:
  *   .hp-pages
  *     .hp-page        (width/height/margin from resolved page config)
+ *       .hp-page-border (only with `pageBorder`; absolute)
  *       .hp-watermark (only when the page has a watermark; absolute, behind)
  *       .hp-header    (only when the page has a header)
  *       .hp-body      (distributed items, moved — not cloned; inside a
@@ -194,6 +196,29 @@ export function buildPages(
     pageEl.style.boxSizing = 'border-box';
     // Print on the sheet of this page's size (CSS named page).
     pageEl.style.setProperty('page', pageSizeName(config.size));
+
+    // Page border: out of flow too. From the edge, the border's outer edge
+    // is `offset` in from the sheet's; from the text, an outline `offset`
+    // out from the body's box (the margins).
+    if (config.pageBorder) {
+      const { border, from, offset } = config.pageBorder;
+      const frame = doc.createElement('div');
+      frame.className = CLASS_NAMES.pageBorder;
+      Object.assign(frame.style, {
+        position: 'absolute',
+        boxSizing: 'border-box',
+        zIndex: '0',
+        pointerEvents: 'none',
+      });
+      if (from === 'edge') {
+        Object.assign(frame.style, { inset: offset, border });
+      } else {
+        const [top, right, bottom, left] = marginSides(config.margin);
+        Object.assign(frame.style, { top, right, bottom, left, outline: border, outlineOffset: offset });
+      }
+      pageEl.style.position = 'relative';
+      pageEl.appendChild(frame);
+    }
 
     // Behind everything, over the whole sheet (margins included); out of
     // flow, so it never affects layout.

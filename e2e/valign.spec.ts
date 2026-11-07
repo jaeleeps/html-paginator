@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { inspectPages, openPaginated, printPdf, readPdf } from './helpers';
 
-test.describe('vertical alignment', () => {
+test.describe('vertical alignment and page borders', () => {
   test('centers the cover, keeps body pages at the top, bottom-aligns the colophon (Word)', async ({ page }) => {
     const errors = await openPaginated(page, 'e2e/fixtures/valign.html');
     expect(errors).toEqual([]);
@@ -52,5 +52,41 @@ test.describe('vertical alignment', () => {
     expect(pdf).toHaveLength(pages.length);
     expect(pdf[0]!.text).toContain('COVER TITLE');
     expect(pdf.at(-1)!.text).toContain('COLOPHON');
+  });
+
+  test('draws page borders from the sheet edge or around the text, out of the flow (Word)', async ({ page }) => {
+    await openPaginated(page, 'e2e/fixtures/valign.html');
+    const borders = await page.evaluate(() =>
+      Array.from(document.querySelectorAll<HTMLElement>('.hp-pages > .hp-page'), (pg) => {
+        const frame = pg.querySelector('.hp-page-border');
+        if (!frame) return null;
+        const sheet = pg.getBoundingClientRect();
+        const rect = frame.getBoundingClientRect();
+        const body = pg.querySelector('.hp-body')!.getBoundingClientRect();
+        const style = getComputedStyle(frame);
+        return {
+          inset: [rect.top - sheet.top, sheet.right - rect.right, sheet.bottom - rect.bottom, rect.left - sheet.left],
+          body: [body.top - sheet.top, sheet.right - body.right, body.left - sheet.left],
+          outline: style.outlineStyle,
+          outlineOffset: parseFloat(style.outlineOffset),
+          border: style.borderTopStyle,
+        };
+      }),
+    );
+    const IN = 96;
+    expect(borders[0]).toBeNull();
+    for (const b of borders.slice(1, -1)) {
+      // 24pt = 32px in from every edge.
+      for (const side of b!.inset) expect(side).toBeCloseTo(32, 0);
+      expect(b!.border).toBe('solid');
+    }
+    const colophon = borders.at(-1)!;
+    // Around the margins (1in), 4pt (≈5.3px) outside them.
+    expect(colophon.inset[0]).toBeCloseTo(IN, 0);
+    expect(colophon.inset[3]).toBeCloseTo(IN, 0);
+    expect(colophon.body[0]).toBeCloseTo(IN, 0);
+    expect(colophon.outline).toBe('double');
+    // Chromium rounds outline offsets to whole pixels.
+    expect(colophon.outlineOffset).toBeCloseTo(16 / 3, 0);
   });
 });
