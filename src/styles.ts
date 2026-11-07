@@ -60,6 +60,14 @@ export function buildStylesheet(size: PageDimensions): string {
   .${c.page}:last-child {
     page-break-after: auto;
   }
+  /* Forced breaks were applied during pagination; inside a fixed-size page
+     they would make the browser start extra sheets. */
+  .${c.body} * {
+    break-before: auto !important;
+    break-after: auto !important;
+    page-break-before: auto !important;
+    page-break-after: auto !important;
+  }
 }
 `.trim();
 }

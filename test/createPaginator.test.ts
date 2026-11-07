@@ -363,6 +363,49 @@ describe('paginate() edge cases', () => {
   });
 });
 
+describe('forced page breaks', () => {
+  function pageTexts(markup: string, pageHeight = 100): string[] {
+    const source = mountSource(markup);
+    const { pages } = createPaginator({ source, measurer: stubMeasurer(pageHeight) }).paginate();
+    return pages.map((p) => p.querySelector(`.${CLASS_NAMES.body}`)?.textContent ?? '');
+  }
+
+  it('starts top-level elements with data-break-before on a new page', () => {
+    expect(pageTexts('<p data-h="10">a</p><p data-h="10" data-break-before="page">b</p>')).toEqual([
+      'a',
+      'b',
+    ]);
+  });
+
+  it('breaks after the last child of one item before the next item', () => {
+    expect(
+      pageTexts(
+        '<div><p data-h="10">a</p><p data-h="10" data-break-after="page">b</p></div><p data-h="10">c</p>',
+      ),
+    ).toEqual(['ab', 'c']);
+  });
+
+  it('splits a container at a nested break', () => {
+    expect(
+      pageTexts('<div><p data-h="10">a</p><h2 data-h="10" style="break-before: page">b</h2><p data-h="10">c</p></div>'),
+    ).toEqual(['a', 'bc']);
+  });
+
+  it('splits a table at a breaking row and keeps rows in order', () => {
+    expect(
+      pageTexts(
+        '<table><tbody><tr data-h="10"><td>1</td></tr><tr data-h="10" data-break-before="page"><td>2</td></tr></tbody></table>',
+      ),
+    ).toEqual(['1', '2']);
+  });
+
+  it('leaves the source without break markers', () => {
+    const source = mountSource('<p data-h="10" data-break-after="page">a</p><p data-h="10">b</p>');
+    createPaginator({ source, measurer: stubMeasurer() }).paginate();
+    expect(source.querySelectorAll('[data-break-before]')).toHaveLength(0);
+  });
+});
+
 describe('reset()', () => {
   it('removes pages and restores the source', () => {
     const source = mountSource('<p data-h="10">a</p>');

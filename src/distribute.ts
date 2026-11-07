@@ -37,6 +37,12 @@ export interface DistributeOptions<T> {
   children?: (item: T) => T[];
   /** Rebuild a container around a subset of its children (a fragment). */
   wrap?: (item: T, children: T[], info: WrapInfo) => T;
+  /**
+   * Forced page break before an item (Word's "page break"). Applies at any
+   * depth inside splittable containers, which are split at the break. Never
+   * produces a blank page: a break at the top of a page is a no-op.
+   */
+  pageBreakBefore?: (item: T) => boolean;
 }
 
 export interface DistributedPage<T> {
@@ -95,12 +101,30 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
   const canSplit = (item: T): boolean =>
     wrap !== undefined && getBehavior(item) === 'auto' && getChildren(item).length > 0;
 
+  const hasBreakHook = options.pageBreakBefore !== undefined;
+
+  /** Forced break before `item`, including one on its first descendant. */
+  const breaksBefore = (item: T): boolean => {
+    if (!hasBreakHook) return false;
+    if (options.pageBreakBefore!(item)) return true;
+    return canSplit(item) && breaksBefore(getChildren(item)[0] as T);
+  };
+
+  /** Forced break somewhere inside `item` (not at its start). */
+  const breaksInside = (item: T): boolean => {
+    if (!hasBreakHook || !canSplit(item)) return false;
+    return getChildren(item).some((kid, i) => (i > 0 && breaksBefore(kid)) || breaksInside(kid));
+  };
+
   /**
    * Split `item` into a head fragment satisfying `fits` and a tail fragment
    * for the next page. Children are taken in order; the boundary child is
    * itself split recursively when possible. Returns `head: null` when not
    * even the first (possibly split) child fits; `tail` is then the whole item
    * rebuilt via `wrap`.
+   *
+   * A child with a forced break ends the head (it starts the tail), and a
+   * child containing one never counts as fitting whole.
    *
    * `wrap` may be destructive (DOM wrapping moves child nodes into the
    * fragment), so after trial wraps `item` itself may be missing children —
@@ -110,10 +134,15 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
     const kids = getChildren(item);
     const headKids: T[] = [];
     let index = 0;
+    let forced = false;
 
     while (index < kids.length) {
       const kid = kids[index] as T;
-      if (fits(wrap!(item, [...headKids, kid], { continuation }))) {
+      if (index > 0 && breaksBefore(kid)) {
+        forced = true;
+        break;
+      }
+      if (!breaksInside(kid) && fits(wrap!(item, [...headKids, kid], { continuation }))) {
         headKids.push(kid);
         index++;
       } else {
@@ -123,7 +152,7 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
 
     let tailKids = kids.slice(index);
 
-    if (index < kids.length) {
+    if (index < kids.length && !forced) {
       const boundary = kids[index] as T;
       if (canSplit(boundary)) {
         const sub = splitToFit(boundary, false, (candidate) =>
@@ -200,10 +229,16 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
 
     // Open the page first so the item is measured for the page it lands on.
     if (current === null) current = openPage();
+
+    // Forced page break (continuations already start a fresh page).
+    if (!entry.continuation && current.items.length > 0 && breaksBefore(entry.item)) {
+      current = openPage();
+    }
+
     const height = measure(entry.item, current.page);
 
     // Fits in the remaining space — place and continue.
-    if (current.usedHeight + height <= current.availableHeight) {
+    if (current.usedHeight + height <= current.availableHeight && !breaksInside(entry.item)) {
       current.items.push(entry.item);
       current.usedHeight += height;
       continue;

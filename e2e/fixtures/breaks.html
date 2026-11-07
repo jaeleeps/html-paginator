@@ -1,0 +1,62 @@
+<!doctype html>
+<!--
+  Forced page break fixture (Word's "page break"). Breaks come from a
+  stylesheet (break-before: page), legacy inline page-break-before: always,
+  data-break-after="page", and a table row with data-break-before="page".
+  Markers: TITLE, CH1..CH3 (chapter headings), C1-01.. (chapter paragraphs),
+  NESTED-BREAK, APPX-LEAD, APPX, T01..T12 (table rows).
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>html-paginator breaks fixture</title>
+<style>
+  body { margin: 0; font: 14px/1.5 Helvetica, Arial, sans-serif; }
+  .hd { border-bottom: 1px solid #333; margin-bottom: 8px; font-size: 12px; }
+  .ft { border-top: 1px solid #999; margin-top: 8px; font-size: 11px; }
+  p { margin: 0 0 8px; }
+  h1 { font-size: 32px; margin: 200px 0 0; text-align: center; }
+  h2.chapter { break-before: page; margin: 0 0 12px; }
+  .box { border: 1px solid #ccc; padding: 6px; }
+  table { width: 100%; border-collapse: collapse; }
+  td { border: 1px solid #bbb; padding: 2px 6px; }
+</style>
+</head>
+<body>
+<div id="src">
+  <h1>TITLE</h1>
+  <h2 class="chapter">CH1 Introduction</h2>
+  <div id="c1"></div>
+  <h2 class="chapter">CH2 Short chapter</h2>
+  <div class="box">
+    <p>C2-01 Before the nested break.</p>
+    <p style="page-break-before: always">NESTED-BREAK starts a page from inside a box.</p>
+  </div>
+  <p data-break-after="page">APPX-LEAD the appendix starts on the next page.</p>
+  <p>APPX appendix body.</p>
+  <h2 class="chapter">CH3 Tables</h2>
+  <table><tbody id="rows"></tbody></table>
+</div>
+<script src="/dist/index.global.js"></script>
+<script>
+  const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.';
+  const pad = (n) => String(n).padStart(2, '0');
+  document.getElementById('c1').innerHTML = Array.from({ length: 30 }, (_, i) => `<p>C1-${pad(i + 1)} ${lorem}</p>`).join('');
+  // Row T07 forces a page break inside the table.
+  document.getElementById('rows').innerHTML = Array.from({ length: 12 }, (_, i) =>
+    `<tr${i === 6 ? ' data-break-before="page"' : ''}><td>T${pad(i + 1)}</td><td>row ${i + 1}</td></tr>`).join('');
+  window.sourceText = document.getElementById('src').innerText;
+
+  htmlPaginator.createPaginator({
+    source: '#src',
+    page: {
+      size: 'a4',
+      margin: '15mm',
+      header: ({ page, totalPages }) => `<div class="hd">Breaks — ${page}/${totalPages}</div>`,
+      footer: ({ page }) => `<div class="ft">p${page}</div>`,
+    },
+  }).paginate();
+  document.documentElement.dataset.paginated = 'true';
+</script>
+</body>
+</html>
