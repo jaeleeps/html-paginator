@@ -154,6 +154,62 @@ describe('paginate()', () => {
   });
 });
 
+describe('content preservation when splitting', () => {
+  /** Text of every leaf <p>/<td>, page by page. */
+  function leafTexts(pages: HTMLElement[]): string[][] {
+    return pages.map((p) => Array.from(p.querySelectorAll('p, td'), (n) => n.textContent ?? ''));
+  }
+
+  function paginate(markup: string, pageHeight = 60): string[][] {
+    const source = mountSource(markup);
+    const { pages } = createPaginator({ source, measurer: stubMeasurer(pageHeight) }).paginate();
+    return leafTexts(pages);
+  }
+
+  it('keeps every child when a container retries on a fresh page', () => {
+    // 50 leaves 10px; [A 40] cannot start there → whole container moves on.
+    expect(
+      paginate('<p data-h="50">lead</p><div><p data-h="40">A</p><p data-h="40">B</p></div>'),
+    ).toEqual([['lead'], ['A'], ['B']]);
+  });
+
+  it('keeps nested content when the boundary child is a container', () => {
+    expect(
+      paginate(
+        '<p data-h="50">lead</p><div><section><p data-h="40">A</p><p data-h="40">B</p></section></div>',
+      ),
+    ).toEqual([['lead'], ['A'], ['B']]);
+  });
+
+  it('keeps table rows when a table retries on a fresh page', () => {
+    expect(
+      paginate(
+        '<p data-h="50">lead</p><table><tbody><tr data-h="40"><td>1</td></tr><tr data-h="40"><td>2</td></tr></tbody></table>',
+      ),
+    ).toEqual([['lead'], ['1'], ['2']]);
+  });
+
+  it('keeps content when a retry ends in a forced split', () => {
+    // [big 100] never fits: lead | big (overflow) | small
+    expect(
+      paginate('<p data-h="50">lead</p><div><p data-h="100">big</p><p data-h="20">small</p></div>'),
+    ).toEqual([['lead'], ['big'], ['small']]);
+  });
+
+  it('marks every fragment after the first of a 3-page container as continued', () => {
+    const source = mountSource(
+      '<div><p data-h="40">A</p><p data-h="40">B</p><p data-h="40">C</p></div>',
+    );
+    const { pages } = createPaginator({ source, measurer: stubMeasurer(50) }).paginate();
+    expect(leafTexts(pages)).toEqual([['A'], ['B'], ['C']]);
+    expect(
+      pages.map((p) =>
+        p.querySelector(`.${CLASS_NAMES.body} > div`)?.hasAttribute('data-hp-continued'),
+      ),
+    ).toEqual([false, true, true]);
+  });
+});
+
 describe('reset()', () => {
   it('removes pages and restores the source', () => {
     const source = mountSource('<p data-h="10">a</p>');

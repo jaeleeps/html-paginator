@@ -95,7 +95,12 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
    * Split `item` into a head fragment satisfying `fits` and a tail fragment
    * for the next page. Children are taken in order; the boundary child is
    * itself split recursively when possible. Returns `head: null` when not
-   * even the first (possibly split) child fits.
+   * even the first (possibly split) child fits; `tail` is then the whole item
+   * rebuilt via `wrap`.
+   *
+   * `wrap` may be destructive (DOM wrapping moves child nodes into the
+   * fragment), so after trial wraps `item` itself may be missing children —
+   * always continue with the returned fragments, never with `item`.
    */
   const splitToFit = (item: T, continuation: boolean, fits: (candidate: T) => boolean): Split<T> => {
     const kids = getChildren(item);
@@ -123,13 +128,16 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
         if (sub.head) {
           headKids.push(sub.head);
           tailKids = sub.tail ? [sub.tail, ...kids.slice(index + 1)] : kids.slice(index + 1);
+        } else {
+          // Trial wraps may have emptied `boundary`; use its rebuilt copy.
+          tailKids = [sub.tail as T, ...kids.slice(index + 1)];
         }
       }
     }
 
     if (headKids.length === 0) {
-      // Nothing fits — leave the item untouched for the caller.
-      return { head: null, tail: item };
+      // Nothing fits — hand back the whole item, rebuilt from its children.
+      return { head: null, tail: wrap!(item, tailKids, { continuation }) };
     }
     return {
       head: wrap!(item, headKids, { continuation }),
@@ -215,13 +223,13 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
         // Nothing fits the remaining space — retry on a fresh page, where
         // splitting gets the full page height to work with.
         current = openPage();
-        pending.unshift(entry);
+        pending.unshift({ item: tail as T, continuation: entry.continuation });
         continue;
       }
 
       // Empty page and not even the first child fits: force-split so the
       // oversized descendant overflows alone and the rest paginates.
-      const forced = forceSplit(entry.item, entry.continuation);
+      const forced = forceSplit(tail as T, entry.continuation);
       current.items.push(forced.head as T);
       current.usedHeight += measure(forced.head as T);
       current.overflows = true;
