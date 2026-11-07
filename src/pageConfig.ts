@@ -56,12 +56,20 @@ export function resolvePageConfig(
 ): ResolvedPageConfig {
   const pageNumber = (variants.pageNumbers?.start ?? 1) + page - 1;
   const parity = pageNumber % 2 === 0 ? variants.evenPages : variants.oddPages;
-  const merged: PageConfig = {
-    ...defaults,
-    ...parity,
-    ...(page === 1 ? variants.firstPage : undefined),
-    ...overrides?.[page],
-  };
+  return mergePageLayers(
+    defaults,
+    parity,
+    page === 1 ? variants.firstPage : undefined,
+    overrides?.[page],
+  );
+}
+
+/**
+ * Merge page config layers, later ones winning per property, and resolve
+ * size and margin defaults.
+ */
+export function mergePageLayers(...layers: (PageConfig | undefined)[]): ResolvedPageConfig {
+  const merged: PageConfig = Object.assign({}, ...layers);
   return {
     size: resolveSize(merged.size),
     margin: merged.margin ?? DEFAULT_MARGIN,

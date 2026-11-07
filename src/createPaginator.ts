@@ -5,8 +5,10 @@ import {
   BREAK_ATTRIBUTE,
   createDomBreaker,
   markBreakHints,
+  SECTION_ATTRIBUTE,
   warnNestedBreakAttributes,
 } from './domBreak';
+import { createPageLayout } from './layout';
 import { createDomMeasurer } from './measure';
 import { resolveSize } from './pageConfig';
 import { injectStyles } from './styles';
@@ -24,6 +26,23 @@ function resolveElement(
     throw new Error(`html-paginator: ${what} not found for selector "${ref}"`);
   }
   return el;
+}
+
+/** Warn once per `data-section` name that has no `sections` entry. */
+function warnUnknownSections(
+  root: HTMLElement,
+  sections: PaginatorConfig['sections'],
+): void {
+  const unknown = new Set<string>();
+  for (const el of root.querySelectorAll(`[${SECTION_ATTRIBUTE}]`)) {
+    const name = el.getAttribute(SECTION_ATTRIBUTE) ?? '';
+    if (!sections?.[name]) unknown.add(name);
+  }
+  for (const name of unknown) {
+    console.warn(
+      `html-paginator: ${SECTION_ATTRIBUTE}="${name}" has no matching sections entry; it starts a section with the default layout`,
+    );
+  }
 }
 
 /** Create a paginator instance. */
@@ -78,35 +97,27 @@ export function createPaginator(config: PaginatorConfig): Paginator {
         }
       }
 
+      warnUnknownSections(copy, resolved.sections);
+
+      // Pages (and their sections) are recorded as distribution opens them;
+      // measurement and rendering both read page config from this layout.
+      const layout = createPageLayout(resolved);
       const measurer: MeasureAdapter =
-        resolved.measurer ??
-        createDomMeasurer({
-          document: doc,
-          page: resolved.page,
-          pageOverrides: resolved.pageOverrides,
-          firstPage: resolved.firstPage,
-          oddPages: resolved.oddPages,
-          evenPages: resolved.evenPages,
-          pageNumbers: resolved.pageNumbers,
-        });
+        resolved.measurer ?? createDomMeasurer({ document: doc, layout });
 
       try {
         const distributed = distribute<HTMLElement>({
           items,
           measure: (el, page) => measurer.measure(el, page),
-          pageHeight: (page) => measurer.pageHeight(page),
+          pageHeight: (page, slot) => {
+            layout.open(page, slot);
+            return measurer.pageHeight(page);
+          },
+          blankPageBefore: (section, page) => layout.blankPageBefore(section, page),
           ...createDomBreaker({ repeatTableHead: resolved.repeatTableHead }),
         });
 
-        const built = buildPages(distributed, {
-          document: doc,
-          page: resolved.page,
-          pageOverrides: resolved.pageOverrides,
-          firstPage: resolved.firstPage,
-          oddPages: resolved.oddPages,
-          evenPages: resolved.evenPages,
-          pageNumbers: resolved.pageNumbers,
-        });
+        const built = buildPages(distributed, { document: doc, layout });
 
         // data-break="clip": hide the overflow of pages whose single item
         // could not fit any page ('avoid' overflow stays visible).

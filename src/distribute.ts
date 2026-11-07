@@ -14,7 +14,17 @@ export interface WrapInfo {
   continuation: boolean;
 }
 
-export interface DistributeOptions<T> {
+/** What the engine knows about a page when it opens it. */
+export interface PageSlot<S = string> {
+  /** Section the page belongs to (undefined before the first section start). */
+  section?: S;
+  /** True on the first page of a section. */
+  sectionStart: boolean;
+  /** True for a blank page inserted before a section (see `blankPageBefore`). */
+  blank: boolean;
+}
+
+export interface DistributeOptions<T, S = string> {
   /** Items to distribute, in order. */
   items: readonly T[];
   /**
@@ -25,9 +35,11 @@ export interface DistributeOptions<T> {
   measure: (item: T, page: number) => number;
   /**
    * Available body height for a given page (1-based page number).
-   * Can vary per page (e.g., different header/footer per page).
+   * Can vary per page (e.g., different header/footer per page). Called once
+   * per page, in order, when the page opens; `slot` tells which section it
+   * belongs to.
    */
-  pageHeight: (page: number) => number;
+  pageHeight: (page: number, slot: PageSlot<S>) => number;
   /**
    * Break behavior of an item. Defaults to `'avoid'` (atomic) when omitted —
    * splitting requires `children` and `wrap` as well.
@@ -49,9 +61,22 @@ export interface DistributeOptions<T> {
    * trailing kept items move along, unless that would empty the page.
    */
   keepWithNext?: (item: T) => boolean;
+  /**
+   * Section started by an item (Word's section break), or undefined. A
+   * section start is also a forced page break. Must return undefined for
+   * continuation fragments (`WrapInfo.continuation`), which do not restart
+   * their section.
+   */
+  section?: (item: T) => S | undefined;
+  /**
+   * Whether to insert a blank page before `page`, which would start
+   * `section` (e.g. to start chapters on odd pages). The blank page belongs
+   * to the previous section.
+   */
+  blankPageBefore?: (section: S, page: number) => boolean;
 }
 
-export interface DistributedPage<T> {
+export interface DistributedPage<T, S = string> {
   /** 1-based page number. */
   page: number;
   items: T[];
@@ -61,6 +86,12 @@ export interface DistributedPage<T> {
   availableHeight: number;
   /** True when a single item was taller than the page and overflows it. */
   overflows: boolean;
+  /** Section of the page (only with the `section` hook). */
+  section?: S;
+  /** First page of a section (only with the `section` hook). */
+  sectionStart?: boolean;
+  /** Blank page inserted by `blankPageBefore`. */
+  blank?: boolean;
 }
 
 interface Pending<T> {
@@ -88,7 +119,9 @@ interface Split<T> {
  * containers are force-split around it so the following content paginates
  * normally.
  */
-export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>[] {
+export function distribute<T, S = string>(
+  options: DistributeOptions<T, S>,
+): DistributedPage<T, S>[] {
   const { items, pageHeight } = options;
   const getBehavior = options.breakBehavior ?? ((): BreakBehavior => 'avoid');
   const getChildren = options.children ?? ((): T[] => []);
@@ -107,13 +140,21 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
   const canSplit = (item: T): boolean =>
     wrap !== undefined && getBehavior(item) === 'auto' && getChildren(item).length > 0;
 
-  const hasBreakHook = options.pageBreakBefore !== undefined;
+  const hasBreakHook = options.pageBreakBefore !== undefined || options.section !== undefined;
+  const startsSection = (item: T): boolean => options.section?.(item) !== undefined;
+
+  /** Section started at the very beginning of `item` (itself or first descendant). */
+  const sectionAt = (item: T): S | undefined => {
+    const own = options.section?.(item);
+    if (own !== undefined) return own;
+    return canSplit(item) ? sectionAt(getChildren(item)[0] as T) : undefined;
+  };
   const keeps = (item: T): boolean => options.keepWithNext?.(item) === true;
 
   /** Forced break before `item`, including one on its first descendant. */
   const breaksBefore = (item: T): boolean => {
     if (!hasBreakHook) return false;
-    if (options.pageBreakBefore!(item)) return true;
+    if (options.pageBreakBefore?.(item) === true || startsSection(item)) return true;
     return canSplit(item) && breaksBefore(getChildren(item)[0] as T);
   };
 
@@ -217,12 +258,12 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
     };
   };
 
-  const pages: DistributedPage<T>[] = [];
-  let current: DistributedPage<T> | null = null;
+  const pages: DistributedPage<T, S>[] = [];
+  let current: DistributedPage<T, S> | null = null;
   /** Per page, what each placed item was queued as and measured at. */
-  const placed = new Map<DistributedPage<T>, { entry: Pending<T>; height: number }[]>();
+  const placed = new Map<DistributedPage<T, S>, { entry: Pending<T>; height: number }[]>();
 
-  const place = (page: DistributedPage<T>, entry: Pending<T>, height: number): void => {
+  const place = (page: DistributedPage<T, S>, entry: Pending<T>, height: number): void => {
     page.items.push(entry.item);
     page.usedHeight += height;
     placed.get(page)!.push({ entry, height });
@@ -232,7 +273,7 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
    * Take kept (keep-with-next) items off the end of `page` so they move on
    * with the item that no longer fits. Never empties the page.
    */
-  const takeKept = (page: DistributedPage<T>): Pending<T>[] => {
+  const takeKept = (page: DistributedPage<T, S>): Pending<T>[] => {
     const log = placed.get(page)!;
     const kept: Pending<T>[] = [];
     while (page.items.length > 1 && keeps(page.items[page.items.length - 1] as T)) {
@@ -244,24 +285,44 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
     return kept;
   };
 
-  const openPage = (): DistributedPage<T> => {
+  let currentSection: S | undefined;
+
+  const newPage = (slot: PageSlot<S>): DistributedPage<T, S> => {
     const page = pages.length + 1;
-    const availableHeight = pageHeight(page);
+    const availableHeight = pageHeight(page, slot);
     if (!Number.isFinite(availableHeight) || availableHeight <= 0) {
       throw new Error(
         `html-paginator: pageHeight(${page}) must be a positive finite number, got ${availableHeight}`,
       );
     }
-    const opened: DistributedPage<T> = {
+    const opened: DistributedPage<T, S> = {
       page,
       items: [],
       usedHeight: 0,
       availableHeight,
       overflows: false,
     };
+    if (options.section) {
+      opened.section = slot.section;
+      opened.sectionStart = slot.sectionStart;
+    }
+    if (slot.blank) opened.blank = true;
     pages.push(opened);
     placed.set(opened, []);
     return opened;
+  };
+
+  /** Open the page that `first` will start (it may start a new section). */
+  const openPage = (first: T): DistributedPage<T, S> => {
+    const section = sectionAt(first);
+    if (section === undefined) {
+      return newPage({ section: currentSection, sectionStart: false, blank: false });
+    }
+    if (options.blankPageBefore?.(section, pages.length + 1) === true) {
+      newPage({ section: currentSection, sectionStart: false, blank: true });
+    }
+    currentSection = section;
+    return newPage({ section, sectionStart: true, blank: false });
   };
 
   const pending: Pending<T>[] = items.map((item) => ({ item, continuation: false }));
@@ -270,11 +331,11 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
     const entry = pending.shift() as Pending<T>;
 
     // Open the page first so the item is measured for the page it lands on.
-    if (current === null) current = openPage();
+    if (current === null) current = openPage(entry.item);
 
     // Forced page break (continuations already start a fresh page).
     if (!entry.continuation && current.items.length > 0 && breaksBefore(entry.item)) {
-      current = openPage();
+      current = openPage(entry.item);
     }
 
     const height = measure(entry.item, current.page);
@@ -303,7 +364,7 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
         // Nothing fits the remaining space — retry on a fresh page, where
         // splitting gets the full page height to work with.
         const kept = takeKept(current);
-        current = openPage();
+        current = openPage(kept[0]?.item ?? (tail as T));
         pending.unshift(...kept, { item: tail as T, continuation: entry.continuation });
         continue;
       }
@@ -326,7 +387,7 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
     // retry on a new page (re-measured there) unless this one is still empty.
     if (current.items.length > 0) {
       const kept = takeKept(current);
-      current = openPage();
+      current = openPage(kept[0]?.item ?? entry.item);
       pending.unshift(...kept, entry);
       continue;
     }

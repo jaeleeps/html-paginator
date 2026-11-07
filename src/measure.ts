@@ -1,8 +1,8 @@
 import type { PageConfig } from './types';
 import { CLASS_NAMES } from './buildPages';
-import { resolvePageConfig } from './pageConfig';
 import type { PageVariants } from './pageConfig';
-import { pageContext } from './pageNumbers';
+import { createPageLayout } from './layout';
+import type { PageLayout } from './layout';
 import { renderTemplate } from './renderTemplate';
 
 /**
@@ -30,6 +30,8 @@ export interface DomMeasurerOptions extends PageVariants {
   page?: PageConfig;
   /** Per-page overrides (1-based). */
   pageOverrides?: Record<number, PageConfig>;
+  /** Page layout being recorded by distribution (built from the options otherwise). */
+  layout?: PageLayout;
 }
 
 export interface DomMeasurer {
@@ -68,6 +70,7 @@ const PROBE_CTX_TOTAL_PAGES = 999;
 
 export function createDomMeasurer(options: DomMeasurerOptions): DomMeasurer {
   const doc = options.document;
+  const layout = options.layout ?? createPageLayout(options);
   const probes = new Map<number, Probe>();
   let currentProbe: Probe | null = null;
 
@@ -82,8 +85,8 @@ export function createDomMeasurer(options: DomMeasurerOptions): DomMeasurer {
   };
 
   const mountProbe = (page: number): Probe => {
-    const config = resolvePageConfig(page, options.page, options.pageOverrides, options);
-    const ctx = pageContext(page, PROBE_CTX_TOTAL_PAGES, options.pageNumbers);
+    const config = layout.config(page);
+    const ctx = layout.probeContext(page, PROBE_CTX_TOTAL_PAGES);
 
     const pageEl = doc.createElement('div');
     pageEl.className = CLASS_NAMES.page;

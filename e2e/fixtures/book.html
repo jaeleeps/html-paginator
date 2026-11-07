@@ -1,0 +1,63 @@
+<!doctype html>
+<!--
+  Book with Word-style sections:
+  - cover (page 1, no header/footer)
+  - front matter section: roman numbering i, ii, ...
+  - body: first chapter restarts at 1; every chapter is a section that starts
+    on an odd physical page (a blank page is inserted when needed)
+  Markers: COVER, TOC, PRE-01.., CH1..CH3, Cn-01.., END.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>html-paginator book fixture</title>
+<style>
+  body { margin: 0; font: 13px/1.55 Georgia, serif; }
+  .hd { font-size: 11px; border-bottom: 1px solid #555; margin-bottom: 12px; }
+  .ft { font-size: 11px; text-align: center; margin-top: 12px; }
+  .cover { text-align: center; padding-top: 3in; font-size: 32px; }
+  h2 { margin: 0 0 10px; }
+  p { margin: 0 0 9px; }
+</style>
+</head>
+<body>
+<div id="src">
+  <div class="cover">COVER The Book</div>
+  <div data-section="front" id="front">
+    <h2>TOC Contents</h2>
+    <p>Chapter 1 ... Chapter 3</p>
+  </div>
+  <div id="chapters"></div>
+</div>
+<script src="/dist/index.global.js"></script>
+<script>
+  const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.';
+  const pad = (n) => String(n).padStart(2, '0');
+  const paras = (prefix, n) => Array.from({ length: n }, (_, i) => `<p>${prefix}-${pad(i + 1)} ${lorem}</p>`).join('');
+  document.getElementById('front').insertAdjacentHTML('beforeend', `<h2>Preface</h2>${paras('PRE', 30)}`);
+  // Chapter lengths chosen so some chapters end on odd pages (forcing blanks).
+  document.getElementById('chapters').innerHTML = [[1, 'body', 14], [2, 'chapter', 30], [3, 'chapter', 8]]
+    .map(([n, section, len]) => `<section data-section="${section}"><h2>CH${n} Chapter ${n}</h2>${paras(`C${n}`, len)}</section>`)
+    .join('') + '<p>END of book.</p>';
+  window.sourceText = document.getElementById('src').innerText;
+
+  const result = htmlPaginator.createPaginator({
+    source: '#src',
+    page: {
+      size: 'a5',
+      margin: '15mm',
+      header: ({ section, sectionPage }) => `<div class="hd">${section ?? 'none'} p${sectionPage}</div>`,
+      footer: ({ pageLabel, lastPageLabel }) => `<div class="ft">${pageLabel} / ${lastPageLabel}</div>`,
+    },
+    firstPage: { header: null, footer: null },
+    sections: {
+      front: { pageNumbers: { start: 1, format: 'lower-roman' } },
+      body: { pageNumbers: { start: 1 }, start: 'odd' },
+      chapter: { start: 'odd' },
+    },
+  }).paginate();
+  window.totalPages = result.totalPages;
+  document.documentElement.dataset.paginated = 'true';
+</script>
+</body>
+</html>
