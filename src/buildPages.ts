@@ -5,6 +5,7 @@ import { createPageLayout } from './layout';
 import { pageSizeName } from './pageConfig';
 import { pagePadding, slotArea } from './pageFrame';
 import type { PageLayout } from './layout';
+import type { RegionColumns } from './sheets';
 import { renderTemplate } from './renderTemplate';
 
 export const CLASS_NAMES = {
@@ -17,6 +18,7 @@ export const CLASS_NAMES = {
   column: 'hp-column',
   columnBody: 'hp-column-body',
   columnRule: 'hp-column-rule',
+  region: 'hp-region',
 } as const;
 
 export interface BuildPagesOptions extends PageVariants {
@@ -28,6 +30,11 @@ export interface BuildPagesOptions extends PageVariants {
   layout?: PageLayout;
   /** Footnote area for a page's notes, placed between body and footer. */
   renderNotes?: (notes: HTMLElement[]) => HTMLElement;
+  /**
+   * Columns of region `region` (0-based, see `DistributedPage.region`) of
+   * page `page`. Default: the page's config.
+   */
+  regionColumns?: (page: number, region: number) => RegionColumns | undefined;
   document: Document;
 }
 
@@ -55,6 +62,10 @@ export interface BuildPagesOptions extends PageVariants {
  *           .hp-column-rule (columns after the first, with `columnRule`)
  *           .hp-column-body (the column's items)
  *           .hp-footnotes
+ *
+ * Entries with different `region`s on one page (a continuous section
+ * break) are stacked in the body as `.hp-region`s, each with its own
+ * columns (or a single `.hp-column-body`) and footnotes.
  */
 export function buildPages(
   distributed: DistributedPage<HTMLElement>[],
@@ -89,6 +100,51 @@ export function buildPages(
     const area = options.renderNotes(dist.notes);
     area.style.flex = '0 0 auto';
     return area;
+  };
+
+  /**
+   * Equal columns filling `box` (inline geometry, so it holds with
+   * injectStyles: false), each holding one entry and its footnotes.
+   */
+  const fillColumns = (box: HTMLElement, entries: DistributedPage<HTMLElement>[], layout: RegionColumns): void => {
+    box.style.columnGap = layout.columnGap;
+    for (let i = 0; i < layout.columns; i++) {
+      const column = doc.createElement('div');
+      column.className = CLASS_NAMES.column;
+      column.dataset.column = String(i + 1);
+      Object.assign(column.style, {
+        display: 'flex',
+        flexDirection: 'column',
+        flex: '1 1 0',
+        minWidth: '0',
+        position: 'relative',
+      });
+      if (i > 0 && layout.columnRule) {
+        const rule = doc.createElement('div');
+        rule.className = CLASS_NAMES.columnRule;
+        Object.assign(rule.style, {
+          position: 'absolute',
+          top: '0',
+          bottom: '0',
+          left: `calc(${layout.columnGap} / -2)`,
+          borderLeft: layout.columnRule,
+        });
+        column.appendChild(rule);
+      }
+      const content = doc.createElement('div');
+      content.className = CLASS_NAMES.columnBody;
+      Object.assign(content.style, { display: 'flow-root', flex: '1 1 auto', minHeight: '0' });
+      column.appendChild(content);
+      // Empty columns (the end of a section) still take their width.
+      const entry = entries[i];
+      if (entry) {
+        for (const item of entry.items) content.appendChild(item);
+        const area = notesArea(entry);
+        if (area) column.appendChild(area);
+        bodies.push(content);
+      }
+      box.appendChild(column);
+    }
   };
 
   for (const group of groups) {
@@ -137,57 +193,56 @@ export function buildPages(
     body.className = CLASS_NAMES.body;
     pageEl.appendChild(body);
 
-    if (config.columns > 1) {
-      // Inline geometry (holds with injectStyles: false): equal columns
-      // filling the body, separated by the gap.
-      Object.assign(body.style, {
-        display: 'flex',
-        flex: '1 1 auto',
-        minHeight: '0',
-        columnGap: config.columnGap,
-      });
-      for (let i = 0; i < config.columns; i++) {
-        const column = doc.createElement('div');
-        column.className = CLASS_NAMES.column;
-        column.dataset.column = String(i + 1);
-        Object.assign(column.style, {
-          display: 'flex',
-          flexDirection: 'column',
-          flex: '1 1 0',
-          minWidth: '0',
-          position: 'relative',
-        });
-        if (i > 0 && config.columnRule) {
-          const rule = doc.createElement('div');
-          rule.className = CLASS_NAMES.columnRule;
-          Object.assign(rule.style, {
-            position: 'absolute',
-            top: '0',
-            bottom: '0',
-            left: `calc(${config.columnGap} / -2)`,
-            borderLeft: config.columnRule,
-          });
-          column.appendChild(rule);
-        }
-        const content = doc.createElement('div');
-        content.className = CLASS_NAMES.columnBody;
-        Object.assign(content.style, { display: 'flow-root', flex: '1 1 auto', minHeight: '0' });
-        column.appendChild(content);
-        // Empty columns (the end of a section) still take their width.
-        const entry = group[i];
-        if (entry) {
-          for (const item of entry.items) content.appendChild(item);
-          const area = notesArea(entry);
-          if (area) column.appendChild(area);
-          bodies.push(content);
-        }
-        body.appendChild(column);
+    // Regions stacked down the body (continuous section breaks), each
+    // with its own columns.
+    const regions: DistributedPage<HTMLElement>[][] = [];
+    for (const entry of group) {
+      const last = regions[regions.length - 1];
+      if (last && (last[0]!.region ?? 0) === (entry.region ?? 0)) last.push(entry);
+      else regions.push([entry]);
+    }
+    const columnsOf = (entries: DistributedPage<HTMLElement>[]): RegionColumns =>
+      options.regionColumns?.(dist.page, entries[0]!.region ?? 0) ?? config;
+
+    if (regions.length === 1) {
+      const columns = columnsOf(group);
+      if (columns.columns > 1) {
+        Object.assign(body.style, { display: 'flex', flex: '1 1 auto', minHeight: '0' });
+        fillColumns(body, group, columns);
+      } else {
+        for (const item of dist.items) body.appendChild(item);
+        bodies.push(body);
+        const area = notesArea(dist);
+        if (area) pageEl.appendChild(area);
       }
     } else {
-      for (const item of dist.items) body.appendChild(item);
-      bodies.push(body);
-      const area = notesArea(dist);
-      if (area) pageEl.appendChild(area);
+      Object.assign(body.style, { display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: '0' });
+      regions.forEach((entries, index) => {
+        const region = doc.createElement('div');
+        region.className = CLASS_NAMES.region;
+        // Earlier regions take their content's height; the last the rest.
+        Object.assign(region.style, {
+          display: 'flex',
+          flex: index === regions.length - 1 ? '1 1 auto' : '0 0 auto',
+          minHeight: '0',
+        });
+        body.appendChild(region);
+        const columns = columnsOf(entries);
+        if (columns.columns > 1) {
+          fillColumns(region, entries, columns);
+        } else {
+          region.style.flexDirection = 'column';
+          const entry = entries[0]!;
+          const content = doc.createElement('div');
+          content.className = CLASS_NAMES.columnBody;
+          Object.assign(content.style, { display: 'flow-root', flex: '1 1 auto', minHeight: '0' });
+          for (const item of entry.items) content.appendChild(item);
+          region.appendChild(content);
+          bodies.push(content);
+          const area = notesArea(entry);
+          if (area) region.appendChild(area);
+        }
+      });
     }
 
     if (footer) {

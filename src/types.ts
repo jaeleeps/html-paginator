@@ -61,9 +61,13 @@ export interface SectionConfig {
   /**
    * Which side the section starts on: 'next' (default) page, or the next
    * 'odd' / 'even' physical page, inserting a blank page when needed (for
-   * duplex printing: chapters on right-hand pages).
+   * duplex printing: chapters on right-hand pages). 'continuous' starts it
+   * on the same page, below the previous section (Word's continuous section
+   * break): a multi-column section can begin or end mid-page, and columns
+   * before the break are balanced. Its page settings other than columns
+   * apply from the next page.
    */
-  start?: 'next' | 'odd' | 'even';
+  start?: 'next' | 'odd' | 'even' | 'continuous';
 }
 
 /** Page numbering options. */
@@ -153,6 +157,12 @@ export interface MeasureAdapter {
    * without it, paragraphs move to the next page whole.
    */
   layout?<R>(item: HTMLElement, page: number, fn: () => R): R;
+  /**
+   * Lay items out on `page` at the width of one of `columns` columns (for a
+   * region whose columns differ from the page's). Without it, items are
+   * measured at the page's own column width.
+   */
+  columns?(page: number, columns: number, gap: string): void;
   /** Clean up any probe state. */
   dispose?(): void;
 }

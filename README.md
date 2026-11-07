@@ -217,8 +217,17 @@ createPaginator({
 
 - Items are measured at column width; paragraphs and table rows split between columns as between pages.
 - Footnotes go to the bottom of the column holding their reference (as in Word).
-- A page break (`data-break-before="page"`, CSS `break-before: page`) inside a multi-column page moves to the next column, like Word's column break. A section always starts on a new page.
-- Columns are not balanced: the last page of a section fills its first column first.
+- A page break (`data-break-before="page"`, CSS `break-before: page`) inside a multi-column page moves to the next column, like Word's column break.
+- A section starts on a new page, unless it is `start: 'continuous'` (Word's continuous section break): then it starts on the same page, below the previous section. This is how columns begin or end partway down a page, e.g. a full-width title above two columns:
+
+  ```js
+  sections: {
+    news: { start: 'continuous', page: { columns: 2 } },  // columns below the title
+    after: { start: 'continuous' },                        // full width again, below the columns
+  }
+  ```
+
+  Before a continuous break, the columns on that page are **balanced** to equal height, as in Word. Columns that hold footnotes are left unbalanced, and so are the columns at the end of the document (as in Word, where balancing needs a continuous break after them). A continuous section's other page settings (header, footer, margins) take effect from the next page. On a page with several sections, each is rendered in a `.hp-region` stacked in the body.
 - Rendered as `.hp-body > .hp-column > .hp-column-body` (plus `.hp-column-rule` and `.hp-footnotes`); the geometry is inline, so it holds with `injectStyles: false`.
 - Declaratively: `data-hp-columns="2"`, `data-hp-column-gap`, `data-hp-column-rule` on the config, content or a `data-hp-section` group.
 
@@ -420,6 +429,7 @@ createPaginator({
 - `data-section="name"` starts a new section and implies a page break. A name can repeat: each occurrence starts a new section that uses the same settings.
 - A section's `page`, `oddPages` and `evenPages` merge over the top-level ones, like Word's "Link to Previous". Its `firstPage` applies to the section's own first page.
 - `pageNumbers.start` restarts numbering. Without it, numbering continues from the previous page. The `format` falls back to the top-level one.
+- `start: 'continuous'` starts the section on the same page, below the previous one (see [Columns](#columns)).
 - `start: 'odd' | 'even'` starts the section on the next odd or even **physical** page (right- or left-hand side in duplex printing), inserting a blank page when needed. The blank page belongs to the previous section.
 - Templates also receive `section`, `sectionPage` and `sectionPages`. `lastPageNumber` / `lastPageLabel` refer to the last page of the current numbering run, so "Page X of Y" works inside a restarted body.
 - Declaratively: `<div data-hp-section="name">` groups in the config template, with their own header/footer slots, `data-hp-margin`, `data-hp-page-start`, `data-hp-page-format`, `data-hp-section-start="odd"`, and nested `data-hp-page="first|odd|even"` groups.
@@ -626,7 +636,7 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-hp-line-numbers` (+ `-start`, `-count-by`, `-distance`) | config / content / section group | Line numbers: `page`, `section`, `continuous` restart, or `none` |
 | `data-hp-suppress-line-numbers` | content elements | Leave the element's lines unnumbered |
 | `data-hp-section` | inside config | Section layout group (slots, margin, numbering, nested first/odd/even groups) |
-| `data-hp-section-start` | section group | `odd` / `even`: start on that side, inserting a blank page if needed |
+| `data-hp-section-start` | section group | `odd` / `even`: start on that side, inserting a blank page if needed; `continuous`: on the same page |
 
 ## How it works
 

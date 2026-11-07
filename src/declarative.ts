@@ -56,7 +56,7 @@ import { createPaginator } from './createPaginator';
  * - `data-hp-repeat-table-head` (boolean attribute) enables repeatTableHead.
  * - `<div data-hp-section="name">` groups describe `sections[name]` (started
  *   in content by `data-section="name"`): their own slots, size/margin,
- *   numbering attributes, `data-hp-section-start="odd|even"`, and nested
+ *   numbering attributes, `data-hp-section-start="odd|even|continuous"`, and nested
  *   first/odd/even page groups.
  */
 export const DECLARATIVE_ATTRIBUTES = {
@@ -202,7 +202,7 @@ function applySharedSlots(root: ParentNode, page: PageConfig, owner: Element | n
   }
 }
 
-const SECTION_STARTS = new Set(['next', 'odd', 'even']);
+const SECTION_STARTS = new Set(['next', 'odd', 'even', 'continuous']);
 
 function parseSection(root: ParentNode, group: Element): SectionConfig {
   const section: SectionConfig = { page: parsePageAttrs(group) };

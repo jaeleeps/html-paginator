@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  Continuous section breaks (Word): a single-column title block, then a
+  two-column section starting on the same page, then a single-column section
+  continuing on the same page below the columns, which are balanced first.
+  Then a long two-column section that flows over pages. Column text is
+  numbered words (W0001...) so reading order can be checked.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>html-paginator continuous sections fixture</title>
+<style>
+  body { margin: 0; font: 12px/18px Helvetica, Arial, sans-serif; }
+  p { margin: 0 0 6px; text-align: justify; }
+  h1 { margin: 0 0 12px; font-size: 24px; line-height: 30px; }
+  h2 { margin: 6px 0; font-size: 15px; line-height: 21px; }
+</style>
+</head>
+<body>
+<div id="src">
+  <h1>TITLE single column</h1>
+  <p>Intro text spanning the full width of the page, above the columns.</p>
+  <div data-section="news" id="news"></div>
+  <div data-section="after" id="after"></div>
+  <div data-section="more" id="more"></div>
+</div>
+<script src="/dist/index.global.js"></script>
+<script>
+  let word = 0;
+  const words = (n) => Array.from({ length: n }, () => `W${String(++word).padStart(4, '0')}`).join(' ');
+  const paras = (n, seed) => Array.from({ length: n }, (_, i) => `<p>${words(15 + ((i * seed) % 50))}</p>`).join('');
+  document.getElementById('news').innerHTML = '<h2>NEWS balanced columns</h2>' + paras(7, 31);
+  document.getElementById('after').innerHTML = '<h2>AFTER full width again</h2><p>Single-column text below the balanced columns, on the same page.</p>';
+  document.getElementById('more').innerHTML = '<h2>MORE columns over pages</h2>' + paras(30, 17);
+  htmlPaginator.createPaginator({
+    source: '#src',
+    page: {
+      size: 'letter',
+      margin: '0.75in',
+      footer: ({ pageLabel }) => `<div style="text-align:center">${pageLabel}</div>`,
+    },
+    sections: {
+      news: { start: 'continuous', page: { columns: 2, columnGap: '0.3in', columnRule: '1px solid #888' } },
+      after: { start: 'continuous' },
+      more: { start: 'continuous', page: { columns: 2, columnGap: '0.3in' } },
+    },
+  }).paginate();
+  document.documentElement.dataset.paginated = 'true';
+</script>
+</body>
+</html>
