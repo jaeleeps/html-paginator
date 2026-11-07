@@ -14,6 +14,14 @@ export type {
   WrapInfo,
 } from './distribute';
 export {
+  captionOf,
+  numberSequences,
+  REF_ATTRIBUTE,
+  resolveCrossRefs,
+  SEQ_ATTRIBUTE,
+  SEQ_FORMAT_ATTRIBUTE,
+} from './captions';
+export {
   collectEndnotes,
   ENDNOTE_ATTRIBUTE,
   ENDNOTE_CLASS_NAMES,

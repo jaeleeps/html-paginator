@@ -1,3 +1,4 @@
+import { captionOf, SEQ_ATTRIBUTE } from './captions';
 import { BREAK_ATTRIBUTE } from './domBreak';
 
 /**
@@ -7,7 +8,10 @@ import { BREAK_ATTRIBUTE } from './domBreak';
  * filling in the real numbers afterwards does not change any page's layout.
  */
 
-/** Container filled with entries for the headings of the content. */
+/**
+ * Container filled with entries for the headings of the content, or with
+ * the value naming a caption sequence (`data-hp-toc="Figure"`), its captions.
+ */
 export const TOC_ATTRIBUTE = 'data-hp-toc';
 /** Heading levels in the TOC, e.g. "1-3" (default) or "2". */
 export const TOC_LEVELS_ATTRIBUTE = 'data-hp-toc-levels';
@@ -91,9 +95,17 @@ export function buildTableOfContents(root: HTMLElement): void {
   };
 
   for (const toc of tocs) {
-    const [low, high] = parseLevels(toc.getAttribute(TOC_LEVELS_ATTRIBUTE));
-    for (const heading of outline) {
-      const level = outlineLevel(heading)!;
+    // data-hp-toc="Figure": a list of the captions of that sequence (Word's
+    // Table of Figures); otherwise the headings.
+    const sequence = toc.getAttribute(TOC_ATTRIBUTE) ?? '';
+    const [low, high] = sequence ? [1, 1] : parseLevels(toc.getAttribute(TOC_LEVELS_ATTRIBUTE));
+    const listed = sequence
+      ? Array.from(root.querySelectorAll<HTMLElement>(`[${SEQ_ATTRIBUTE}]`))
+          .filter((seq) => seq.getAttribute(SEQ_ATTRIBUTE) === sequence && !tocs.some((t) => t.contains(seq)))
+          .map(captionOf)
+      : outline;
+    for (const heading of listed) {
+      const level = sequence ? 1 : outlineLevel(heading)!;
       if (level < low || level > high) continue;
 
       // Inline layout so measurement matches the final page (the library

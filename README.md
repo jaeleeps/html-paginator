@@ -370,6 +370,25 @@ Wrap a note's text in `data-footnote` where its reference goes. The note moves t
 - An `id` on the `data-footnote` element moves to the note, so you can link to it. Footnote reference numbers are left out of TOC entries.
 - A note longer than the space left on a page is not continued on the next page (Word can do that). The note and its reference move on together.
 
+### Numbered captions and cross-references
+
+Word's SEQ and REF fields: number figures, tables or any other sequence in document order, and refer to them by number:
+
+```html
+<figure id="sales">
+  <img src="sales.png">
+  <figcaption>Figure <span data-hp-seq="Figure"></span>. Sales by region</figcaption>
+</figure>
+…
+<p>As <a href="#sales" data-hp-ref></a> shows (page <a href="#sales" data-hp-page-ref></a>), …</p>
+<!-- → "As Figure 1 shows (page 4), …" -->
+```
+
+- Each sequence name ("Figure", "Table", "Equation", …) counts separately. `data-hp-seq-format` sets a number style, e.g. `upper-alpha`.
+- `data-hp-ref` shows `<name> <number>` of the sequence number at its `href` target, which is the numbered element or an element containing it. `data-hp-ref="number"` shows only the number, and `data-hp-ref="#id"` names the target directly. A target without a number shows `??` and logs a warning.
+- **List of figures** (Word's Table of Figures): `<nav data-hp-toc="Figure"></nav>` lists the captions of a sequence with their pages, in the same format as the TOC. The caption is the enclosing `figcaption`/`caption`, or else the number's parent element.
+- Numbers do not depend on pagination, so they are filled in before measuring.
+
 ### Endnotes
 
 `data-endnote` works like `data-footnote`, but the notes are collected at the end of the document, as with Word's endnotes:
@@ -498,10 +517,12 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-keep-with-next` | content elements | Keep on the same page as the next element (`="false"` opts a heading out) |
 | `data-hp-field` | inline content | Page field: `pageLabel`, `totalPages`, `sectionPage`, … of the page it lands on |
 | `data-repeat-head` | `<table>` | Repeat this table's `<thead>` on continuation pages (`="false"` opts out of `repeatTableHead`) |
+| `data-hp-seq` / `data-hp-seq-format` | inline content | Sequence number ("Figure", "Table", …) in document order |
+| `data-hp-ref` | inline content | Cross-reference: "Figure 3" (or `="number"`) of the sequence number at `href` |
 | `data-endnote` | inline content | Endnote: numbered reference; the note goes to the end (or into `data-hp-endnotes`) |
 | `data-hp-endnotes` | content container | Where endnotes are collected |
 | `data-footnote` | inline content | Footnote: replaced by a numbered reference, its content shown at the bottom of the page |
-| `data-hp-toc` | content container | Fill with a table of contents (`data-hp-toc-levels="1-3"`) |
+| `data-hp-toc` | content container | Fill with a table of contents (`data-hp-toc-levels="1-3"`), or with `="Figure"` a list of that sequence's captions |
 | `data-hp-toc-level` / `data-hp-toc-skip` | content elements | Add an element to the TOC at a level / leave a heading out |
 | `data-hp-page-ref` | content elements | Replace the text with the page label of `#id` (attribute value or `href`) |
 | `data-section` | content elements | Start a new section (`sections[name]`); implies a page break |

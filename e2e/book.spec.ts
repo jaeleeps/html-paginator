@@ -14,7 +14,7 @@ test.describe('book with sections', () => {
       const labelOf = (el: Element) =>
         (el.closest('.hp-page')!.querySelector('.hp-footer')!.textContent ?? '').split(' / ')[0]!.trim();
       const target = (href: string) => document.querySelector(`.hp-pages ${href}`)!;
-      const toc = Array.from(document.querySelectorAll('.hp-pages .hp-toc-entry'), (e) => ({
+      const toc = Array.from(document.querySelectorAll('.hp-pages nav:not([data-hp-toc="Figure"]) .hp-toc-entry'), (e) => ({
         text: e.querySelector('.hp-toc-text')!.textContent,
         page: e.querySelector('.hp-toc-page')!.textContent,
         expected: labelOf(target(e.querySelector('a')!.getAttribute('href')!)),
@@ -29,7 +29,7 @@ test.describe('book with sections', () => {
         fieldExpected: field.closest('.hp-page')!.querySelector('.hp-footer')!.textContent!.trim(),
       };
       // Entries repeat chapter markers; drop them for the marker checks below.
-      document.querySelectorAll('.hp-pages .hp-toc-entry').forEach((e) => e.remove());
+      document.querySelectorAll('.hp-pages nav:not([data-hp-toc="Figure"]) .hp-toc-entry').forEach((e) => e.remove());
       return result;
     });
     expect(refs.toc.map((e) => e.text)).toEqual(['Preface', 'CH1 Chapter 1', 'CH2 Chapter 2', 'CH3 Chapter 3']);
@@ -52,6 +52,25 @@ test.describe('book with sections', () => {
     });
     expect(endnote).toMatchObject({ ref: 'i', note: 'i ENDNOTE-ONE explained.', afterEnd: true });
     expect(endnote.notePage).toBe(endnote.lastPage);
+
+    // List of figures and a cross-reference to a numbered caption.
+    const figures = await page.evaluate(() => {
+      const nav = document.querySelector('.hp-pages nav[data-hp-toc="Figure"]')!;
+      return {
+        entries: Array.from(nav.querySelectorAll('.hp-toc-entry'), (e) => {
+          const target = document.querySelector(`.hp-pages ${e.querySelector('a')!.getAttribute('href')}`)!;
+          return {
+            text: e.querySelector('.hp-toc-text')!.textContent,
+            page: e.querySelector('.hp-toc-page')!.textContent,
+            expected: (target.closest('.hp-page')!.querySelector('.hp-footer')!.textContent ?? '').split(' / ')[0]!.trim(),
+          };
+        }),
+        xref: document.querySelector('.hp-pages #xref')!.textContent,
+      };
+    });
+    expect(figures.entries.map((e) => e.text)).toEqual(['Figure 1. Diagram of part 2', 'Figure 2. Diagram of part 3']);
+    for (const e of figures.entries) expect(e.page, e.text!).toBe(e.expected);
+    expect(figures.xref).toBe('Figure 2');
 
     // Page fields in body text match the footer of their page.
     expect(refs.field).toBe(refs.fieldExpected);
