@@ -71,4 +71,26 @@ describe('renderTemplate', () => {
     );
     expect(el?.tagName).toBe('EM');
   });
+
+  it('returns null when a template function returns an empty string', () => {
+    expect(renderTemplate(() => '', ctx, document)).toBeNull();
+  });
+
+  it('trims surrounding whitespace before parsing HTML', () => {
+    expect(renderTemplate('  <b>x</b>\n', ctx, document)?.outerHTML).toBe('<b>x</b>');
+  });
+
+  it('treats invalid selectors as plain text', () => {
+    expect(renderTemplate('Page 2 of 5', ctx, document)?.textContent).toBe('Page 2 of 5');
+  });
+
+  it('resolves a bare word as a selector when it matches (e.g. "footer")', () => {
+    // Documented gotcha: a string that happens to be a valid, matching
+    // selector clones that element rather than rendering the text.
+    document.body.innerHTML = '<footer>site footer</footer>';
+    expect(renderTemplate('footer', ctx, document)?.outerHTML).toBe(
+      '<footer>site footer</footer>',
+    );
+    document.body.innerHTML = '';
+  });
 });

@@ -103,6 +103,46 @@ describe('parseDeclarativeConfig', () => {
   });
 });
 
+describe('parseDeclarativeConfig edge cases', () => {
+  it('lets the last duplicate data-hp-page group win', () => {
+    document.body.innerHTML = `
+      <template data-hp-config>
+        <div data-hp-page="2"><div data-hp-header>A</div></div>
+        <div data-hp-page="2"><div data-hp-header>B</div></div>
+      </template>
+      <div data-hp-content></div>`;
+    const config = parseDeclarativeConfig(document);
+    expect(render(config?.pageOverrides?.[2]?.header, { page: 2, totalPages: 2 })).toContain('B');
+  });
+
+  it('works with a plain hidden element instead of <template>', () => {
+    document.body.innerHTML = `
+      <div data-hp-config hidden data-hp-size="a5">
+        <div data-hp-footer>{{page}}</div>
+      </div>
+      <div data-hp-content></div>`;
+    const config = parseDeclarativeConfig(document);
+    expect(config?.page?.size).toBe('a5');
+    expect(render(config?.page?.footer, { page: 3, totalPages: 4 })).toContain('>3<');
+  });
+
+  it('defers unknown size presets to paginate(), which throws', () => {
+    document.body.innerHTML = `
+      <template data-hp-config data-hp-size="b5"></template>
+      <div data-hp-content><p>a</p></div>`;
+    expect(parseDeclarativeConfig(document)?.page?.size).toBe('b5');
+    expect(() => autoPaginate(document, { measurer })).toThrow(/unknown page size preset "b5"/);
+  });
+
+  it('interpolates every occurrence of a placeholder', () => {
+    document.body.innerHTML = `
+      <template data-hp-config><div data-hp-header>{{page}}-{{page}}/{{totalPages}}</div></template>
+      <div data-hp-content></div>`;
+    const config = parseDeclarativeConfig(document);
+    expect(render(config?.page?.header, { page: 7, totalPages: 9 })).toContain('7-7/9');
+  });
+});
+
 describe('autoPaginate', () => {
   it('returns null without declarative markup', () => {
     document.body.innerHTML = '<div><p>a</p></div>';
@@ -120,6 +160,26 @@ describe('autoPaginate', () => {
     expect(document.getElementById('src')?.style.display).toBe('none');
     paginator.reset();
     expect(document.querySelector('.hp-page')).toBeNull();
+  });
+});
+
+describe('bindPrintPagination edge cases', () => {
+  it('run() is a no-op until declarative markup exists, then paginates', () => {
+    document.body.innerHTML = '<div id="x"></div>';
+    const handle = bindPrintPagination(document, { measurer });
+    handle.run();
+    expect(document.querySelector('.hp-pages')).toBeNull();
+    document.body.innerHTML = '<div data-hp-content><p>a</p></div>';
+    handle.run();
+    expect(document.querySelector('.hp-pages')).not.toBeNull();
+    handle.unbind();
+  });
+
+  it('reset() before any run() does nothing', () => {
+    document.body.innerHTML = '<div data-hp-content><p>a</p></div>';
+    const handle = bindPrintPagination(document, { measurer });
+    expect(() => handle.reset()).not.toThrow();
+    handle.unbind();
   });
 });
 
