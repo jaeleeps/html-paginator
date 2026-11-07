@@ -129,6 +129,11 @@ export interface DistributedPage<T, S = string> {
   notes?: T[];
   /** Height of the page's footnote area (0 without notes). */
   notesHeight?: number;
+  /**
+   * Column of the page this entry fills (0-based), when the caller lays
+   * several engine pages side by side on one sheet (multi-column pages).
+   */
+  column?: number;
 }
 
 interface Pending<T> {

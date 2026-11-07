@@ -1,0 +1,55 @@
+<!doctype html>
+<!--
+  A two-column section between single-column ones (Word: section columns,
+  with "line between"). The column text is numbered words (W0001...), so
+  reading the columns in order must give every word exactly once, in order,
+  even where paragraphs split between columns. Footnotes sit at the bottom
+  of the column of their reference.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>html-paginator columns fixture</title>
+<style>
+  body { margin: 0; font: 12px/18px Helvetica, Arial, sans-serif; }
+  p { margin: 0 0 8px; text-align: justify; }
+  h2 { margin: 12px 0 6px; font-size: 16px; }
+</style>
+</head>
+<body>
+<div id="src">
+  <h2>INTRO single column</h2>
+  <p>Single-column text before the newsletter section.</p>
+  <section data-section="news" id="news"></section>
+  <section data-section="outro">
+    <h2>OUTRO single column again</h2>
+    <p>Back to one column.</p>
+  </section>
+</div>
+<script src="/dist/index.global.js"></script>
+<script>
+  let word = 0;
+  const words = (n) => Array.from({ length: n }, () => `W${String(++word).padStart(4, '0')}`).join(' ');
+  const news = document.getElementById('news');
+  let html = '<h2>NEWS two columns</h2>';
+  for (let i = 0; i < 40; i++) {
+    const note = i % 13 === 5 ? `<span data-footnote>Note for paragraph ${i + 1}.</span>` : '';
+    html += `<p>${words(20 + ((i * 37) % 60))}${note}</p>`;
+  }
+  news.innerHTML = html;
+  htmlPaginator.createPaginator({
+    source: '#src',
+    page: {
+      size: 'letter',
+      margin: '0.75in',
+      footer: ({ pageLabel }) => `<div style="text-align:center">${pageLabel}</div>`,
+    },
+    sections: {
+      news: { page: { columns: 2, columnGap: '0.4in', columnRule: '1px solid #888' } },
+      outro: {},
+    },
+  }).paginate();
+  document.documentElement.dataset.paginated = 'true';
+</script>
+</body>
+</html>

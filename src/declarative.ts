@@ -39,6 +39,8 @@ import { createPaginator } from './createPaginator';
  *   `data-hp-header="none"` / `data-hp-footer="none"` removes them.
  * - `data-hp-watermark` slots work the same way (a layer behind the page).
  * - `data-hp-orientation="landscape"` turns pages (or a section) sideways.
+ * - `data-hp-columns="2"` (with `data-hp-column-gap`, `data-hp-column-rule`)
+ *   flows pages (or a section) in newspaper columns.
  * - `data-hp-size` accepts a preset ('letter', 'a4', ...) or explicit
  *   dimensions as "<width> <height>" (e.g. "8.5in 11in").
  * - `{{page}}`, `{{totalPages}}`, `{{pageNumber}}`, `{{pageLabel}}`,
@@ -62,6 +64,9 @@ export const DECLARATIVE_ATTRIBUTES = {
   size: 'data-hp-size',
   margin: 'data-hp-margin',
   orientation: 'data-hp-orientation',
+  columns: 'data-hp-columns',
+  columnGap: 'data-hp-column-gap',
+  columnRule: 'data-hp-column-rule',
   repeatTableHead: 'data-hp-repeat-table-head',
   pageStart: 'data-hp-page-start',
   pageFormat: 'data-hp-page-format',
@@ -117,7 +122,7 @@ function parseSize(value: string): PageConfig['size'] {
   return value.trim() as PageConfig['size'];
 }
 
-/** Read data-hp-size / data-hp-orientation / data-hp-margin from an element. */
+/** Read data-hp-size / -orientation / -margin / -columns... from an element. */
 function parsePageAttrs(el: Element): PageConfig {
   const config: PageConfig = {};
   const size = el.getAttribute(A.size);
@@ -126,6 +131,12 @@ function parsePageAttrs(el: Element): PageConfig {
   if (margin) config.margin = margin;
   const orientation = el.getAttribute(A.orientation);
   if (orientation) config.orientation = orientation.trim() as PageConfig['orientation'];
+  const columns = el.getAttribute(A.columns);
+  if (columns) config.columns = Number(columns.trim());
+  const columnGap = el.getAttribute(A.columnGap);
+  if (columnGap) config.columnGap = columnGap;
+  const columnRule = el.getAttribute(A.columnRule);
+  if (columnRule) config.columnRule = columnRule;
   return config;
 }
 
