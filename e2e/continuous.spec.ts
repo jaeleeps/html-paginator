@@ -4,7 +4,7 @@ import { inspectPages, openPaginated, printPdf, readPdf } from './helpers';
 const WORD = /W\d{4}/g;
 
 test.describe('continuous section breaks', () => {
-  test('stacks sections on one page, balancing columns before a continuous break', async ({ page }) => {
+  test('stacks sections on one page, balancing columns (with footnotes) before a continuous break', async ({ page }) => {
     const errors = await openPaginated(page, 'e2e/fixtures/continuous.html');
     expect(errors).toEqual([]);
     const pages = await inspectPages(page);
@@ -21,6 +21,7 @@ test.describe('continuous section breaks', () => {
             text: (c as HTMLElement).innerText,
             bottom: bottomOf(c),
             box: c.getBoundingClientRect().bottom,
+            notes: Array.from(c.parentElement!.querySelectorAll('.hp-footnote'), (n) => n.getBoundingClientRect()),
           }));
           return { top: rect.top, bottom: rect.bottom, contentBottom: bottomOf(el), text: (el as HTMLElement).innerText, columns };
         };
@@ -31,6 +32,7 @@ test.describe('continuous section breaks', () => {
           regions,
           columns: regions.length === 0 ? Array.from(pg.querySelectorAll('.hp-column-body'), (c) => (c as HTMLElement).innerText) : [],
           columnBottoms: Array.from(pg.querySelectorAll('.hp-column-body'), bottomOf),
+          columnNotes: Array.from(pg.querySelectorAll('.hp-column'), (c) => c.querySelectorAll('.hp-footnote').length),
           text: (pg.querySelector('.hp-body') as HTMLElement).innerText,
         };
       }),
@@ -53,6 +55,12 @@ test.describe('continuous section breaks', () => {
     const [left, right] = news!.columns;
     expect(Math.abs(left!.bottom - right!.bottom)).toBeLessThanOrEqual(18 + 6 + 1);
     expect(right!.text).toMatch(WORD);
+    // With a footnote in each column, below its text and inside the region.
+    for (const column of news!.columns) {
+      expect(column.notes).toHaveLength(1);
+      expect(column.notes[0]!.top).toBeGreaterThanOrEqual(column.bottom - 0.5);
+      expect(column.notes[0]!.bottom).toBeLessThanOrEqual(news!.bottom + 0.5);
+    }
     // MORE fills the rest of the page: its columns reach the body bottom.
     expect(more!.bottom).toBeCloseTo(first.bodyBottom, 0);
 
@@ -69,6 +77,8 @@ test.describe('continuous section breaks', () => {
     // Within one unsplittable chunk: orphans/widows (2) keep up to 3 lines together.
     expect(Math.abs(lastLeft! - lastRight!)).toBeLessThanOrEqual(3 * 18 + 6 + 1);
     expect(lastLeft!).toBeLessThan(sheets.at(-1)!.bodyBottom - 18 * 3);
+    // ...with its footnote kept in its column.
+    expect(sheets.at(-1)!.columnNotes.reduce((a, b) => a + b, 0)).toBe(1);
 
     // Reading order: every numbered word once, in order.
     const reading = [

@@ -48,6 +48,8 @@ export interface SheetPlannerOptions<T> {
    * columns, or null when they need more than the region's columns.
    */
   balance?(items: T[], height: number, region: SheetRegion<T>): DistributedPage<T>[] | null;
+  /** Whether a region may be balanced at all (default: yes). */
+  canBalance?(region: SheetRegion<T>): boolean;
   /** Least height worth starting a region in (else: a new sheet). Default 36. */
   minRegionHeight?: number;
 }
@@ -72,10 +74,12 @@ export interface SheetPlanner<T> {
   readonly regions: readonly SheetRegion<T>[];
 }
 
+/** Height a column's content takes, notes included. */
+const columnUsed = <T>(page: DistributedPage<T>): number => page.usedHeight + (page.notesHeight ?? 0);
+
 /** Height a region's content takes: its tallest column, notes included. */
 export function regionUsed<T>(region: SheetRegion<T>): number {
-  const columns = region.balanced ?? region.pages;
-  return Math.max(0, ...columns.map((page) => page.usedHeight + (page.notesHeight ?? 0)));
+  return Math.max(0, ...(region.balanced ?? region.pages).map(columnUsed));
 }
 
 export function createSheetPlanner<T>(options: SheetPlannerOptions<T>): SheetPlanner<T> {
@@ -124,15 +128,15 @@ export function createSheetPlanner<T>(options: SheetPlannerOptions<T>): SheetPla
   const balance = (region: SheetRegion<T>): void => {
     const pages = region.pages;
     if (!options.balance || region.columns < 2 || pages.length === 0) return;
-    // Footnotes and overflow stay where the engine put them.
-    if (pages.some((page) => page.overflows || (page.notes?.length ?? 0) > 0)) return;
+    // Overflow stays where the engine put it.
+    if (pages.some((page) => page.overflows) || options.canBalance?.(region) === false) return;
     const items = pages.flatMap((page) => page.items);
     if (items.length === 0) return;
     const total = pages.reduce((sum, page) => sum + page.usedHeight, 0);
     // Smallest column height that holds everything in the columns.
     let low = Math.max(1, Math.floor(total / region.columns));
     // The engine's own columns already fit in their tallest one.
-    let high = Math.min(Math.ceil(region.height), Math.ceil(Math.max(...pages.map((page) => page.usedHeight))));
+    let high = Math.min(Math.ceil(region.height), Math.ceil(Math.max(...pages.map(columnUsed))));
     let best: DistributedPage<T>[] | null = null;
     while (low < high) {
       const mid = Math.floor((low + high) / 2);
@@ -140,7 +144,7 @@ export function createSheetPlanner<T>(options: SheetPlannerOptions<T>): SheetPla
       if (columns) {
         best = columns;
         // Nothing between the tallest column it made and `mid` does better.
-        high = Math.min(mid, Math.ceil(Math.max(...columns.map((page) => page.usedHeight))));
+        high = Math.min(mid, Math.ceil(Math.max(...columns.map(columnUsed))));
       } else {
         low = mid + 1;
       }

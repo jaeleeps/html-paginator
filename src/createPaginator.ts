@@ -188,10 +188,21 @@ export function createPaginator(config: PaginatorConfig): Paginator {
             pageHeight: () => height,
             ...breaker,
             fragment: fragment && ((el, fits) => fragment(el, fits, { page: sheet })),
+            // Footnotes stay whole (splitting would change the originals).
+            notes: footnotes ? (el) => footnotes.notesOf(el) : undefined,
+            notesHeight: footnotes ? (notes) => measurer.measure(footnotes.area(notes), sheet) : undefined,
           });
           return columns.length <= region.columns && !columns.some((column) => column.overflows)
             ? columns
             : null;
+        },
+        // Only a region holding exactly its own footnotes, whole: none
+        // continued from before it or split off to after it.
+        canBalance: (region) => {
+          if (!footnotes) return true;
+          const own = region.pages.flatMap((page) => page.items.flatMap((el) => footnotes.notesOf(el)));
+          const placed = region.pages.flatMap((page) => page.notes ?? []);
+          return placed.length === new Set(own).size && placed.every((note) => own.includes(note));
         },
       });
       const sheetOf = (enginePage: number): number => useRegion(planner.region(enginePage));

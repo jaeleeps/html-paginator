@@ -5,7 +5,9 @@
   continuing on the same page below the columns, which are balanced first.
   Then a long two-column section that flows over pages, its last page
   balanced too (balanceColumns). Column text is
-  numbered words (W0001...) so reading order can be checked.
+  numbered words (W0001...) so reading order can be checked. Both column
+  sections hold footnotes, which stay in their reference's column while the
+  columns are balanced.
 -->
 <html>
 <head>
@@ -30,10 +32,13 @@
 <script>
   let word = 0;
   const words = (n) => Array.from({ length: n }, () => `W${String(++word).padStart(4, '0')}`).join(' ');
-  const paras = (n, seed) => Array.from({ length: n }, (_, i) => `<p>${words(15 + ((i * seed) % 50))}</p>`).join('');
-  document.getElementById('news').innerHTML = '<h2>NEWS balanced columns</h2>' + paras(7, 31);
+  const note = (text) => `<span data-footnote>Footnote ${text}, a note long enough to wrap onto a second line in a column.</span>`;
+  // Paragraphs; those at the indices in `notes` end with a footnote.
+  const paras = (n, seed, notes = []) =>
+    Array.from({ length: n }, (_, i) => `<p>${words(15 + ((i * seed) % 50))}${notes.includes(i) ? note(`at ${i}`) : ''}</p>`).join('');
+  document.getElementById('news').innerHTML = '<h2>NEWS balanced columns</h2>' + paras(7, 31, [1, 5]);
   document.getElementById('after').innerHTML = '<h2>AFTER full width again</h2><p>Single-column text below the balanced columns, on the same page.</p>';
-  document.getElementById('more').innerHTML = '<h2>MORE columns over pages</h2>' + paras(30, 17);
+  document.getElementById('more').innerHTML = '<h2>MORE columns over pages</h2>' + paras(30, 17, [28]);
   htmlPaginator.createPaginator({
     source: '#src',
     page: {
