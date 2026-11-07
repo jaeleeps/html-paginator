@@ -299,4 +299,4 @@ The pipeline has two passes:
 
 ## License
 
-MIT
+[MIT](LICENSE) © Jaeyoung Lee
