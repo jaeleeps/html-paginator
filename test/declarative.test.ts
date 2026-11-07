@@ -147,6 +147,24 @@ describe('parseDeclarativeConfig edge cases', () => {
   });
 });
 
+describe('declarative first/odd/even groups', () => {
+  it('maps data-hp-page="first|odd|even" to page variants', () => {
+    document.body.innerHTML = `
+      <template data-hp-config>
+        <div data-hp-header>Shared</div>
+        <div data-hp-page="first" data-hp-margin="2in"><div data-hp-header="none"></div></div>
+        <div data-hp-page="odd"><div data-hp-header>Odd {{pageLabel}}</div></div>
+        <div data-hp-page="even" data-hp-margin="1in 1.25in 1in 0.75in"><div data-hp-header>Even</div></div>
+      </template>
+      <div data-hp-content></div>`;
+    const config = parseDeclarativeConfig(document);
+    expect(config?.firstPage).toEqual({ margin: '2in', header: null });
+    expect(render(config?.oddPages?.header, { page: 3, totalPages: 3 })).toContain('Odd 3');
+    expect(config?.evenPages?.margin).toBe('1in 1.25in 1in 0.75in');
+    expect(config?.pageOverrides).toBeUndefined();
+  });
+});
+
 describe('declarative page numbering', () => {
   it('reads data-hp-page-start / data-hp-page-format', () => {
     document.body.innerHTML = `

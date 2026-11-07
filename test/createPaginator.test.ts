@@ -396,6 +396,37 @@ describe('page numbering', () => {
   });
 });
 
+describe('first, odd and even pages', () => {
+  it('renders Word-style first/odd/even headers and footers', () => {
+    const source = mountSource(
+      ['a', 'b', 'c', 'd'].map((t) => `<p data-h="50">${t}</p>`).join(''),
+    );
+    const { pages } = createPaginator({
+      source,
+      measurer: stubMeasurer(60),
+      pageNumbers: { start: 0 },
+      page: { footer: ({ pageLabel }) => `<footer>${pageLabel}</footer>` },
+      firstPage: { header: '<header>cover</header>', footer: null },
+      oddPages: { header: '<header>odd</header>' },
+      evenPages: { header: '<header>even</header>' },
+    }).paginate();
+    const slot = (p: HTMLElement, c: string) => p.querySelector(`.${c}`)?.textContent ?? null;
+    expect(pages.map((p) => slot(p, CLASS_NAMES.header))).toEqual(['cover', 'odd', 'even', 'odd']);
+    expect(pages.map((p) => slot(p, CLASS_NAMES.footer))).toEqual([null, '1', '2', '3']);
+  });
+
+  it('applies mirrored margins on even pages', () => {
+    const source = mountSource('<p data-h="50">a</p><p data-h="50">b</p><p data-h="50">c</p>');
+    const { pages } = createPaginator({
+      source,
+      measurer: stubMeasurer(60),
+      page: { margin: '1in 0.75in 1in 1.25in' },
+      evenPages: { margin: '1in 1.25in 1in 0.75in' },
+    }).paginate();
+    expect(pages.map((p) => p.style.paddingLeft)).toEqual(['1.25in', '0.75in', '1.25in']);
+  });
+});
+
 describe('forced page breaks', () => {
   function pageTexts(markup: string, pageHeight = 100): string[] {
     const source = mountSource(markup);

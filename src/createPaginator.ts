@@ -84,6 +84,9 @@ export function createPaginator(config: PaginatorConfig): Paginator {
           document: doc,
           page: resolved.page,
           pageOverrides: resolved.pageOverrides,
+          firstPage: resolved.firstPage,
+          oddPages: resolved.oddPages,
+          evenPages: resolved.evenPages,
           pageNumbers: resolved.pageNumbers,
         });
 
@@ -99,6 +102,9 @@ export function createPaginator(config: PaginatorConfig): Paginator {
           document: doc,
           page: resolved.page,
           pageOverrides: resolved.pageOverrides,
+          firstPage: resolved.firstPage,
+          oddPages: resolved.oddPages,
+          evenPages: resolved.evenPages,
           pageNumbers: resolved.pageNumbers,
         });
 

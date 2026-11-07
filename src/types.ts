@@ -92,6 +92,15 @@ export interface PaginatorConfig {
   page?: PageConfig;
   /** Per-page overrides (1-based page number), merged over the default. */
   pageOverrides?: Record<number, PageConfig>;
+  /** Word's "Different First Page": merged over the default on page 1. */
+  firstPage?: PageConfig;
+  /**
+   * Word's "Different Odd & Even Pages": merged over the default by the
+   * parity of the displayed page number (`pageNumbers.start` shifts it).
+   * Precedence: page < oddPages/evenPages < firstPage < pageOverrides[n].
+   */
+  oddPages?: PageConfig;
+  evenPages?: PageConfig;
   /** Displayed page numbering (start number and style). */
   pageNumbers?: PageNumbering;
   /** Repeat <thead> on table continuation pages. Default: false. */

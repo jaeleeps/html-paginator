@@ -21,7 +21,7 @@ export {
 } from './domBreak';
 export type { DomWrapOptions } from './domBreak';
 export { PAGE_SIZE_PRESETS, resolvePageConfig, resolveSize } from './pageConfig';
-export type { ResolvedPageConfig } from './pageConfig';
+export type { PageVariants, ResolvedPageConfig } from './pageConfig';
 export {
   autoPaginate,
   bindPrintPagination,
