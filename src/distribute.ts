@@ -17,8 +17,12 @@ export interface WrapInfo {
 export interface DistributeOptions<T> {
   /** Items to distribute, in order. */
   items: readonly T[];
-  /** Height of a single item. */
-  measure: (item: T) => number;
+  /**
+   * Height of a single item when laid out on the given page (1-based).
+   * Pages can differ in width, so the page is the one the item is being
+   * considered for.
+   */
+  measure: (item: T, page: number) => number;
   /**
    * Available body height for a given page (1-based page number).
    * Can vary per page (e.g., different header/footer per page).
@@ -78,8 +82,8 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
   const getChildren = options.children ?? ((): T[] => []);
   const wrap = options.wrap;
 
-  const measure = (item: T): number => {
-    const height = options.measure(item);
+  const measure = (item: T, page: number): number => {
+    const height = options.measure(item, page);
     if (!Number.isFinite(height) || height < 0) {
       throw new Error(
         `html-paginator: measure() must return a non-negative finite number, got ${height}`,
@@ -193,9 +197,10 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
 
   while (pending.length > 0) {
     const entry = pending.shift() as Pending<T>;
-    const height = measure(entry.item);
 
+    // Open the page first so the item is measured for the page it lands on.
     if (current === null) current = openPage();
+    const height = measure(entry.item, current.page);
 
     // Fits in the remaining space — place and continue.
     if (current.usedHeight + height <= current.availableHeight) {
@@ -208,12 +213,12 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
     if (canSplit(entry.item)) {
       const page = current;
       const { head, tail } = splitToFit(entry.item, entry.continuation, (candidate) => {
-        return page.usedHeight + measure(candidate) <= page.availableHeight;
+        return page.usedHeight + measure(candidate, page.page) <= page.availableHeight;
       });
 
       if (head) {
         current.items.push(head);
-        current.usedHeight += measure(head);
+        current.usedHeight += measure(head, current.page);
         if (tail) pending.unshift({ item: tail, continuation: true });
         current = null; // Tail cannot fit here; continue on a fresh page.
         continue;
@@ -231,7 +236,7 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
       // oversized descendant overflows alone and the rest paginates.
       const forced = forceSplit(tail as T, entry.continuation);
       current.items.push(forced.head as T);
-      current.usedHeight += measure(forced.head as T);
+      current.usedHeight += measure(forced.head as T, current.page);
       current.overflows = true;
       if (forced.tail) pending.unshift({ item: forced.tail, continuation: true });
       current = null;
@@ -239,8 +244,12 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
     }
 
     // Atomic path ('avoid'/'clip'/leaf, or unsplittable remainder):
-    // move to a new page unless the current one is still empty.
-    if (current.items.length > 0) current = openPage();
+    // retry on a new page (re-measured there) unless this one is still empty.
+    if (current.items.length > 0) {
+      current = openPage();
+      pending.unshift(entry);
+      continue;
+    }
 
     current.items.push(entry.item);
     current.usedHeight += height;

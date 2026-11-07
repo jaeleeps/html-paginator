@@ -77,6 +77,48 @@ describe('distribute', () => {
     });
   });
 
+  describe('page-dependent measurement (pages of different widths)', () => {
+    it('measures each item for the page it is placed on', () => {
+      const calls: [string, number][] = [];
+      const pages = distribute({
+        items: ['a', 'b', 'c'],
+        measure: (item, page) => {
+          calls.push([item, page]);
+          return 60;
+        },
+        pageHeight: () => 60,
+      });
+      const placed = new Map(pages.flatMap((p) => p.items.map((i) => [i, p.page] as const)));
+      // The last measurement of every item is for its final page.
+      for (const [item, page] of placed) {
+        expect(calls.filter(([i]) => i === item).at(-1)?.[1]).toBe(page);
+      }
+    });
+
+    it('re-measures an atomic item that moves to a wider page', () => {
+      // Page 1 is narrow: content wraps to twice its height there.
+      const pages = distribute({
+        items: [40, 60],
+        measure: (h, page) => (page === 1 ? h * 2 : h),
+        pageHeight: () => 100,
+      });
+      expect(pages.map((p) => p.items)).toEqual([[40], [60]]);
+      expect(pages[1]?.usedHeight).toBe(60);
+      expect(pages[1]?.overflows).toBe(false);
+    });
+
+    it('measures the item after a full page against the next page', () => {
+      const pages = distribute({
+        items: [100, 60, 30],
+        measure: (h, page) => (page === 1 ? h : h / 2),
+        pageHeight: () => 100,
+      });
+      // On page 2 the items measure 30 + 15.
+      expect(pages.map((p) => p.items)).toEqual([[100], [60, 30]]);
+      expect(pages[1]?.usedHeight).toBe(45);
+    });
+  });
+
   describe('validation', () => {
     it('rejects non-positive page heights', () => {
       expect(() => run([10], 0)).toThrow(/pageHeight/);

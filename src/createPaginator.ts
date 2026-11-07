@@ -81,7 +81,7 @@ export function createPaginator(config: PaginatorConfig): Paginator {
       try {
         const distributed = distribute<HTMLElement>({
           items,
-          measure: (el) => measurer.measure(el),
+          measure: (el, page) => measurer.measure(el, page),
           pageHeight: (page) => measurer.pageHeight(page),
           ...createDomBreaker({ repeatTableHead: resolved.repeatTableHead }),
         });

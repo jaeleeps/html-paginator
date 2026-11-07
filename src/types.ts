@@ -47,8 +47,8 @@ export type BreakBehavior = 'auto' | 'avoid' | 'clip';
  * for tests or non-standard measurement.
  */
 export interface MeasureAdapter {
-  /** Outer height of an item. */
-  measure(item: HTMLElement): number;
+  /** Outer height of an item, laid out on the given page (1-based). */
+  measure(item: HTMLElement, page?: number): number;
   /** Available body height of the given page (1-based). */
   pageHeight(page: number): number;
   /** Clean up any probe state. */

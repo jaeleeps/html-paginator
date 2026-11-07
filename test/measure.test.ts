@@ -120,6 +120,27 @@ describe('createDomMeasurer', () => {
     measurer.dispose();
   });
 
+  it('measure(item, page) lays the item out in that page\'s probe', () => {
+    const measurer = createDomMeasurer({ document, pageOverrides: { 2: { margin: '5mm' } } });
+    const item = document.createElement('p');
+    document.body.appendChild(item);
+    // Report a height that depends on which probe page the item sits in.
+    Object.defineProperty(item, 'offsetHeight', {
+      configurable: true,
+      get(this: HTMLElement) {
+        const page = this.closest<HTMLElement>(`.${CLASS_NAMES.page}`);
+        return page?.style.padding === '5mm' ? 20 : 10;
+      },
+    });
+
+    measurer.pageHeight(2); // page 2 is now the most recent probe
+    expect(measurer.measure(item, 1)).toBe(10);
+    expect(measurer.measure(item, 2)).toBe(20);
+    expect(measurer.measure(item)).toBe(20); // no page: last probe used
+    expect(item.parentNode).toBe(document.body);
+    measurer.dispose();
+  });
+
   it('dispose() removes all probes', () => {
     const measurer = createDomMeasurer({ document, pageOverrides: { 2: { margin: '5mm' } } });
     measurer.pageHeight(1);
