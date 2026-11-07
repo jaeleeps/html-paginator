@@ -181,6 +181,26 @@ Keep an element on the same page as the element after it, like Word's "Keep with
 
 In declarative mode: `data-hp-size="a4"` or `data-hp-size="210mm 297mm"`.
 
+### Orientation
+
+`orientation: 'landscape'` turns pages sideways: the width and height of `size` swap. Sizes are given upright. Like Word's section orientation, a section can turn only its own pages, e.g. for a wide table:
+
+```js
+createPaginator({
+  source: '#content',
+  page: { size: 'letter' },
+  sections: { wide: { page: { orientation: 'landscape' } }, body: {} },
+});
+```
+
+```html
+<p>Portrait text…</p>
+<section data-section="wide"><table>…many columns…</table></section>
+<section data-section="body">Portrait again…</section>
+```
+
+Each page prints on a sheet of its own size and orientation: the stylesheet declares a CSS named page (`@page hp-11in-8_5in { size: 11in 8.5in }`) for every page size used, and each page selects its own. Declaratively: `data-hp-orientation="landscape"` on the config, content or a `data-hp-section` group.
+
 ### Margin
 
 Any CSS margin shorthand:
@@ -526,6 +546,7 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-hp-toc-level` / `data-hp-toc-skip` | content elements | Add an element to the TOC at a level / leave a heading out |
 | `data-hp-page-ref` | content elements | Replace the text with the page label of `#id` (attribute value or `href`) |
 | `data-section` | content elements | Start a new section (`sections[name]`); implies a page break |
+| `data-hp-orientation` | config / content / section group | `landscape` or `portrait` |
 | `data-hp-section` | inside config | Section layout group (slots, margin, numbering, nested first/odd/even groups) |
 | `data-hp-section-start` | section group | `odd` / `even`: start on that side, inserting a blank page if needed |
 

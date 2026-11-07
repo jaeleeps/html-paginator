@@ -115,6 +115,14 @@ export function createDomMeasurer(options: DomMeasurerOptions): DomMeasurer {
 
     const body = doc.createElement('div');
     body.className = CLASS_NAMES.body;
+    // Like the rendered body (a flex item), contain child margins (a block
+    // formatting context), so margins collapsing through an item — e.g. a
+    // heading's top margin through its section — are measured. Sized by
+    // its content alone, even if page styles from an earlier run apply.
+    body.style.display = 'flow-root';
+    body.style.flex = 'none';
+    body.style.height = 'auto';
+    body.style.minHeight = '0';
     pageEl.appendChild(body);
 
     const footer = renderTemplate(config.footer, ctx, doc);
@@ -157,7 +165,13 @@ export function createDomMeasurer(options: DomMeasurerOptions): DomMeasurer {
     },
 
     measure(item: HTMLElement, page?: number): number {
-      return layoutIn(item, page, () => measureOuterHeight(item));
+      // The body holds only `item`: its height is the item's margin box,
+      // including margins of descendants that collapse through it. Never
+      // less than the item's own box (without layout, e.g. jsdom, the body
+      // reports 0).
+      return layoutIn(item, page, () =>
+        Math.max(currentProbe!.body.getBoundingClientRect().height, measureOuterHeight(item)),
+      );
     },
 
     layout(item, page, fn) {

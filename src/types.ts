@@ -90,6 +90,12 @@ export type HeaderFooterTemplate =
 /** Configuration of a single page (the default, or a per-page override). */
 export interface PageConfig {
   size?: PageSizePreset | PageDimensions;
+  /**
+   * 'landscape' turns the page sideways (width and height of `size` swap;
+   * sizes are given upright). A section can set it alone, keeping the size.
+   * Default: 'portrait'.
+   */
+  orientation?: 'portrait' | 'landscape';
   /** Any CSS margin shorthand (e.g. '0.5in', '10mm 20mm'). */
   margin?: string;
   header?: HeaderFooterTemplate;

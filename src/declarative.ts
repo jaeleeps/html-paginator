@@ -37,6 +37,7 @@ import { createPaginator } from './createPaginator';
  *   evenPages (Word's different first page and odd & even pages).
  * - A page group inherits shared header/footer for slots it omits;
  *   `data-hp-header="none"` / `data-hp-footer="none"` removes them.
+ * - `data-hp-orientation="landscape"` turns pages (or a section) sideways.
  * - `data-hp-size` accepts a preset ('letter', 'a4', ...) or explicit
  *   dimensions as "<width> <height>" (e.g. "8.5in 11in").
  * - `{{page}}`, `{{totalPages}}`, `{{pageNumber}}`, `{{pageLabel}}`,
@@ -58,6 +59,7 @@ export const DECLARATIVE_ATTRIBUTES = {
   page: 'data-hp-page',
   size: 'data-hp-size',
   margin: 'data-hp-margin',
+  orientation: 'data-hp-orientation',
   repeatTableHead: 'data-hp-repeat-table-head',
   pageStart: 'data-hp-page-start',
   pageFormat: 'data-hp-page-format',
@@ -113,13 +115,15 @@ function parseSize(value: string): PageConfig['size'] {
   return value.trim() as PageConfig['size'];
 }
 
-/** Read data-hp-size / data-hp-margin from an element. */
+/** Read data-hp-size / data-hp-orientation / data-hp-margin from an element. */
 function parsePageAttrs(el: Element): PageConfig {
   const config: PageConfig = {};
   const size = el.getAttribute(A.size);
   if (size) config.size = parseSize(size);
   const margin = el.getAttribute(A.margin);
   if (margin) config.margin = margin;
+  const orientation = el.getAttribute(A.orientation);
+  if (orientation) config.orientation = orientation.trim() as PageConfig['orientation'];
   return config;
 }
 

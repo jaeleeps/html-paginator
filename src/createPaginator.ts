@@ -202,7 +202,11 @@ export function createPaginator(config: PaginatorConfig): Paginator {
         });
 
         if (resolved.injectStyles !== false) {
-          injectStyles(doc, resolveSize(resolved.page?.size));
+          injectStyles(
+            doc,
+            resolveSize(resolved.page?.size, resolved.page?.orientation),
+            built.pages.map((_, index) => layout.config(index + 1).size),
+          );
         }
 
         // Render: user always sees exactly one final copy.

@@ -17,16 +17,36 @@ export interface ResolvedPageConfig {
 export const DEFAULT_MARGIN = '0';
 
 /** Convert a size preset or explicit dimensions into dimensions. */
-export function resolveSize(size: PageConfig['size']): PageDimensions {
-  if (size === undefined) return PAGE_SIZE_PRESETS.letter;
-  if (typeof size === 'string') {
+export function resolveSize(
+  size: PageConfig['size'],
+  orientation: PageConfig['orientation'] = 'portrait',
+): PageDimensions {
+  let dims: PageDimensions;
+  if (size === undefined) {
+    dims = PAGE_SIZE_PRESETS.letter;
+  } else if (typeof size === 'string') {
     const preset = PAGE_SIZE_PRESETS[size];
     if (!preset) {
       throw new Error(`html-paginator: unknown page size preset "${size}"`);
     }
-    return preset;
+    dims = preset;
+  } else {
+    dims = size;
   }
-  return size;
+  if (orientation === 'landscape') return { width: dims.height, height: dims.width };
+  if (orientation !== 'portrait') {
+    throw new Error(`html-paginator: unknown orientation "${orientation}" (expected portrait | landscape)`);
+  }
+  return dims;
+}
+
+/**
+ * Name of the CSS named page (`@page <name>`) for a sheet size, so pages
+ * of different sizes or orientations print on matching sheets.
+ */
+export function pageSizeName(size: PageDimensions): string {
+  const part = (v: string) => v.trim().replace(/[^a-zA-Z0-9]+/g, '_');
+  return `hp-${part(size.width)}-${part(size.height)}`;
 }
 
 /**
@@ -71,7 +91,7 @@ export function resolvePageConfig(
 export function mergePageLayers(...layers: (PageConfig | undefined)[]): ResolvedPageConfig {
   const merged: PageConfig = Object.assign({}, ...layers);
   return {
-    size: resolveSize(merged.size),
+    size: resolveSize(merged.size, merged.orientation),
     margin: merged.margin ?? DEFAULT_MARGIN,
     header: merged.header,
     footer: merged.footer,

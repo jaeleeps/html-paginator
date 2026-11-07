@@ -61,6 +61,12 @@ describe('parseDeclarativeConfig', () => {
     expect(config.page?.size).toEqual({ width: '8.5in', height: '11in' });
   });
 
+  it('parses data-hp-orientation', () => {
+    document.body.innerHTML =
+      '<div data-hp-content data-hp-size="a4" data-hp-orientation="landscape"><p>a</p></div>';
+    expect(parseDeclarativeConfig(document)!.page).toEqual({ size: 'a4', orientation: 'landscape' });
+  });
+
   it('reads page attributes from content when there is no config element', () => {
     document.body.innerHTML =
       '<div data-hp-content data-hp-size="legal" data-hp-margin="1cm"><p>a</p></div>';

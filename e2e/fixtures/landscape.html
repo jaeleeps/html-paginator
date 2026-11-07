@@ -1,0 +1,47 @@
+<!doctype html>
+<!--
+  A landscape section inside a portrait document (Word: section
+  orientation). Letter portrait, then a landscape section holding a wide
+  table that spans pages, then portrait again. Checked in the DOM and in the
+  PDF: each sheet must match its page's size and orientation.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>html-paginator landscape fixture</title>
+<style>
+  body { margin: 0; font: 12px/18px Helvetica, Arial, sans-serif; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #999; padding: 2px 4px; text-align: left; }
+</style>
+</head>
+<body>
+<div id="src">
+  <h2>INTRO portrait</h2>
+  <p>Portrait text before the wide table.</p>
+  <section data-section="wide">
+    <h2>WIDE landscape</h2>
+    <table id="wide"></table>
+  </section>
+  <section data-section="body">
+    <h2>OUTRO portrait again</h2>
+    <p>Back to portrait.</p>
+  </section>
+</div>
+<script src="/dist/index.global.js"></script>
+<script>
+  const cols = 12;
+  document.getElementById('wide').innerHTML =
+    `<thead><tr>${Array.from({ length: cols }, (_, c) => `<th>Column ${c + 1}</th>`).join('')}</tr></thead><tbody>` +
+    Array.from({ length: 70 }, (_, r) => `<tr>${Array.from({ length: cols }, (_, c) => `<td>R${r + 1}C${c + 1}</td>`).join('')}</tr>`).join('') +
+    '</tbody>';
+  htmlPaginator.createPaginator({
+    source: '#src',
+    page: { size: 'letter', margin: '0.5in', footer: ({ pageLabel }) => `<div style="text-align:center">${pageLabel}</div>` },
+    sections: { wide: { page: { orientation: 'landscape' } }, body: {} },
+    repeatTableHead: true,
+  }).paginate();
+  document.documentElement.dataset.paginated = 'true';
+</script>
+</body>
+</html>
