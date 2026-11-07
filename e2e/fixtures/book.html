@@ -5,6 +5,8 @@
   - front matter section: roman numbering i, ii, ...
   - body: first chapter restarts at 1; every chapter is a section that starts
     on an odd physical page (a blank page is inserted when needed)
+  The front matter has a table of contents (h2 entries) and the last
+  paragraph a page reference to chapter 2.
   Markers: COVER, TOC, PRE-01.., CH1..CH3, Cn-01.., END.
 -->
 <html>
@@ -24,8 +26,7 @@
 <div id="src">
   <div class="cover">COVER The Book</div>
   <div data-section="front" id="front">
-    <h2>TOC Contents</h2>
-    <p>Chapter 1 ... Chapter 3</p>
+    <nav data-hp-toc data-hp-toc-levels="2"><h2>TOC Contents</h2></nav>
   </div>
   <div id="chapters"></div>
 </div>
@@ -37,8 +38,8 @@
   document.getElementById('front').insertAdjacentHTML('beforeend', `<h2>Preface</h2>${paras('PRE', 30)}`);
   // Chapter lengths chosen so some chapters end on odd pages (forcing blanks).
   document.getElementById('chapters').innerHTML = [[1, 'body', 14], [2, 'chapter', 30], [3, 'chapter', 8]]
-    .map(([n, section, len]) => `<section data-section="${section}"><h2>CH${n} Chapter ${n}</h2>${paras(`C${n}`, len)}</section>`)
-    .join('') + '<p>END of book.</p>';
+    .map(([n, section, len]) => `<section data-section="${section}"><h2 id="ch${n}">CH${n} Chapter ${n}</h2>${paras(`C${n}`, len)}</section>`)
+    .join('') + '<p>END of book. Chapter 2 starts on page <a id="ref" href="#ch2" data-hp-page-ref>?</a>.</p>';
   window.sourceText = document.getElementById('src').innerText;
 
   const result = htmlPaginator.createPaginator({

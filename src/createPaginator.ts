@@ -13,6 +13,7 @@ import { createDomMeasurer } from './measure';
 import { resolveSize } from './pageConfig';
 import { injectStyles } from './styles';
 import { createTextSplitter } from './textSplit';
+import { buildTableOfContents, resolvePageRefs } from './toc';
 
 export const DEFAULT_PAGE_SIZE = 'letter' as const;
 
@@ -85,6 +86,7 @@ export function createPaginator(config: PaginatorConfig): Paginator {
       // Work on a clone so the source stays intact for reset()/re-pagination.
       const copy = source.cloneNode(true) as HTMLElement;
       markBreakHints(source, copy, { keepHeadingsWithNext: resolved.keepHeadingsWithNext });
+      buildTableOfContents(copy);
 
       // Loose top-level text gets a <div> so it is paginated, not dropped.
       const items: HTMLElement[] = [];
@@ -127,6 +129,8 @@ export function createPaginator(config: PaginatorConfig): Paginator {
         });
 
         const built = buildPages(distributed, { document: doc, layout });
+        const total = built.pages.length;
+        resolvePageRefs(built.pages, (index) => layout.context(index + 1, total).pageLabel);
 
         // data-break="clip": hide the overflow of pages whose single item
         // could not fit any page ('avoid' overflow stays visible).

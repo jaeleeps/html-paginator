@@ -332,6 +332,25 @@ createPaginator({
 - Templates also receive `section`, `sectionPage` and `sectionPages`. `lastPageNumber` / `lastPageLabel` refer to the last page of the current numbering run, so "Page X of Y" works inside a restarted body.
 - Declaratively: `<div data-hp-section="name">` groups in the config template, with their own header/footer slots, `data-hp-margin`, `data-hp-page-start`, `data-hp-page-format`, `data-hp-section-start="odd"`, and nested `data-hp-page="first|odd|even"` groups.
 
+### Table of contents and page references
+
+Word's TOC and PAGEREF fields. Mark a container with `data-hp-toc` and it is filled with one entry per heading: the heading text, a dot leader, and the page it lands on. Any element with `data-hp-page-ref` shows the page of its target:
+
+```html
+<nav data-hp-toc data-hp-toc-levels="1-2">
+  <h2>Contents</h2>
+</nav>
+…
+<p>Details are on page <a href="#results" data-hp-page-ref></a>.</p>
+```
+
+- Levels default to `1-3` (`h1`–`h3`). Include any element with `data-hp-toc-level="N"`, and leave a heading out with `data-hp-toc-skip`. Headings inside the TOC container are never listed.
+- Page numbers are **page labels**: they follow the numbering format, restarts and sections (e.g. `iv` in front matter).
+- The reference target is the attribute's value (`data-hp-page-ref="#id"`), or else the element's `href`. A target that does not exist shows `??` and logs a warning.
+- Headings without an `id` get one (`hp-toc-N`) in the paginated copy, so entries link to them; the source is not modified.
+- Entries are `div.hp-toc-entry.hp-toc-level-N`, each holding `a.hp-toc-text`, `span.hp-toc-leader` and `span.hp-toc-page`. The layout (flex, dotted leader, 1.5em indent per level) is set inline so it is measured correctly. Restyle them with your own CSS.
+- Numbers are measured as `000` before they are known, so filling them in never changes the pagination.
+
 ## Table splitting
 
 Tables with `data-break="auto"` split at row boundaries. The `<caption>` stays on the first fragment and `<tfoot>` goes on the fragment holding the last row (its height counts toward that page). Use `repeatTableHead` to repeat `<thead>` on continuation pages:
@@ -411,6 +430,9 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-break` | content elements | Break behavior: `auto`, `avoid`, or `clip` |
 | `data-break-before` / `data-break-after` | content elements | `="page"` forces a page break |
 | `data-keep-with-next` | content elements | Keep on the same page as the next element (`="false"` opts a heading out) |
+| `data-hp-toc` | content container | Fill with a table of contents (`data-hp-toc-levels="1-3"`) |
+| `data-hp-toc-level` / `data-hp-toc-skip` | content elements | Add an element to the TOC at a level / leave a heading out |
+| `data-hp-page-ref` | content elements | Replace the text with the page label of `#id` (attribute value or `href`) |
 | `data-section` | content elements | Start a new section (`sections[name]`); implies a page break |
 | `data-hp-section` | inside config | Section layout group (slots, margin, numbering, nested first/odd/even groups) |
 | `data-hp-section-start` | section group | `odd` / `even`: start on that side, inserting a blank page if needed |

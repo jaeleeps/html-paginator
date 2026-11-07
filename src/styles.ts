@@ -37,6 +37,11 @@ export function buildStylesheet(size: PageDimensions): string {
   flex: 1 1 auto;
   min-height: 0;
 }
+/* TOC entries read like Word's: plain text, not links (zero specificity). */
+:where(.hp-toc-text) {
+  color: inherit;
+  text-decoration: none;
+}
 @page {
   size: ${size.width} ${size.height};
   margin: 0;

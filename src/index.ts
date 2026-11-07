@@ -14,6 +14,17 @@ export type {
   WrapInfo,
 } from './distribute';
 export { createTextSplitter } from './textSplit';
+export {
+  buildTableOfContents,
+  PAGE_REF_ATTRIBUTE,
+  PAGE_REF_PLACEHOLDER,
+  resolvePageRefs,
+  TOC_ATTRIBUTE,
+  TOC_CLASS_NAMES,
+  TOC_LEVEL_ATTRIBUTE,
+  TOC_LEVELS_ATTRIBUTE,
+  TOC_SKIP_ATTRIBUTE,
+} from './toc';
 export type { TextSplitterOptions } from './textSplit';
 export { createPageLayout } from './layout';
 export type { PageLayout, PageLayoutConfig } from './layout';
