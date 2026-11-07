@@ -163,6 +163,10 @@ export function createPaginator(config: PaginatorConfig): Paginator {
           ...createDomBreaker({ repeatTableHead: resolved.repeatTableHead }),
           fragment,
           notes: footnotes ? (el) => footnotes.notesOf(el) : undefined,
+          fragmentNote:
+            footnotes && splitText
+              ? (note, fits, info) => footnotes.inArea(note, () => splitText(note, fits, info))
+              : undefined,
           notesHeight: footnotes
             ? (notes, page) => measurer.measure(footnotes.area(notes), page)
             : undefined,

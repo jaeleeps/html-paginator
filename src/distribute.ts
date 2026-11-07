@@ -90,6 +90,13 @@ export interface DistributeOptions<T, S = string> {
   notes?: (item: T) => readonly T[];
   /** Height of the footnote area holding `notes` on `page` (not called when empty). */
   notesHeight?: (notes: readonly T[], page: number) => number;
+  /**
+   * Split a note that does not fit (Word continues long footnotes on the
+   * next page): like `fragment`, `fits` tells whether a head fits the
+   * page's note area. The tail starts the next page's notes. Only the last
+   * note of a page is split.
+   */
+  fragmentNote?: (note: T, fits: (head: T) => boolean, info: FragmentInfo) => Fragment<T> | null;
 }
 
 export interface FragmentInfo {
@@ -308,17 +315,27 @@ export function distribute<T, S = string>(
 
   const pages: DistributedPage<T, S>[] = [];
   let current: DistributedPage<T, S> | null = null;
-  /** Per page, what each placed item was queued as, measured at, and the notes it added. */
-  const placed = new Map<
-    DistributedPage<T, S>,
-    { entry: Pending<T>; height: number; notes: T[] }[]
-  >();
+  /** What each placed item was queued as, measured at, and the notes it brought. */
+  interface Placed {
+    entry: Pending<T>;
+    height: number;
+    /** Notes as placed on the page (the last may be a split head). */
+    notes: T[];
+    /** The notes they come from. */
+    sources: T[];
+    /** Continuation of a split note, for the next page. */
+    carry: T | null;
+  }
+  const placed = new Map<DistributedPage<T, S>, Placed[]>();
+  /** Notes already placed (by source), so each appears once. */
+  const placedNotes = new Set<T>();
+  /** Per page, the continuation of its split note (for the next page). */
+  const carries = new Map<DistributedPage<T, S>, T>();
 
-  /** Notes of `item` not yet on `page`. */
-  const newNotes = (page: DistributedPage<T, S>, item: T): T[] => {
+  /** Notes of `item` not placed yet, in order. */
+  const newNotes = (item: T): T[] => {
     if (!options.notes) return [];
-    const onPage = page.notes ?? [];
-    return options.notes(item).filter((note, i, all) => !onPage.includes(note) && all.indexOf(note) === i);
+    return options.notes(item).filter((note, i, all) => !placedNotes.has(note) && all.indexOf(note) === i);
   };
 
   const notesArea = (notes: readonly T[], page: number): number => {
@@ -332,23 +349,54 @@ export function distribute<T, S = string>(
     return height;
   };
 
-  /** Whether `item` (of flow height `height`) and its notes fit what is left of `page`. */
-  const fitsOn = (page: DistributedPage<T, S>, item: T, height: number): boolean => {
-    const extra = newNotes(page, item);
-    const notes =
-      extra.length === 0 ? (page.notesHeight ?? 0) : notesArea([...(page.notes ?? []), ...extra], page.page);
-    return page.usedHeight + height + notes <= page.availableHeight;
+  interface NotesPlan {
+    notes: T[];
+    sources: T[];
+    carry: T | null;
+  }
+
+  /**
+   * How `item` (of flow height `height`) and its notes fit what is left of
+   * `page`, or null when they do not. The page's last note may be split
+   * (`fragmentNote`), its continuation carried to the next page, like Word.
+   */
+  const planOn = (page: DistributedPage<T, S>, item: T, height: number): NotesPlan | null => {
+    const sources = newNotes(item);
+    const room = page.availableHeight - page.usedHeight - height;
+    const onPage = page.notes ?? [];
+    if (sources.length === 0) {
+      return (page.notesHeight ?? 0) <= room ? { notes: [], sources, carry: null } : null;
+    }
+    if (notesArea([...onPage, ...sources], page.page) <= room) {
+      return { notes: sources, sources, carry: null };
+    }
+    if (!options.fragmentNote || carries.has(page)) return null;
+    const whole = sources.slice(0, -1);
+    const split = options.fragmentNote(
+      sources[sources.length - 1] as T,
+      (head) => notesArea([...onPage, ...whole, head], page.page) <= room,
+      { page: page.page },
+    );
+    return split ? { notes: [...whole, split.head], sources, carry: split.tail } : null;
   };
 
+  const fitsOn = (page: DistributedPage<T, S>, item: T, height: number): boolean =>
+    planOn(page, item, height) !== null;
+
   const place = (page: DistributedPage<T, S>, entry: Pending<T>, height: number): void => {
-    const notes = newNotes(page, entry.item);
+    // An item placed although it does not fit (alone on a page) brings its
+    // notes whole.
+    const sources = newNotes(entry.item);
+    const plan = planOn(page, entry.item, height) ?? { notes: sources, sources, carry: null };
     page.items.push(entry.item);
     page.usedHeight += height;
-    if (notes.length > 0) {
-      page.notes!.push(...notes);
+    if (plan.notes.length > 0) {
+      page.notes!.push(...plan.notes);
       page.notesHeight = notesArea(page.notes!, page.page);
     }
-    placed.get(page)!.push({ entry, height, notes });
+    plan.sources.forEach((note) => placedNotes.add(note));
+    if (plan.carry) carries.set(page, plan.carry);
+    placed.get(page)!.push({ entry, height, ...plan });
   };
 
   /**
@@ -366,6 +414,8 @@ export function distribute<T, S = string>(
         page.notes = page.notes!.filter((note) => !last.notes.includes(note));
         page.notesHeight = notesArea(page.notes, page.page);
       }
+      last.sources.forEach((note) => placedNotes.delete(note));
+      if (last.carry) carries.delete(page);
       kept.unshift(last.entry);
     }
     return kept;
@@ -394,8 +444,11 @@ export function distribute<T, S = string>(
     }
     if (slot.blank) opened.blank = true;
     if (options.notes) {
-      opened.notes = [];
-      opened.notesHeight = 0;
+      // A note split on the previous page continues first.
+      const previous = pages[pages.length - 1];
+      const carry = previous ? carries.get(previous) : undefined;
+      opened.notes = carry ? [carry] : [];
+      opened.notesHeight = notesArea(opened.notes, page);
     }
     pages.push(opened);
     placed.set(opened, []);
@@ -414,6 +467,10 @@ export function distribute<T, S = string>(
     currentSection = section;
     return newPage({ section, sectionStart: true, blank: false });
   };
+
+  /** Holds something already (items, or notes continued from the page before). */
+  const occupied = (page: DistributedPage<T, S>): boolean =>
+    page.items.length > 0 || (page.notes?.length ?? 0) > 0;
 
   const pending: Pending<T>[] = items.map((item) => ({ item, continuation: false }));
 
@@ -450,7 +507,7 @@ export function distribute<T, S = string>(
         continue;
       }
 
-      if (current.items.length > 0) {
+      if (occupied(current)) {
         // Nothing fits the remaining space — retry on a fresh page, where
         // splitting gets the full page height to work with.
         const kept = takeKept(current);
@@ -492,7 +549,7 @@ export function distribute<T, S = string>(
 
     // Atomic path ('avoid'/'clip'/leaf, or unsplittable remainder):
     // retry on a new page (re-measured there) unless this one is still empty.
-    if (current.items.length > 0) {
+    if (occupied(current)) {
       const kept = takeKept(current);
       current = openPage(kept[0]?.item ?? entry.item);
       pending.unshift(...kept, entry);

@@ -88,6 +88,37 @@ describe('distribute: notes', () => {
     expect(page!.overflows).toBe(true);
   });
 
+  it('continues a long note on the next page (fragmentNote)', () => {
+    /** Notes are 'name:lines', 10px per line; the area adds 5. */
+    const lines = (n: Item) => Number(n.name.split(':')[1]);
+    const pages = distribute<Item>({
+      items: [
+        { name: 'a', h: 50 },
+        { name: 'b', h: 10, notes: ['n1:8'] },
+        { name: 'c', h: 70 },
+      ],
+      measure: (i) => i.h,
+      pageHeight: () => 100,
+      notes: (i) => (i.notes ?? []).map((n) => ({ name: n, h: 0 })),
+      notesHeight: (notes) => 5 + 10 * notes.reduce((sum, n) => sum + lines(n), 0),
+      fragmentNote: (note, fits) => {
+        const [name, total] = note.name.split(':');
+        for (let k = Number(total) - 1; k >= 1; k--) {
+          const head = { name: `${name}:${k}`, h: 0 };
+          if (fits(head)) return { head, tail: { name: `${name}+:${Number(total) - k}`, h: 0 } };
+        }
+        return null;
+      },
+    });
+    // Page 1: a + b = 60; 40 left → note head of 3 lines (35). The rest
+    // (5 lines, 55) opens page 2's notes; c (70) does not fit 45 → page 3.
+    expect(pages.map((p) => ({ items: p.items.map((i) => i.name), notes: p.notes!.map((n) => n.name) }))).toEqual([
+      { items: ['a', 'b'], notes: ['n1:3'] },
+      { items: [], notes: ['n1+:5'] },
+      { items: ['c'], notes: [] },
+    ]);
+  });
+
   it('rejects invalid note heights', () => {
     expect(() =>
       distribute({
