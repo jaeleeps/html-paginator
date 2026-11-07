@@ -57,16 +57,21 @@ interface PagePlan {
   instance: number;
 }
 
-function checkStart(start: number | undefined, where: string): void {
+function checkNumbering(numbering: PageNumbering | undefined, where: string): void {
+  const start = numbering?.start;
   if (start !== undefined && !Number.isInteger(start)) {
     throw new Error(`html-paginator: ${where}.start must be an integer, got ${start}`);
+  }
+  const chapter = numbering?.chapter;
+  if (chapter !== undefined && (!Number.isInteger(chapter) || chapter < 0 || chapter > 6)) {
+    throw new Error(`html-paginator: ${where}.chapter must be a heading level 0-6, got ${chapter}`);
   }
 }
 
 export function createPageLayout(config: PageLayoutConfig): PageLayout {
-  checkStart(config.pageNumbers?.start, 'pageNumbers');
+  checkNumbering(config.pageNumbers, 'pageNumbers');
   for (const [name, section] of Object.entries(config.sections ?? {})) {
-    checkStart(section.pageNumbers?.start, `sections.${name}.pageNumbers`);
+    checkNumbering(section.pageNumbers, `sections.${name}.pageNumbers`);
   }
 
   const plans: PagePlan[] = [];
@@ -80,6 +85,16 @@ export function createPageLayout(config: PageLayoutConfig): PageLayout {
 
   const formatOf = (plan: PagePlan) =>
     sectionConfig(plan.section)?.pageNumbers?.format ?? config.pageNumbers?.format;
+
+  /** Page label: the formatted number, after the chapter number if asked for. */
+  const labelOf = (number: number, plan: PagePlan, running: RunningValues): string => {
+    const label = formatPageNumber(number, formatOf(plan));
+    const own = sectionConfig(plan.section)?.pageNumbers;
+    const level = own?.chapter ?? config.pageNumbers?.chapter;
+    if (!level) return label;
+    const separator = own?.chapterSeparator ?? config.pageNumbers?.chapterSeparator ?? '-';
+    return `${running.running[`outline.h${level}`] ?? '0'}${separator}${label}`;
+  };
 
   const open = (page: number, slot: PageSlot): void => {
     // Fill gaps (standalone use without a distribution) by continuing.
@@ -117,7 +132,7 @@ export function createPageLayout(config: PageLayoutConfig): PageLayout {
   const buildContext = (
     page: number,
     totalPages: number,
-    last: { number: number; plan: PagePlan },
+    last: { number: number; plan: PagePlan; running: RunningValues },
     running: RunningValues,
   ): PageContext => {
     const p = plan(page);
@@ -126,9 +141,9 @@ export function createPageLayout(config: PageLayoutConfig): PageLayout {
       page,
       totalPages,
       pageNumber: p.number,
-      pageLabel: formatPageNumber(p.number, formatOf(p)),
+      pageLabel: labelOf(p.number, p, running),
       lastPageNumber: last.number,
-      lastPageLabel: formatPageNumber(last.number, formatOf(last.plan)),
+      lastPageLabel: labelOf(last.number, last.plan, last.running),
       section: p.section,
       sectionPage: p.sectionPage,
       sectionPages,
@@ -167,9 +182,18 @@ export function createPageLayout(config: PageLayoutConfig): PageLayout {
       plan(totalPages);
       const p = plan(page);
       let last = p;
-      for (let i = page; i < totalPages && plans[i]!.run === p.run; i++) last = plans[i]!;
-      const running = runningPages?.[page - 1] ?? { running: {}, runningLast: {} };
-      return buildContext(page, totalPages, { number: last.number, plan: last }, running);
+      let lastPage = page;
+      for (let i = page; i < totalPages && plans[i]!.run === p.run; i++) {
+        last = plans[i]!;
+        lastPage = i + 1;
+      }
+      const runningOf = (n: number) => runningPages?.[n - 1] ?? { running: {}, runningLast: {} };
+      return buildContext(
+        page,
+        totalPages,
+        { number: last.number, plan: last, running: runningOf(lastPage) },
+        runningOf(page),
+      );
     },
 
     probeContext(page, placeholderTotal) {
@@ -177,7 +201,11 @@ export function createPageLayout(config: PageLayoutConfig): PageLayout {
       return buildContext(
         page,
         placeholderTotal,
-        { number: p.number + Math.max(0, placeholderTotal - page), plan: p },
+        {
+          number: p.number + Math.max(0, placeholderTotal - page),
+          plan: p,
+          running: { running: runningProbe, runningLast: runningProbe },
+        },
         { running: runningProbe, runningLast: runningProbe },
       );
     },

@@ -42,29 +42,53 @@ function chapterLevel(seq: HTMLElement): number {
   return level;
 }
 
+/** Outline numbers of every level after a heading ("2.1.0.0.0.0"). */
+export const OUTLINE_ATTRIBUTE = 'data-hp-outline';
+
+/**
+ * Record on each heading under `root` the outline numbers after it, counting
+ * headings in document order: those with `data-hp-toc-skip` or inside a TOC
+ * container do not count.
+ */
+export function numberHeadings(root: HTMLElement): void {
+  const counters = [0, 0, 0, 0, 0, 0];
+  for (const el of root.querySelectorAll<HTMLElement>('h1, h2, h3, h4, h5, h6')) {
+    if (el.hasAttribute('data-hp-toc-skip') || el.closest('[data-hp-toc]')) continue;
+    const level = Number(HEADING.exec(el.tagName.toUpperCase())![1]);
+    counters[level - 1]! += 1;
+    counters.fill(0, level);
+    el.setAttribute(OUTLINE_ATTRIBUTE, counters.join('.'));
+  }
+}
+
+/**
+ * Chapter number at `level` from outline numbers: "2" for level 1, "2.3"
+ * for level 2; levels never used above (no h1 over an h2) are left out.
+ */
+export function chapterNumber(outline: readonly number[], level: number): string {
+  const parts = outline.slice(0, level);
+  while (parts.length > 1 && parts[0] === 0) parts.shift();
+  return parts.join('.');
+}
+
 /** Number every sequence element under `root`; returns the elements in order. */
 export function numberSequences(root: HTMLElement): HTMLElement[] {
+  numberHeadings(root);
   const counters = new Map<string, { n: number; chapter: string }>();
-  // Outline numbers of the headings so far: headings[k - 1] for level k.
-  const headings = [0, 0, 0, 0, 0, 0];
+  // Outline numbers of the last counted heading.
+  let outline = [0, 0, 0, 0, 0, 0];
   const seqs: HTMLElement[] = [];
-  const nodes = root.querySelectorAll<HTMLElement>(`h1, h2, h3, h4, h5, h6, [${SEQ_ATTRIBUTE}]`);
+  const nodes = root.querySelectorAll<HTMLElement>(`[${OUTLINE_ATTRIBUTE}], [${SEQ_ATTRIBUTE}]`);
   for (const el of nodes) {
     if (!el.hasAttribute(SEQ_ATTRIBUTE)) {
-      if (el.hasAttribute('data-hp-toc-skip') || el.closest('[data-hp-toc]')) continue;
-      const level = Number(HEADING.exec(el.tagName.toUpperCase())![1]);
-      headings[level - 1]! += 1;
-      headings.fill(0, level);
+      outline = el.getAttribute(OUTLINE_ATTRIBUTE)!.split('.').map(Number);
       continue;
     }
     const seq = el;
     seqs.push(seq);
     const name = seq.getAttribute(SEQ_ATTRIBUTE) ?? '';
     const level = chapterLevel(seq);
-    // Leading levels never used (e.g. no h1 above an h2) are left out.
-    const parts = headings.slice(0, level);
-    while (parts.length > 1 && parts[0] === 0) parts.shift();
-    const chapter = parts.join('.');
+    const chapter = level === 0 ? '' : chapterNumber(outline, level);
     // A new chapter restarts the count (only for chapter-numbered elements,
     // as with Word's SEQ \s: a plain one continues it).
     const last = counters.get(name);

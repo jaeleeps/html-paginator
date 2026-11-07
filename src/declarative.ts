@@ -54,7 +54,8 @@ import { createPaginator } from './createPaginator';
  *   `{{running.h1}}` / `{{runningLast.name}}` give running header text.
  *   As with the JS API, header/footer height must not depend on them.
  * - `data-hp-page-start` / `data-hp-page-format` set page numbering
- *   (e.g. `data-hp-page-start="0"`, `data-hp-page-format="lower-roman"`).
+ *   (e.g. `data-hp-page-start="0"`, `data-hp-page-format="lower-roman"`);
+ *   `data-hp-page-chapter="1"` (+ `-separator`) prefixes the chapter number.
  * - `data-hp-repeat-table-head` (boolean attribute) enables repeatTableHead.
  * - `<div data-hp-section="name">` groups describe `sections[name]` (started
  *   in content by `data-section="name"`): their own slots, size/margin,
@@ -83,6 +84,8 @@ export const DECLARATIVE_ATTRIBUTES = {
   repeatTableHead: 'data-hp-repeat-table-head',
   pageStart: 'data-hp-page-start',
   pageFormat: 'data-hp-page-format',
+  pageChapter: 'data-hp-page-chapter',
+  pageChapterSeparator: 'data-hp-page-chapter-separator',
   section: 'data-hp-section',
   sectionStart: 'data-hp-section-start',
   balanceColumns: 'data-hp-balance-columns',
@@ -135,6 +138,14 @@ function parseNumbering(...els: (Element | null)[]): PageNumbering | undefined {
       if (PAGE_FORMATS.has(format.trim())) numbering.format = format.trim() as PageNumberFormat;
       else console.warn(`html-paginator: invalid ${A.pageFormat}="${format}", ignored`, el);
     }
+    const chapter = el?.getAttribute(A.pageChapter);
+    if (chapter != null && numbering.chapter === undefined) {
+      const n = Number(chapter.trim());
+      if (Number.isInteger(n) && n >= 0 && n <= 6) numbering.chapter = n;
+      else console.warn(`html-paginator: invalid ${A.pageChapter}="${chapter}" (expected 0-6), ignored`, el);
+    }
+    const separator = el?.getAttribute(A.pageChapterSeparator);
+    if (separator != null && numbering.chapterSeparator === undefined) numbering.chapterSeparator = separator;
   }
   return Object.keys(numbering).length > 0 ? numbering : undefined;
 }

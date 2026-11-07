@@ -352,6 +352,26 @@ Formats: `'decimal'` (default), `'lower-roman'` / `'upper-roman'` (i, ii, … / 
 
 Declaratively: `data-hp-page-start="0"` and `data-hp-page-format="lower-roman"` on the config (or content) element.
 
+#### Chapter numbers in page numbers
+
+Word's "Include chapter number": `chapter: 1` puts the number of the current `h1` chapter in front of each page number ("2-5"). Combined with sections that restart numbering, each chapter's pages run 2-1, 2-2, …:
+
+```js
+createPaginator({
+  source: '#content',
+  pageNumbers: { chapter: 1 },                       // separator: chapterSeparator, default '-'
+  sections: {
+    front: { pageNumbers: { start: 1, format: 'lower-roman', chapter: 0 } }, // no prefix here
+    chapter: { pageNumbers: { start: 1 } },          // <section data-section="chapter"><h1>…
+  },
+});
+```
+
+- The chapter is the first chapter heading on the page, else the last one before it; before the first chapter it is 0. Headings count in document order, except those with `data-hp-toc-skip` or inside a TOC container.
+- `chapter: 2` uses outline numbers of `h2` headings ("2.3-1"); levels with no headings above them are left out.
+- `pageLabel` and `lastPageLabel` carry the prefix, so the TOC, page references and `data-hp-field` show it too.
+- Declaratively: `data-hp-page-chapter="1"` and `data-hp-page-chapter-separator`.
+
 ### Per-page overrides
 
 Override any page property for specific pages (1-based). Omitted properties inherit from the default. This is how you get different headers or footers on page 1 vs. the rest -- a common requirement for cover pages, footnotes, and org-specific disclaimers.
