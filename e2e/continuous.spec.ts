@@ -30,6 +30,7 @@ test.describe('continuous section breaks', () => {
           bodyBottom: body.bottom,
           regions,
           columns: regions.length === 0 ? Array.from(pg.querySelectorAll('.hp-column-body'), (c) => (c as HTMLElement).innerText) : [],
+          columnBottoms: Array.from(pg.querySelectorAll('.hp-column-body'), bottomOf),
           text: (pg.querySelector('.hp-body') as HTMLElement).innerText,
         };
       }),
@@ -60,6 +61,14 @@ test.describe('continuous section breaks', () => {
       expect(sheet.regions).toHaveLength(0);
       expect(sheet.columns).toHaveLength(2);
     }
+
+    // The document's last page of columns is balanced too (balanceColumns),
+    // the pages before it are filled.
+    const [lastLeft, lastRight] = sheets.at(-1)!.columnBottoms;
+    expect(sheets.length).toBeGreaterThanOrEqual(3);
+    // Within one unsplittable chunk: orphans/widows (2) keep up to 3 lines together.
+    expect(Math.abs(lastLeft! - lastRight!)).toBeLessThanOrEqual(3 * 18 + 6 + 1);
+    expect(lastLeft!).toBeLessThan(sheets.at(-1)!.bodyBottom - 18 * 3);
 
     // Reading order: every numbered word once, in order.
     const reading = [

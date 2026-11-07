@@ -85,6 +85,7 @@ export const DECLARATIVE_ATTRIBUTES = {
   pageFormat: 'data-hp-page-format',
   section: 'data-hp-section',
   sectionStart: 'data-hp-section-start',
+  balanceColumns: 'data-hp-balance-columns',
 } as const;
 
 const A = DECLARATIVE_ATTRIBUTES;
@@ -231,6 +232,7 @@ function parseSection(root: ParentNode, group: Element): SectionConfig {
   const numbering = parseNumbering(group);
   if (numbering) section.pageNumbers = numbering;
 
+  if (group.hasAttribute(A.balanceColumns)) section.balanceColumns = true;
   const start = group.getAttribute(A.sectionStart)?.trim();
   if (start !== undefined) {
     if (SECTION_STARTS.has(start)) section.start = start as SectionConfig['start'];

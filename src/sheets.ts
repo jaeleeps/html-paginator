@@ -61,6 +61,11 @@ export interface SheetPlanner<T> {
   partial(page: number): boolean;
   /** Region of an engine page (the last one opened for a page not yet placed). */
   region(page: number): SheetRegion<T>;
+  /**
+   * Balance the last region of each section with `balanceColumns` (call
+   * once distribution is done; continuous breaks balance on their own).
+   */
+  finish(): void;
   /** Sheets opened so far. */
   readonly sheets: number;
   /** All regions, in order. */
@@ -193,6 +198,17 @@ export function createSheetPlanner<T>(options: SheetPlannerOptions<T>): SheetPla
 
     region(page) {
       return regionOf[page - 1] ?? regions[regions.length - 1]!;
+    },
+
+    finish() {
+      regions.forEach((region, i) => {
+        const next = regions[i + 1];
+        // The section's last region: nothing after it, or another section.
+        const last = !next || next.section !== region.section;
+        if (!region.balanced && last && region.section && config.sections?.[region.section]?.balanceColumns) {
+          balance(region);
+        }
+      });
     },
 
     get sheets() {

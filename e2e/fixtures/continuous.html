@@ -3,7 +3,8 @@
   Continuous section breaks (Word): a single-column title block, then a
   two-column section starting on the same page, then a single-column section
   continuing on the same page below the columns, which are balanced first.
-  Then a long two-column section that flows over pages. Column text is
+  Then a long two-column section that flows over pages, its last page
+  balanced too (balanceColumns). Column text is
   numbered words (W0001...) so reading order can be checked.
 -->
 <html>
@@ -43,7 +44,7 @@
     sections: {
       news: { start: 'continuous', page: { columns: 2, columnGap: '0.3in', columnRule: '1px solid #888' } },
       after: { start: 'continuous' },
-      more: { start: 'continuous', page: { columns: 2, columnGap: '0.3in' } },
+      more: { start: 'continuous', page: { columns: 2, columnGap: '0.3in' }, balanceColumns: true },
     },
   }).paginate();
   document.documentElement.dataset.paginated = 'true';
