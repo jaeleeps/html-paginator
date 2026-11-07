@@ -368,7 +368,7 @@ Wrap a note's text in `data-footnote` where its reference goes. The note moves t
   ```
 
 - An `id` on the `data-footnote` element moves to the note, so you can link to it. Footnote reference numbers are left out of TOC entries.
-- A note longer than the space left on a page is not continued on the next page (Word can do that). The note and its reference move on together.
+- **Long notes continue on the next page**, as in Word. When a page's last note does not fit, it splits between lines, keeping CSS `orphans`/`widows`. The rest opens the next page's footnote area, without a number and under a full-width separator (`.hp-footnote-separator-continued`). Its fragment is marked `data-hp-continued`. Turning off `splitParagraphs` also turns this off.
 
 ### Numbered captions and cross-references
 

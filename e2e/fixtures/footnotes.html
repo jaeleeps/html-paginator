@@ -10,6 +10,8 @@
      (40) = 80px: the head keeps 2 lines and the note.
   C  5 paragraphs with 3 notes each, filling pages; every note must sit on
      its reference's page, and nothing may overflow.
+  D  700px filler + a line whose note (~1200 words) cannot fit: the note
+     splits between lines and continues at the top of the next page's area.
 -->
 <html>
 <head>
@@ -22,6 +24,7 @@
   .ft { height: 40px; line-height: 40px; text-align: center; }
   .hp-footnotes { margin-top: 10px; font-size: 12px; line-height: 20px; }
   .hp-footnote-separator { margin-bottom: 9px; width: 120px; }
+  .hp-footnote-separator.hp-footnote-separator-continued { width: 100%; }
   .hp-footnote { margin: 0; }
 </style>
 </head>
@@ -35,6 +38,10 @@
   <p>B-ONE l1<span data-footnote>NOTE-B1 on line one.</span><br>l2<br>l3<br>l4</p>
 
   <div id="many" data-break-before="page"></div>
+
+  <div class="fill" style="height:700px" data-break-before="page">FILL-D</div>
+  <p>D-ONE line<span data-footnote id="long">NOTE-D1 </span></p>
+  <p>D-TWO after</p>
 </div>
 <script src="/dist/index.global.js"></script>
 <script>
@@ -44,6 +51,7 @@
     `<p>C${p + 1}_START ${text(120, p)}<span data-footnote>NOTE-C${p + 1}a ${text(25, p)}</span> ${text(120, p + 1)}` +
     `<span data-footnote>NOTE-C${p + 1}b short.</span> ${text(150, p + 2)}<span data-footnote>NOTE-C${p + 1}c ${text(8, p)}</span> C${p + 1}_END</p>`,
   ).join('');
+  document.getElementById('long').append(text(1200, 3));
   htmlPaginator.createPaginator({
     source: '#src',
     page: { size: 'letter', margin: '0.5in', footer: ({ page }) => `<div class="ft">PAGE-${page}</div>` },

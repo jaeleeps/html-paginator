@@ -17,8 +17,17 @@ test.describe('footnotes', () => {
         for (const el of body.querySelectorAll('*')) contentBottom = Math.max(contentBottom, el.getBoundingClientRect().bottom);
         return {
           refs: Array.from(pg.querySelectorAll('.hp-body .hp-footnote-ref'), (r) => r.textContent).filter(Boolean),
-          notes: Array.from(pg.querySelectorAll('.hp-footnote'), (n) => n.getAttribute('data-hp-note')),
-          noteText: Array.from(pg.querySelectorAll('.hp-footnote'), (n) => n.textContent!.match(/NOTE-\w+/)![0]),
+          notes: Array.from(pg.querySelectorAll('.hp-footnote:not([data-hp-continued])'), (n) => n.getAttribute('data-hp-note')),
+          noteText: Array.from(pg.querySelectorAll('.hp-footnote:not([data-hp-continued])'), (n) => n.textContent!.match(/NOTE-\w+/)![0]),
+          continued: Array.from(pg.querySelectorAll('.hp-footnote[data-hp-continued]'), (n) => ({
+            note: n.getAttribute('data-hp-note'),
+            first: n === pg.querySelector('.hp-footnote'),
+            mark: n.querySelector('.hp-footnote-mark') !== null,
+            separatorWidth: pg.querySelector('.hp-footnote-separator')!.getBoundingClientRect().width,
+            areaWidth: pg.querySelector('.hp-footnotes')!.getBoundingClientRect().width,
+            continuationSeparator: pg.querySelector('.hp-footnote-separator')!.classList.contains('hp-footnote-separator-continued'),
+          })),
+          noteLines: Array.from(pg.querySelectorAll('.hp-footnote'), (n) => Math.round(n.getBoundingClientRect().height / 20)),
           order: Array.from(pg.children, (c) => [...c.classList].find((k) => k.startsWith('hp-'))),
           contentBottom,
           bodyBottom: box('.hp-body')!.bottom,
@@ -33,7 +42,7 @@ test.describe('footnotes', () => {
     // Numbering is continuous and every note is on its reference's page.
     const all = pages.flatMap((p) => p.notes);
     expect(all).toEqual(Array.from({ length: all.length }, (_, i) => String(i + 1)));
-    expect(all).toHaveLength(18);
+    expect(all).toHaveLength(19);
     for (const [i, p] of pages.entries()) expect(p.notes, `page ${i + 1}`).toEqual(p.refs);
 
     // Scenario markers.
@@ -41,6 +50,17 @@ test.describe('footnotes', () => {
     expect(pages[1]!.noteText).toEqual(['NOTE-A2']);
     expect(pages[2]!.noteText).toEqual(['NOTE-B1']);
     expect(pages[2]!.areaHeight).toBe(30); // author CSS (1 + 9 + 20, plus a 10px margin), not the defaults
+
+    // D: the long note starts on its reference's page and continues, first
+    // in the next page's area, without a number, under a full-width rule.
+    const start = pages.findIndex((p) => p.noteText.includes('NOTE-D1'));
+    const next = pages[start + 1]!;
+    expect(next.continued).toHaveLength(1);
+    expect(next.continued[0]).toMatchObject({ note: '19', first: true, mark: false, continuationSeparator: true });
+    expect(next.continued[0]!.separatorWidth).toBeCloseTo(next.continued[0]!.areaWidth, 0);
+    expect(pages[start]!.noteLines.at(-1)).toBeGreaterThanOrEqual(2); // orphans
+    expect(next.noteLines[0]).toBeGreaterThanOrEqual(2); // widows
+    expect(pages.flatMap((p) => p.continued)).toHaveLength(1);
 
     for (const [i, p] of pages.entries()) {
       // Body, notes, footer stack without overlap; content stays in the body.
@@ -73,7 +93,7 @@ test.describe('footnotes', () => {
       })),
     );
     const letters = 'abcdefghijklmnopqrstuvwxyz';
-    expect(pages.flatMap((p) => p.marks)).toHaveLength(18);
+    expect(pages.flatMap((p) => p.marks)).toHaveLength(19);
     for (const [i, p] of pages.entries()) {
       expect(p.marks, `page ${i + 1}`).toEqual(Array.from(letters.slice(0, p.marks.length)));
       expect(p.refs, `page ${i + 1}`).toEqual(p.marks);

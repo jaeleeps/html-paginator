@@ -1,3 +1,4 @@
+import { CONTINUED_ATTRIBUTE } from './domBreak';
 import { formatPageNumber } from './pageNumbers';
 import type { PageNumberFormat } from './types';
 
@@ -8,7 +9,8 @@ import type { PageNumberFormat } from './types';
  * (`sup.hp-footnote-ref`) and its content a note (`div.hp-footnote`) shown
  * in the footnote area (`div.hp-footnotes`) at the bottom of the page where
  * the reference lands, between the body and the footer. Numbering is
- * continuous through the document.
+ * continuous through the document. A note that does not fit continues at
+ * the top of the next page's area (split between lines).
  */
 
 export const FOOTNOTE_ATTRIBUTE = 'data-footnote';
@@ -33,12 +35,16 @@ export interface FootnoteOptions {
   format?: PageNumberFormat;
 }
 
+/** Separator above a note continued from the previous page. */
+export const CONTINUATION_SEPARATOR_CLASS = 'hp-footnote-separator-continued';
+
 const STYLE_ATTRIBUTE = 'data-html-paginator-footnotes';
 
 /** Default look, zero specificity so any author rule wins. */
 const FOOTNOTE_CSS = `
 :where(.hp-footnotes) { margin-top: 1em; font-size: 0.8em; line-height: 1.4; }
 :where(.hp-footnote-separator) { width: 33%; border-top: 1px solid currentColor; margin-bottom: 0.5em; }
+:where(.hp-footnote-separator-continued) { width: 100%; }
 :where(.hp-footnote) { margin: 0 0 0.2em; }
 :where(.hp-footnote-ref, .hp-footnote-mark) { font-size: 0.75em; line-height: 0; vertical-align: super; }
 :where(.hp-footnote-mark) { margin-right: 0.3em; }
@@ -63,6 +69,8 @@ export interface Footnotes {
   notesOf(el: HTMLElement): HTMLElement[];
   /** A footnote area holding copies of `notes`. */
   area(notes: readonly HTMLElement[]): HTMLElement;
+  /** Run `fn` with `note` inside a footnote area (so it lays out as one). */
+  inArea<R>(note: HTMLElement, fn: () => R): R;
 }
 
 /**
@@ -121,9 +129,25 @@ export function createFootnotes(root: HTMLElement): Footnotes | null {
       area.className = FOOTNOTE_CLASS_NAMES.area;
       const separator = doc.createElement('div');
       separator.className = FOOTNOTE_CLASS_NAMES.separator;
+      // A note continued from the previous page gets Word's full-width
+      // continuation separator.
+      if (list[0]?.hasAttribute(CONTINUED_ATTRIBUTE)) separator.classList.add(CONTINUATION_SEPARATOR_CLASS);
       area.appendChild(separator);
       for (const note of list) area.appendChild(note.cloneNode(true));
       return area;
+    },
+
+    inArea(note, fn) {
+      const area = this.area([]);
+      const parent = note.parentNode;
+      const next = note.nextSibling;
+      area.appendChild(note);
+      try {
+        return fn();
+      } finally {
+        area.removeChild(note);
+        if (parent) parent.insertBefore(note, next);
+      }
     },
   };
 }
@@ -145,6 +169,8 @@ export function renumberFootnotes(
     if (restart === 'page' || (restart === 'section' && sectionStarts[index])) counter = 0;
     const labels = new Map<string, string>();
     for (const note of page.querySelectorAll<HTMLElement>(`.${FOOTNOTE_CLASS_NAMES.note}`)) {
+      // A continuation keeps the number given on the page it started on.
+      if (note.hasAttribute(CONTINUED_ATTRIBUTE)) continue;
       const label = formatPageNumber(++counter, options.format);
       labels.set(note.getAttribute(NOTE_ATTRIBUTE) ?? '', label);
       const mark = note.querySelector(`.${FOOTNOTE_CLASS_NAMES.mark}`);
