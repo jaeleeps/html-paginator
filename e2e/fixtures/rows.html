@@ -9,6 +9,7 @@
      2 so 2 move (widows); cell 1 keeps 3.
   C  900px filler; data-break="avoid" row moves whole.
   D  a 110-line row spans pages; the table footer follows its last part.
+     Only D repeats its header (data-repeat-head; repeatTableHead is off).
 -->
 <html>
 <head>
@@ -29,7 +30,7 @@
 <script>
   const pad = (n) => String(n).padStart(2, '0');
   const cell = (row, c, n) => `<td>${Array.from({ length: n }, (_, i) => `${row}-${c}-${pad(i + 1)}`).join('<br>')}</td>`;
-  const table = (rows, foot = '') => `<table><thead><tr><th>H1</th><th>H2</th></tr></thead><tbody>${rows}</tbody>${foot}</table>`;
+  const table = (rows, foot = '', attrs = '') => `<table${attrs}><thead><tr><th>H1</th><th>H2</th></tr></thead><tbody>${rows}</tbody>${foot}</table>`;
   document.getElementById('src').innerHTML = [
     '<div class="fill" style="height:820px">FILL-A</div>',
     table(`<tr>${cell('S', 1, 1)}${cell('S', 2, 1)}</tr><tr>${cell('A', 1, 12)}${cell('A', 2, 3)}</tr>`),
@@ -38,13 +39,12 @@
     '<div class="fill" style="height:900px" data-break-before="page">FILL-C</div>',
     table(`<tr data-break="avoid">${cell('C', 1, 6)}${cell('C', 2, 2)}</tr>`),
     '<div data-break-before="page"></div>',
-    table(`<tr>${cell('D', 1, 110)}${cell('D', 2, 2)}</tr>`, '<tfoot><tr><td>FOOT</td><td></td></tr></tfoot>'),
+    table(`<tr>${cell('D', 1, 110)}${cell('D', 2, 2)}</tr>`, '<tfoot><tr><td>FOOT</td><td></td></tr></tfoot>', ' data-repeat-head'),
   ].join('');
   window.sourceText = document.getElementById('src').textContent;
   htmlPaginator.createPaginator({
     source: '#src',
     page: { size: 'letter', margin: '0.5in' },
-    repeatTableHead: true,
   }).paginate();
   document.documentElement.dataset.paginated = 'true';
 </script>

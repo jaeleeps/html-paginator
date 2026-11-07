@@ -399,6 +399,8 @@ createPaginator({ source: '#content', repeatTableHead: true });
 
 Or declaratively: add `data-hp-repeat-table-head` on `<template data-hp-config>` or `<div data-hp-content>`.
 
+Per table, like Word's "Repeat as header row": `<table data-repeat-head>` repeats its `<thead>` on every page even when `repeatTableHead` is off, and `<table data-repeat-head="false">` never repeats it.
+
 **Columns stay aligned across pages.** Each fragment of a split table is a separate table, so under auto layout each would size its own columns. When a table is first measured, its auto-layout column widths are frozen: a `<colgroup>` with percentage widths and `table-layout: fixed` (the table gets `data-hp-cols`). Tables that already declare `<colgroup>`/`<col>` keep the author's columns, which are now copied to every fragment.
 
 **Rows break across pages**, like Word's "Allow row to break across pages" (on by default). A row that does not fit is cut across all its cells at one line: each cell's lines above the cut stay, and the rest continue in a matching row on the next page. Rows taller than a whole page no longer overflow.
@@ -480,6 +482,7 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-break-before` / `data-break-after` | content elements | `="page"` forces a page break |
 | `data-keep-with-next` | content elements | Keep on the same page as the next element (`="false"` opts a heading out) |
 | `data-hp-field` | inline content | Page field: `pageLabel`, `totalPages`, `sectionPage`, … of the page it lands on |
+| `data-repeat-head` | `<table>` | Repeat this table's `<thead>` on continuation pages (`="false"` opts out of `repeatTableHead`) |
 | `data-footnote` | inline content | Footnote: replaced by a numbered reference, its content shown at the bottom of the page |
 | `data-hp-toc` | content container | Fill with a table of contents (`data-hp-toc-levels="1-3"`) |
 | `data-hp-toc-level` / `data-hp-toc-skip` | content elements | Add an element to the TOC at a level / leave a heading out |
