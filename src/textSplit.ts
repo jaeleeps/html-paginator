@@ -59,10 +59,10 @@ export interface LineBox {
 
 /**
  * Lines of `el`'s text in document order, found from the boxes of each
- * word's first character (the element must be laid out). Null without a
- * layout engine (jsdom).
+ * word's first character (the element must be laid out), skipping text
+ * nodes `accept` rejects. Null without a layout engine (jsdom).
  */
-export function lineBoxes(el: HTMLElement): LineBox[] | null {
+export function lineBoxes(el: HTMLElement, accept?: (node: Text) => boolean): LineBox[] | null {
   const doc = el.ownerDocument;
   const range = doc.createRange();
   if (typeof range.getBoundingClientRect !== 'function') return null;
@@ -70,6 +70,7 @@ export function lineBoxes(el: HTMLElement): LineBox[] | null {
   const lines: LineBox[] = [];
   const walker = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode() as Text | null; node; node = walker.nextNode() as Text | null) {
+    if (accept && !accept(node)) continue;
     const words = /\S+/g;
     for (let match = words.exec(node.data); match; match = words.exec(node.data)) {
       range.setStart(node, match.index);

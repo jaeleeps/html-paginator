@@ -222,6 +222,30 @@ createPaginator({
 - Rendered as `.hp-body > .hp-column > .hp-column-body` (plus `.hp-column-rule` and `.hp-footnotes`); the geometry is inline, so it holds with `injectStyles: false`.
 - Declaratively: `data-hp-columns="2"`, `data-hp-column-gap`, `data-hp-column-rule` on the config, content or a `data-hp-section` group.
 
+### Line numbers
+
+`lineNumbers` numbers the lines of text in the left margin, like Word's Layout › Line Numbers:
+
+```js
+createPaginator({
+  source: '#content',
+  page: { lineNumbers: { countBy: 5, restart: 'page' } },
+  sections: { appendix: { page: { lineNumbers: null } } }, // off in one section
+});
+```
+
+| Option | Default | |
+|---|---|---|
+| `restart` | `'page'` | `'page'`, `'section'` or `'continuous'` |
+| `start` | `1` | First number |
+| `countBy` | `1` | Show only multiples of this (every line still counts) |
+| `distance` | `'0.25in'` | Space between the numbers and the text |
+
+- The numbers come from the rendered lines and are placed out of the flow after pagination, so they never change it. They are `span.hp-line-number` elements, positioned inline (style them with CSS).
+- As in Word, tables are not numbered (nor headers, footers and footnotes), and `data-hp-suppress-line-numbers` on an element leaves it out. Pages where line numbers are off do not count.
+- In columns, each column is numbered beside it, counting down the first column, then the next.
+- Declaratively: `data-hp-line-numbers="page|section|continuous"` (`"none"` turns them off), with `data-hp-line-numbers-start`, `-count-by` and `-distance`.
+
 ### Margin
 
 Any CSS margin shorthand:
@@ -588,6 +612,8 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-section` | content elements | Start a new section (`sections[name]`); implies a page break |
 | `data-hp-orientation` | config / content / section group | `landscape` or `portrait` |
 | `data-hp-columns` / `data-hp-column-gap` / `data-hp-column-rule` | config / content / section group | Newspaper columns, the space and line between them |
+| `data-hp-line-numbers` (+ `-start`, `-count-by`, `-distance`) | config / content / section group | Line numbers: `page`, `section`, `continuous` restart, or `none` |
+| `data-hp-suppress-line-numbers` | content elements | Leave the element's lines unnumbered |
 | `data-hp-section` | inside config | Section layout group (slots, margin, numbering, nested first/odd/even groups) |
 | `data-hp-section-start` | section group | `odd` / `even`: start on that side, inserting a blank page if needed |
 
