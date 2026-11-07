@@ -22,6 +22,52 @@ describe('numberSequences / resolveCrossRefs', () => {
     expect(Array.from(root.querySelectorAll('[data-hp-seq]'), (s) => s.textContent)).toEqual(['1', 'A', '2']);
   });
 
+  it('prefixes the chapter number and restarts in each chapter', () => {
+    const root = mount(`
+      <nav data-hp-toc><h1>Contents</h1></nav>
+      <h1 data-hp-toc-skip>Preface</h1>
+      <p><span data-hp-seq="Figure" data-hp-seq-chapter="1"></span></p>
+      <div data-hp-seq-chapter="1">
+        <h1>One</h1>
+        <p><span data-hp-seq="Figure"></span><span data-hp-seq="Table"></span></p>
+        <p id="f2"><span data-hp-seq="Figure"></span></p>
+        <h1>Two</h1>
+        <h2>Two.One</h2>
+        <p><span data-hp-seq="Figure"></span></p>
+        <p><span data-hp-seq="Table" data-hp-seq-separator="." data-hp-seq-format="upper-alpha"></span></p>
+        <p><span data-hp-seq="Eq" data-hp-seq-chapter="2"></span></p>
+        <h2>Two.Two</h2>
+        <p><span data-hp-seq="Eq" data-hp-seq-chapter="2"></span><span data-hp-seq="Eq" data-hp-seq-chapter="2"></span></p>
+      </div>
+      <p><span data-hp-seq="Figure"></span></p>
+      <p><a href="#f2" data-hp-ref></a></p>`);
+    const seqs = numberSequences(root);
+    expect(seqs.map((s) => s.textContent)).toEqual([
+      '0-1', // before the first chapter (the TOC title and skipped headings do not count)
+      '1-1', '1-1', '1-2',
+      '2-1', '2.A',
+      '2.1-1', '2.2-1', '2.2-2',
+      '2', // outside the chapter-numbered container: the count continues (Word's SEQ without \s)
+    ]);
+    resolveCrossRefs(root);
+    expect(root.querySelector('a')!.textContent).toBe('Figure 1-2');
+  });
+
+  it('leaves out unused leading levels (h2 chapters without h1)', () => {
+    const root = mount(`<div data-hp-seq-chapter="2">
+      <h2>A</h2><span data-hp-seq="Figure"></span>
+      <h2>B</h2><span data-hp-seq="Figure"></span><span data-hp-seq="Figure"></span>
+      <h1>Part</h1><span data-hp-seq="Figure"></span><h2>C</h2><span data-hp-seq="Figure"></span></div>`);
+    expect(numberSequences(root).map((s) => s.textContent)).toEqual(['1-1', '2-1', '2-2', '1.0-1', '1.1-1']);
+  });
+
+  it('ignores an invalid chapter level with a warning', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const root = mount('<h1>A</h1><span data-hp-seq="Figure" data-hp-seq-chapter="7"></span>');
+    expect(numberSequences(root)[0]!.textContent).toBe('1');
+    expect(warn).toHaveBeenCalled();
+  });
+
   it('resolves references by href or value, as label or number', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const root = mount(`
