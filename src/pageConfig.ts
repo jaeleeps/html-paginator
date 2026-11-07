@@ -18,6 +18,8 @@ export interface ResolvedPageConfig {
   columnGap: string;
   columnRule?: string;
   lineNumbers?: PageConfig['lineNumbers'];
+  headerDistance?: string;
+  footerDistance?: string;
 }
 
 export const DEFAULT_COLUMN_GAP = '0.5in';
@@ -121,5 +123,7 @@ export function mergePageLayers(...layers: (PageConfig | undefined)[]): Resolved
     columnGap: merged.columnGap ?? DEFAULT_COLUMN_GAP,
     columnRule: merged.columnRule,
     lineNumbers: merged.lineNumbers,
+    headerDistance: merged.headerDistance,
+    footerDistance: merged.footerDistance,
   };
 }

@@ -40,6 +40,7 @@ export {
   renumberFootnotes,
 } from './footnotes';
 export type { FootnoteOptions, Footnotes } from './footnotes';
+export { FOOTER_AREA_CLASS, HEADER_AREA_CLASS, marginSides } from './pageFrame';
 export { LINE_NUMBER_CLASS, numberLines, SUPPRESS_LINE_NUMBERS_ATTRIBUTE } from './lineNumbers';
 export type { LineNumberedPage, LineNumberOptions } from './lineNumbers';
 export { createRowSplitter } from './rowSplit';

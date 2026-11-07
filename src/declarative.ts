@@ -42,6 +42,8 @@ import { createPaginator } from './createPaginator';
  * - `data-hp-orientation="landscape"` turns pages (or a section) sideways.
  * - `data-hp-columns="2"` (with `data-hp-column-gap`, `data-hp-column-rule`)
  *   flows pages (or a section) in newspaper columns.
+ * - `data-hp-header-distance` / `data-hp-footer-distance` place the header
+ *   and footer at a distance from the sheet edge, inside the margin (Word).
  * - `data-hp-line-numbers="page|section|continuous"` (where numbering
  *   restarts; "none" turns it off) with `-start`, `-count-by`, `-distance`.
  * - `data-hp-size` accepts a preset ('letter', 'a4', ...) or explicit
@@ -70,6 +72,8 @@ export const DECLARATIVE_ATTRIBUTES = {
   columns: 'data-hp-columns',
   columnGap: 'data-hp-column-gap',
   columnRule: 'data-hp-column-rule',
+  headerDistance: 'data-hp-header-distance',
+  footerDistance: 'data-hp-footer-distance',
   lineNumbers: 'data-hp-line-numbers',
   lineNumbersStart: 'data-hp-line-numbers-start',
   lineNumbersCountBy: 'data-hp-line-numbers-count-by',
@@ -138,6 +142,10 @@ function parsePageAttrs(el: Element): PageConfig {
   if (margin) config.margin = margin;
   const orientation = el.getAttribute(A.orientation);
   if (orientation) config.orientation = orientation.trim() as PageConfig['orientation'];
+  const headerDistance = el.getAttribute(A.headerDistance);
+  if (headerDistance) config.headerDistance = headerDistance;
+  const footerDistance = el.getAttribute(A.footerDistance);
+  if (footerDistance) config.footerDistance = footerDistance;
   const columns = el.getAttribute(A.columns);
   if (columns) config.columns = Number(columns.trim());
   const columnGap = el.getAttribute(A.columnGap);

@@ -257,6 +257,16 @@ Any CSS margin shorthand:
 
 In declarative mode: `data-hp-margin="0.6in"`.
 
+#### Header and footer distance (Word layout)
+
+By default the header and footer sit inside the margins, above and below the body. Word instead places them *in* the margins: the header at a distance from the top edge ("Header from top"), the footer at a distance from the bottom edge, with the body between the margins. `headerDistance` / `footerDistance` do the same:
+
+```js
+{ margin: '1in', headerDistance: '0.5in', footerDistance: '0.5in' }
+```
+
+The body then starts at the top margin, or lower only when the header is taller than the space in the margin (as in Word), and likewise at the bottom. The header and footer are wrapped in `div.hp-header-area` / `div.hp-footer-area`, which reach from the distance to the margin. Declaratively: `data-hp-header-distance` / `data-hp-footer-distance`.
+
 ### Headers and footers
 
 In the JS API, `header` and `footer` accept:
@@ -612,6 +622,7 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-section` | content elements | Start a new section (`sections[name]`); implies a page break |
 | `data-hp-orientation` | config / content / section group | `landscape` or `portrait` |
 | `data-hp-columns` / `data-hp-column-gap` / `data-hp-column-rule` | config / content / section group | Newspaper columns, the space and line between them |
+| `data-hp-header-distance` / `data-hp-footer-distance` | config / content / section group | Header/footer distance from the sheet edge (Word layout) |
 | `data-hp-line-numbers` (+ `-start`, `-count-by`, `-distance`) | config / content / section group | Line numbers: `page`, `section`, `continuous` restart, or `none` |
 | `data-hp-suppress-line-numbers` | content elements | Leave the element's lines unnumbered |
 | `data-hp-section` | inside config | Section layout group (slots, margin, numbering, nested first/odd/even groups) |

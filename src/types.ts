@@ -99,6 +99,15 @@ export interface PageConfig {
   orientation?: 'portrait' | 'landscape';
   /** Any CSS margin shorthand (e.g. '0.5in', '10mm 20mm'). */
   margin?: string;
+  /**
+   * Distance from the top edge of the sheet to the header (Word: "Header
+   * from top", e.g. '0.5in'). The header then sits inside the top margin and
+   * the body starts at the margin, lower only if the header is taller.
+   * Default: none (the header sits inside the margin box, above the body).
+   */
+  headerDistance?: string;
+  /** Distance from the bottom edge to the footer (Word: "Footer from bottom"). */
+  footerDistance?: string;
   header?: HeaderFooterTemplate;
   footer?: HeaderFooterTemplate;
   /**
