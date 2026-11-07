@@ -224,6 +224,23 @@ In the JS API, `header` and `footer` accept:
 
 In declarative mode, the same context fields are interpolated in the template HTML: `{{page}}`, `{{totalPages}}`, `{{pageNumber}}`, `{{pageLabel}}`, `{{lastPageNumber}}` and `{{lastPageLabel}}`.
 
+### Watermarks and page backgrounds
+
+`watermark` takes the same templates and context as `header`/`footer`. It is rendered in `div.hp-watermark`, a layer covering the whole sheet (margins included) behind the content. It is out of the flow, so it never affects pagination:
+
+```js
+createPaginator({
+  source: '#content',
+  page: { watermark: 'DRAFT' },
+  firstPage: { watermark: null },                       // not on the cover
+  sections: { appendix: { page: { watermark: ({ section }) => `<img src="bg.svg" style="width:100%">` } } },
+});
+```
+
+- It follows the same layers as headers: sections, first/odd/even pages, `pageOverrides`, and `null` to remove.
+- The default look is large, light, centered text rotated 45°, with zero specificity, so `.hp-watermark { … }` restyles it. Use an image or full-size element for a page background.
+- Declaratively: a `data-hp-watermark` slot (`="none"` removes it), like `data-hp-header`.
+
 ### Page numbers
 
 Template functions receive the page context:

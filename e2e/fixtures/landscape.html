@@ -3,7 +3,8 @@
   A landscape section inside a portrait document (Word: section
   orientation). Letter portrait, then a landscape section holding a wide
   table that spans pages, then portrait again. Checked in the DOM and in the
-  PDF: each sheet must match its page's size and orientation.
+  PDF: each sheet must match its page's size and orientation. Every page
+  has a WATERMARK layer behind the content.
 -->
 <html>
 <head>
@@ -37,7 +38,12 @@
     '</tbody>';
   htmlPaginator.createPaginator({
     source: '#src',
-    page: { size: 'letter', margin: '0.5in', footer: ({ pageLabel }) => `<div style="text-align:center">${pageLabel}</div>` },
+    page: {
+      size: 'letter',
+      margin: '0.5in',
+      footer: ({ pageLabel }) => `<div style="text-align:center">${pageLabel}</div>`,
+      watermark: '<span>WATERMARK</span>',
+    },
     sections: { wide: { page: { orientation: 'landscape' } }, body: {} },
     repeatTableHead: true,
   }).paginate();

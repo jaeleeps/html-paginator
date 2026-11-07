@@ -19,7 +19,24 @@ test.describe('landscape section', () => {
     // Every landscape page repeats the header row.
     for (const p of wide) expect(p.theads).toBe(1);
 
+    // The watermark covers each whole sheet, behind the content.
+    const layers = await page.evaluate(() =>
+      Array.from(document.querySelectorAll<HTMLElement>('.hp-pages > .hp-page'), (pg) => {
+        const layer = pg.querySelector('.hp-watermark')!.getBoundingClientRect();
+        const sheet = pg.getBoundingClientRect();
+        const mark = pg.querySelector('.hp-watermark span')!.getBoundingClientRect();
+        const z = (sel: string) => Number(getComputedStyle(pg.querySelector(sel)!).zIndex) || 0;
+        return {
+          covers: Math.abs(layer.width - sheet.width) < 1 && Math.abs(layer.height - sheet.height) < 1,
+          centered: Math.abs(mark.left + mark.width / 2 - (sheet.left + sheet.width / 2)) < 2,
+          contentOnTop: z('.hp-body') > z('.hp-watermark'),
+        };
+      }),
+    );
+    for (const [i, l] of layers.entries()) expect(l, `page ${i + 1}`).toEqual({ covers: true, centered: true, contentOnTop: true });
+
     const pdf = await readPdf(await printPdf(page));
+    for (const [i, sheet] of pdf.entries()) expect(sheet.text, `sheet ${i + 1}`).toContain('WATERMARK');
     expect(pdf).toHaveLength(pages.length);
     pdf.forEach((sheet, i) => {
       expect(sheet.widthIn, `sheet ${i + 1}`).toBeCloseTo(pages[i]!.widthIn, 1);

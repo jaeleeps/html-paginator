@@ -48,6 +48,22 @@ export function buildStylesheet(size: PageDimensions, pageSizes: readonly PageDi
   color: inherit;
   text-decoration: none;
 }
+/* Watermark layer: centered, behind the content, which stays on top. */
+:where(.${c.watermark}) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0, 0, 0, 0.12);
+  font-size: 96px;
+  font-weight: bold;
+}
+:where(.${c.watermark}) > * {
+  transform: rotate(-45deg);
+}
+.${c.watermark} ~ * {
+  position: relative;
+  z-index: 1;
+}
 :where(.hp-endnote-ref a) {
   color: inherit;
   text-decoration: none;
