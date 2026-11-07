@@ -542,6 +542,8 @@ Wrap a note's text in `data-footnote` where its reference goes. The note moves t
   createPaginator({ source: '#content', footnotes: { restart: 'page', format: 'lower-alpha' } });
   // restart: 'continuous' (default) | 'section' | 'page'
   ```
+
+  Declaratively: `data-hp-footnote-restart="page"` and `data-hp-footnote-format="lower-alpha"` on the config element (or the content).
 - The footnote area takes its height from the body. Pagination keeps every reference on the same page as its note: a paragraph or table row splits before the line with the reference, or moves on, rather than leave its note behind.
 - Default styles are small text and a one-third-width separator. They use zero specificity, so any rule of yours wins:
 
@@ -591,6 +593,8 @@ Word's SEQ and REF fields: number figures, tables or any other sequence in docum
   ```js
   createPaginator({ source: '#content', endnotes: { location: 'section', restart: 'section' } });
   ```
+
+  Declaratively: `data-hp-endnote-location`, `data-hp-endnote-restart` and `data-hp-endnote-format` on the config element (or the content).
 
 ### Table of contents and page references
 
