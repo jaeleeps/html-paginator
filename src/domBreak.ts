@@ -194,6 +194,12 @@ function tableRows(table: HTMLTableElement): HTMLElement[] {
   return rows;
 }
 
+/** A split row's tail ends the table if the row did: it takes over the footer. */
+export function transferTableFoot(row: HTMLElement, tail: HTMLElement): void {
+  const foot = footByLastRow.get(row);
+  if (foot) footByLastRow.set(tail, foot);
+}
+
 /**
  * Child items of an element for splitting purposes.
  * - <table> → data rows (tr of its tbody sections); caption/thead/tfoot are

@@ -361,6 +361,13 @@ createPaginator({ source: '#content', repeatTableHead: true });
 
 Or declaratively: add `data-hp-repeat-table-head` on `<template data-hp-config>` or `<div data-hp-content>`.
 
+**Rows break across pages**, like Word's "Allow row to break across pages" (on by default). A row that does not fit is cut across all its cells at one line: each cell's lines above the cut stay, and the rest continue in a matching row on the next page. Rows taller than a whole page no longer overflow.
+
+- Per cell, CSS `orphans`/`widows` apply (default 2). A cell that would keep fewer lines moves whole, so rows of 3 lines or fewer never split.
+- Keep a row whole with `<tr data-break="avoid">` or `tr { break-inside: avoid }`. Turn this off everywhere with `splitTableRows: false`.
+- Rows of tables with `rowspan` cells are never split.
+- The tail row is marked `data-hp-continued`. A split last row passes the `<tfoot>` on to its final part.
+
 Continuation fragments are marked with a `data-hp-continued` attribute for styling:
 
 ```css
@@ -382,6 +389,7 @@ Create a paginator instance.
 | `page` | `PageConfig` | letter, no margin | Default page definition |
 | `pageOverrides` | `Record<number, PageConfig>` | `{}` | Per-page overrides (1-based) |
 | `repeatTableHead` | `boolean` | `false` | Repeat `<thead>` on table continuation pages |
+| `splitTableRows` | `boolean` | `true` | Let rows break across pages (cells split between lines) |
 | `splitParagraphs` | `boolean` | `true` | Split paragraphs between lines (widow/orphan control via CSS `orphans`/`widows`) |
 | `keepHeadingsWithNext` | `boolean` | `true` | Headings keep with the next element |
 | `injectStyles` | `boolean` | `true` | Inject built-in print/screen stylesheet |
@@ -453,6 +461,7 @@ The pipeline has two passes:
 
 3. **Split or place** -- When an item doesn't fit:
    - **Splittable** (`data-break="auto"` with children): `splitToFit` recursively splits the container at child boundaries. The head fragment stays on the current page; the tail is re-queued for the next page. Tables split at row level with optional `<thead>` repetition. If no children fit an empty page, `forceSplit` takes the first (deepest splittable) child so pagination can continue.
+   - **Table rows**: cut across all cells at one line, with per-cell `orphans`/`widows`.
    - **Paragraphs** (`auto` elements holding inline text): split between lines. Line boxes are found in the real layout, and the largest head within `orphans`/`widows` that fits stays on the page.
    - **Atomic** (`avoid`, `clip`, or leaf): the item is placed alone on a new page. If it exceeds the page height, it overflows in place (`overflows: true`). For `clip` items, `overflow: hidden` is applied to the page body.
 

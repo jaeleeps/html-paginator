@@ -1,6 +1,7 @@
 import type { MeasureAdapter, PaginateResult, Paginator, PaginatorConfig } from './types';
 import { buildPages, CLASS_NAMES } from './buildPages';
 import { distribute } from './distribute';
+import type { FragmentInfo } from './distribute';
 import {
   BREAK_ATTRIBUTE,
   createDomBreaker,
@@ -12,6 +13,7 @@ import { createPageLayout } from './layout';
 import { createDomMeasurer } from './measure';
 import { resolveSize } from './pageConfig';
 import { injectStyles } from './styles';
+import { createRowSplitter } from './rowSplit';
 import { createTextSplitter } from './textSplit';
 import { buildTableOfContents, resolvePageRefs } from './toc';
 
@@ -108,11 +110,23 @@ export function createPaginator(config: PaginatorConfig): Paginator {
       const measurer: MeasureAdapter =
         resolved.measurer ?? createDomMeasurer({ document: doc, layout });
 
-      // Paragraphs split between lines when the measurer can lay them out.
+      // Paragraphs split between lines and rows across pages when the
+      // measurer can lay them out.
       const layoutIn = measurer.layout?.bind(measurer);
-      const fragment =
+      const splitText =
         resolved.splitParagraphs !== false && layoutIn
           ? createTextSplitter({ layout: layoutIn, root: copy })
+          : undefined;
+      const splitRow =
+        resolved.splitTableRows !== false && layoutIn
+          ? createRowSplitter({ layout: layoutIn, root: copy })
+          : undefined;
+      const fragment =
+        splitText || splitRow
+          ? (el: HTMLElement, fits: (head: HTMLElement) => boolean, info: FragmentInfo) =>
+              el instanceof HTMLTableRowElement
+                ? (splitRow?.(el, fits, info) ?? null)
+                : (splitText?.(el, fits, info) ?? null)
           : undefined;
 
       try {

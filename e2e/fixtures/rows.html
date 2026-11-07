@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  Table rows breaking across pages (Word: "Allow row to break across
+  pages"). Letter body 960px; every line, header and footer row is 20px.
+  Cells hold one token per line: <row>-<cell>-<line>, e.g. A-1-07.
+  A  820px filler; header + short row leave 100px → the tall row (12 | 3
+     lines) splits after 5 lines; the 3-line cell fits whole.
+  B  880px filler; header leaves 60px → 3 lines, but cell 2 (4 lines) keeps
+     2 so 2 move (widows); cell 1 keeps 3.
+  C  900px filler; data-break="avoid" row moves whole.
+  D  a 110-line row spans pages; the table footer follows its last part.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>html-paginator rows fixture</title>
+<style>
+  body { margin: 0; font: 14px/20px Helvetica, Arial, sans-serif; }
+  .fill { margin: 0; background: #eef; }
+  table { width: 100%; border-collapse: collapse; margin: 0; }
+  th, td { padding: 0 6px; border: 0; vertical-align: top; text-align: left; }
+  td { background: #fafafa; }
+  td + td { background: #f0f0f0; }
+</style>
+</head>
+<body>
+<div id="src"></div>
+<script src="/dist/index.global.js"></script>
+<script>
+  const pad = (n) => String(n).padStart(2, '0');
+  const cell = (row, c, n) => `<td>${Array.from({ length: n }, (_, i) => `${row}-${c}-${pad(i + 1)}`).join('<br>')}</td>`;
+  const table = (rows, foot = '') => `<table><thead><tr><th>H1</th><th>H2</th></tr></thead><tbody>${rows}</tbody>${foot}</table>`;
+  document.getElementById('src').innerHTML = [
+    '<div class="fill" style="height:820px">FILL-A</div>',
+    table(`<tr>${cell('S', 1, 1)}${cell('S', 2, 1)}</tr><tr>${cell('A', 1, 12)}${cell('A', 2, 3)}</tr>`),
+    '<div class="fill" style="height:880px" data-break-before="page">FILL-B</div>',
+    table(`<tr>${cell('B', 1, 12)}${cell('B', 2, 4)}</tr>`),
+    '<div class="fill" style="height:900px" data-break-before="page">FILL-C</div>',
+    table(`<tr data-break="avoid">${cell('C', 1, 6)}${cell('C', 2, 2)}</tr>`),
+    '<div data-break-before="page"></div>',
+    table(`<tr>${cell('D', 1, 110)}${cell('D', 2, 2)}</tr>`, '<tfoot><tr><td>FOOT</td><td></td></tr></tfoot>'),
+  ].join('');
+  window.sourceText = document.getElementById('src').textContent;
+  htmlPaginator.createPaginator({
+    source: '#src',
+    page: { size: 'letter', margin: '0.5in' },
+    repeatTableHead: true,
+  }).paginate();
+  document.documentElement.dataset.paginated = 'true';
+</script>
+</body>
+</html>

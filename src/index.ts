@@ -13,6 +13,7 @@ export type {
   PageSlot,
   WrapInfo,
 } from './distribute';
+export { createRowSplitter } from './rowSplit';
 export { createTextSplitter } from './textSplit';
 export {
   buildTableOfContents,

@@ -21,7 +21,7 @@ export interface TextSplitterOptions {
 }
 
 /** Where a line starts: before character `offset` of a text node. */
-interface LineStart {
+export interface LineStart {
   node: Text;
   offset: number;
 }
@@ -45,19 +45,29 @@ function inlineOnly(el: HTMLElement, view: Window): boolean {
   return true;
 }
 
-function positiveInt(value: string | undefined, fallback: number): number {
+export function positiveInt(value: string | undefined, fallback: number): number {
   const n = parseInt(value ?? '', 10);
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
-/** Line starts of `el`'s text, found from the boxes of each word's first character. */
-function lineStarts(el: HTMLElement): LineStart[] | null {
+/** A line of text: where it starts in the DOM and its vertical extent. */
+export interface LineBox {
+  start: LineStart;
+  top: number;
+  bottom: number;
+}
+
+/**
+ * Lines of `el`'s text in document order, found from the boxes of each
+ * word's first character (the element must be laid out). Null without a
+ * layout engine (jsdom).
+ */
+export function lineBoxes(el: HTMLElement): LineBox[] | null {
   const doc = el.ownerDocument;
   const range = doc.createRange();
-  if (typeof range.getBoundingClientRect !== 'function') return null; // No layout (jsdom).
+  if (typeof range.getBoundingClientRect !== 'function') return null;
 
-  const starts: LineStart[] = [];
-  let lineBottom: number | null = null;
+  const lines: LineBox[] = [];
   const walker = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode() as Text | null; node; node = walker.nextNode() as Text | null) {
     const words = /\S+/g;
@@ -66,22 +76,33 @@ function lineStarts(el: HTMLElement): LineStart[] | null {
       range.setEnd(node, match.index + 1);
       const box = range.getBoundingClientRect();
       if (box.height === 0) continue;
-      if (lineBottom === null) {
-        lineBottom = box.bottom;
-      } else if ((box.top + box.bottom) / 2 > lineBottom) {
+      const line = lines[lines.length - 1];
+      if (!line || (box.top + box.bottom) / 2 > line.bottom) {
         // Below the current line: this word starts the next one.
-        starts.push({ node, offset: match.index });
-        lineBottom = box.bottom;
+        lines.push({ start: { node, offset: match.index }, top: box.top, bottom: box.bottom });
       } else {
-        lineBottom = Math.max(lineBottom, box.bottom);
+        line.top = Math.min(line.top, box.top);
+        line.bottom = Math.max(line.bottom, box.bottom);
       }
     }
   }
-  return starts;
+  return lines;
+}
+
+/**
+ * Outermost detached ancestor of `el` below `root`: the fragment wrappers of
+ * its containers, laid out so `el` gets the width it really has.
+ */
+export function layoutRoot(el: HTMLElement, root: Node | undefined): HTMLElement {
+  let top = el;
+  while (top.parentElement && top.parentElement !== root && !top.parentElement.isConnected) {
+    top = top.parentElement;
+  }
+  return top;
 }
 
 /** Copy of `el` holding the content between two points (null = element edge). */
-function slice(el: HTMLElement, from: LineStart | null, to: LineStart | null): HTMLElement {
+export function slice(el: HTMLElement, from: LineStart | null, to: LineStart | null): HTMLElement {
   const range = el.ownerDocument.createRange();
   range.selectNodeContents(el);
   if (from) range.setStart(from.node, from.offset);
@@ -103,16 +124,11 @@ export function createTextSplitter(
   const measureLines = (el: HTMLElement, page: number): TextLayout | null => {
     const view = el.ownerDocument.defaultView;
     if (!view) return null;
-    // Lay out the outermost detached ancestor (the fragment wrappers of the
-    // containers), so lines wrap at the width the paragraph really has.
-    let top = el;
-    while (top.parentElement && top.parentElement !== root && !top.parentElement.isConnected) {
-      top = top.parentElement;
-    }
-    return layout(top, page, () => {
+    return layout(layoutRoot(el, root), page, () => {
       if (!inlineOnly(el, view)) return null;
-      const starts = lineStarts(el);
-      if (!starts) return null;
+      const lines = lineBoxes(el);
+      if (!lines) return null;
+      const starts = lines.slice(1).map((line) => line.start);
       const style = view.getComputedStyle(el);
       return {
         starts,

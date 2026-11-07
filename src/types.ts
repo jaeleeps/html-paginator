@@ -154,6 +154,13 @@ export interface PaginatorConfig {
    * Default: true.
    */
   splitParagraphs?: boolean;
+  /**
+   * Let table rows break across pages, like Word ("Allow row to break across
+   * pages"): cells split between lines at a common cut, with CSS
+   * `orphans`/`widows` per cell. `data-break="avoid"` or
+   * `break-inside: avoid` on a row keeps it whole. Default: true.
+   */
+  splitTableRows?: boolean;
   /** Repeat <thead> on table continuation pages. Default: false. */
   repeatTableHead?: boolean;
   /**
