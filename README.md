@@ -444,6 +444,7 @@ Word's SEQ and REF fields: number figures, tables or any other sequence in docum
 
 - Each sequence name ("Figure", "Table", "Equation", …) counts separately. `data-hp-seq-format` sets a number style, e.g. `upper-alpha`.
 - `data-hp-ref` shows `<name> <number>` of the sequence number at its `href` target, which is the numbered element or an element containing it. `data-hp-ref="number"` shows only the number, and `data-hp-ref="#id"` names the target directly. A target without a number shows `??` and logs a warning.
+- **Chapter numbers** (Word's "include chapter number"): `data-hp-seq-chapter="1"` on a number, or on an ancestor such as the content root, puts the number of the enclosing `h1` in front, and the count restarts in each chapter: "Figure 2-1". Level 2 uses outline numbers ("2.3-1"); levels with no headings above them are left out, so `h2` chapters without `h1` give "3-1". `data-hp-seq-separator` changes the "-". Headings with `data-hp-toc-skip` or inside a TOC container are not counted. Cross-references and the list of figures show the full number.
 - **List of figures** (Word's Table of Figures): `<nav data-hp-toc="Figure"></nav>` lists the captions of a sequence with their pages, in the same format as the TOC. The caption is the enclosing `figcaption`/`caption`, or else the number's parent element.
 - Numbers do not depend on pagination, so they are filled in before measuring.
 
@@ -576,6 +577,7 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-hp-field` | inline content | Page field: `pageLabel`, `totalPages`, `sectionPage`, … of the page it lands on |
 | `data-repeat-head` | `<table>` | Repeat this table's `<thead>` on continuation pages (`="false"` opts out of `repeatTableHead`) |
 | `data-hp-seq` / `data-hp-seq-format` | inline content | Sequence number ("Figure", "Table", …) in document order |
+| `data-hp-seq-chapter` / `data-hp-seq-separator` | number or ancestor | Prefix the chapter (heading) number, restart per chapter: "Figure 2-1" |
 | `data-hp-ref` | inline content | Cross-reference: "Figure 3" (or `="number"`) of the sequence number at `href` |
 | `data-endnote` | inline content | Endnote: numbered reference; the note goes to the end (or into `data-hp-endnotes`) |
 | `data-hp-endnotes` | content container | Where endnotes are collected |

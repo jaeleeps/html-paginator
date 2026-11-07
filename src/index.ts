@@ -19,7 +19,9 @@ export {
   REF_ATTRIBUTE,
   resolveCrossRefs,
   SEQ_ATTRIBUTE,
+  SEQ_CHAPTER_ATTRIBUTE,
   SEQ_FORMAT_ATTRIBUTE,
+  SEQ_SEPARATOR_ATTRIBUTE,
 } from './captions';
 export {
   collectEndnotes,
