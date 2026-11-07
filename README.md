@@ -233,7 +233,7 @@ Create a paginator instance.
 | `pageOverrides` | `Record<number, PageConfig>` | `{}` | Per-page overrides (1-based) |
 | `repeatTableHead` | `boolean` | `false` | Repeat `<thead>` on table continuation pages |
 | `injectStyles` | `boolean` | `true` | Inject built-in print/screen stylesheet |
-| `measurer` | `MeasureAdapter` | DOM layout | Custom measurement adapter |
+| `measurer` | `MeasureAdapter` | DOM layout | Custom measurement adapter: `measure(el, page?)` (outer height of `el` on that page), `pageHeight(page)` (available body height), optional `dispose()` |
 
 **`Paginator`**
 

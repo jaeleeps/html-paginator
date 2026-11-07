@@ -333,6 +333,22 @@ describe('paginate() edge cases', () => {
     expect(String(warn.mock.calls[0]?.[0])).toContain('invalid data-break="nope"');
   });
 
+  it('passes the target page number to the measurer', () => {
+    // Page 1 is narrow (content twice as tall), later pages are wide.
+    const source = mountSource('<p data-h="40">a</p><p data-h="60">b</p>');
+    const base = stubMeasurer(100);
+    const { pages } = createPaginator({
+      source,
+      measurer: {
+        measure: (el, page) => base.measure(el) * (page === 1 ? 2 : 1),
+        pageHeight: base.pageHeight,
+      },
+    }).paginate();
+    expect(pages).toHaveLength(2);
+    const body = pages[1]?.querySelector<HTMLElement>(`.${CLASS_NAMES.body}`);
+    expect(body?.style.overflow).toBe('');
+  });
+
   it('applies per-page overrides by final page number', () => {
     const source = mountSource('<p data-h="50">a</p><p data-h="50">b</p><p data-h="50">c</p>');
     const { pages } = createPaginator({

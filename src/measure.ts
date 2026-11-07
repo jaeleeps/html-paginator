@@ -31,8 +31,11 @@ export interface DomMeasurerOptions {
 }
 
 export interface DomMeasurer {
-  /** Outer height (incl. margins) of an item, laid out at page-body width. */
-  measure(item: HTMLElement): number;
+  /**
+   * Outer height (incl. margins) of an item, laid out at the body width of
+   * `page` (default: the page last passed to pageHeight/measure, else 1).
+   */
+  measure(item: HTMLElement, page?: number): number;
   /** Available body height of the given page (1-based). */
   pageHeight(page: number): number;
   /** Remove all probe elements from the document. */
@@ -126,9 +129,9 @@ export function createDomMeasurer(options: DomMeasurerOptions): DomMeasurer {
       return innerHeight - headerHeight - footerHeight;
     },
 
-    measure(item: HTMLElement): number {
-      // Default to page 1's probe when measuring before any page is opened.
-      const probe = currentProbe ?? getProbe(1);
+    measure(item: HTMLElement, page?: number): number {
+      // Without a page, reuse the last probe (page 1 before any is opened).
+      const probe = page !== undefined ? getProbe(page) : (currentProbe ?? getProbe(1));
 
       // Temporarily move the item into the probe body so it is laid out at
       // the real page-body width, then restore its original position.
