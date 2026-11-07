@@ -43,6 +43,12 @@ export interface DistributeOptions<T> {
    * produces a blank page: a break at the top of a page is a no-op.
    */
   pageBreakBefore?: (item: T) => boolean;
+  /**
+   * Keep an item on the same page as the item after it (Word's "keep with
+   * next", e.g. headings). When the next item has to start a new page,
+   * trailing kept items move along, unless that would empty the page.
+   */
+  keepWithNext?: (item: T) => boolean;
 }
 
 export interface DistributedPage<T> {
@@ -102,6 +108,7 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
     wrap !== undefined && getBehavior(item) === 'auto' && getChildren(item).length > 0;
 
   const hasBreakHook = options.pageBreakBefore !== undefined;
+  const keeps = (item: T): boolean => options.keepWithNext?.(item) === true;
 
   /** Forced break before `item`, including one on its first descendant. */
   const breaksBefore = (item: T): boolean => {
@@ -151,6 +158,7 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
     }
 
     let tailKids = kids.slice(index);
+    let headEndsWithFragment = false;
 
     if (index < kids.length && !forced) {
       const boundary = kids[index] as T;
@@ -160,11 +168,20 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
         );
         if (sub.head) {
           headKids.push(sub.head);
+          headEndsWithFragment = true;
           tailKids = sub.tail ? [sub.tail, ...kids.slice(index + 1)] : kids.slice(index + 1);
         } else {
           // Trial wraps may have emptied `boundary`; use its rebuilt copy.
           tailKids = [sub.tail as T, ...kids.slice(index + 1)];
         }
+      }
+    }
+
+    // Keep with next: whole kept children at the end of the head move to the
+    // tail with what follows them (a forced break ends the head on purpose).
+    if (!forced && !headEndsWithFragment && tailKids.length > 0) {
+      while (headKids.length > 1 && keeps(headKids[headKids.length - 1] as T)) {
+        tailKids.unshift(headKids.pop() as T);
       }
     }
 
@@ -202,6 +219,30 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
 
   const pages: DistributedPage<T>[] = [];
   let current: DistributedPage<T> | null = null;
+  /** Per page, what each placed item was queued as and measured at. */
+  const placed = new Map<DistributedPage<T>, { entry: Pending<T>; height: number }[]>();
+
+  const place = (page: DistributedPage<T>, entry: Pending<T>, height: number): void => {
+    page.items.push(entry.item);
+    page.usedHeight += height;
+    placed.get(page)!.push({ entry, height });
+  };
+
+  /**
+   * Take kept (keep-with-next) items off the end of `page` so they move on
+   * with the item that no longer fits. Never empties the page.
+   */
+  const takeKept = (page: DistributedPage<T>): Pending<T>[] => {
+    const log = placed.get(page)!;
+    const kept: Pending<T>[] = [];
+    while (page.items.length > 1 && keeps(page.items[page.items.length - 1] as T)) {
+      page.items.pop();
+      const last = log.pop()!;
+      page.usedHeight -= last.height;
+      kept.unshift(last.entry);
+    }
+    return kept;
+  };
 
   const openPage = (): DistributedPage<T> => {
     const page = pages.length + 1;
@@ -219,6 +260,7 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
       overflows: false,
     };
     pages.push(opened);
+    placed.set(opened, []);
     return opened;
   };
 
@@ -239,8 +281,7 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
 
     // Fits in the remaining space — place and continue.
     if (current.usedHeight + height <= current.availableHeight && !breaksInside(entry.item)) {
-      current.items.push(entry.item);
-      current.usedHeight += height;
+      place(current, entry, height);
       continue;
     }
 
@@ -252,8 +293,7 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
       });
 
       if (head) {
-        current.items.push(head);
-        current.usedHeight += measure(head, current.page);
+        place(current, { item: head, continuation: entry.continuation }, measure(head, current.page));
         if (tail) pending.unshift({ item: tail, continuation: true });
         current = null; // Tail cannot fit here; continue on a fresh page.
         continue;
@@ -262,16 +302,20 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
       if (current.items.length > 0) {
         // Nothing fits the remaining space — retry on a fresh page, where
         // splitting gets the full page height to work with.
+        const kept = takeKept(current);
         current = openPage();
-        pending.unshift({ item: tail as T, continuation: entry.continuation });
+        pending.unshift(...kept, { item: tail as T, continuation: entry.continuation });
         continue;
       }
 
       // Empty page and not even the first child fits: force-split so the
       // oversized descendant overflows alone and the rest paginates.
       const forced = forceSplit(tail as T, entry.continuation);
-      current.items.push(forced.head as T);
-      current.usedHeight += measure(forced.head as T, current.page);
+      place(
+        current,
+        { item: forced.head as T, continuation: entry.continuation },
+        measure(forced.head as T, current.page),
+      );
       current.overflows = true;
       if (forced.tail) pending.unshift({ item: forced.tail, continuation: true });
       current = null;
@@ -281,13 +325,13 @@ export function distribute<T>(options: DistributeOptions<T>): DistributedPage<T>
     // Atomic path ('avoid'/'clip'/leaf, or unsplittable remainder):
     // retry on a new page (re-measured there) unless this one is still empty.
     if (current.items.length > 0) {
+      const kept = takeKept(current);
       current = openPage();
-      pending.unshift(entry);
+      pending.unshift(...kept, entry);
       continue;
     }
 
-    current.items.push(entry.item);
-    current.usedHeight += height;
+    place(current, entry, height);
 
     if (height > current.availableHeight) {
       // Taller than an empty page: placed alone, mark overflow.

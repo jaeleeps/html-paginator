@@ -4,7 +4,7 @@ import { distribute } from './distribute';
 import {
   BREAK_ATTRIBUTE,
   createDomBreaker,
-  markForcedBreaks,
+  markBreakHints,
   warnNestedBreakAttributes,
 } from './domBreak';
 import { createDomMeasurer } from './measure';
@@ -64,7 +64,7 @@ export function createPaginator(config: PaginatorConfig): Paginator {
 
       // Work on a clone so the source stays intact for reset()/re-pagination.
       const copy = source.cloneNode(true) as HTMLElement;
-      markForcedBreaks(source, copy);
+      markBreakHints(source, copy, { keepHeadingsWithNext: resolved.keepHeadingsWithNext });
 
       // Loose top-level text gets a <div> so it is paginated, not dropped.
       const items: HTMLElement[] = [];

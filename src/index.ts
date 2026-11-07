@@ -13,13 +13,15 @@ export {
   domChildren,
   domWrap,
   getBreakBehavior,
+  hasKeepWithNext,
   hasPageBreakBefore,
-  markForcedBreaks,
+  KEEP_WITH_NEXT_ATTRIBUTE,
+  markBreakHints,
   PAGE_BREAK_AFTER_ATTRIBUTE,
   PAGE_BREAK_BEFORE_ATTRIBUTE,
   warnNestedBreakAttributes,
 } from './domBreak';
-export type { DomWrapOptions } from './domBreak';
+export type { BreakHintOptions, DomWrapOptions } from './domBreak';
 export { PAGE_SIZE_PRESETS, resolvePageConfig, resolveSize } from './pageConfig';
 export type { PageVariants, ResolvedPageConfig } from './pageConfig';
 export {

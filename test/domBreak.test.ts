@@ -6,8 +6,9 @@ import {
   domChildren,
   domWrap,
   getBreakBehavior,
+  hasKeepWithNext,
   hasPageBreakBefore,
-  markForcedBreaks,
+  markBreakHints,
   warnNestedBreakAttributes,
 } from '../src/domBreak';
 import { distribute } from '../src/distribute';
@@ -242,14 +243,14 @@ describe('integration: distribute + createDomBreaker', () => {
   });
 });
 
-describe('markForcedBreaks', () => {
+describe('markBreakHints', () => {
   /** Mount `markup` as a live source, clone it, mark breaks on the clone. */
   function marked(markup: string, css = ''): HTMLElement {
     document.head.innerHTML = css ? `<style>${css}</style>` : '';
     document.body.innerHTML = `<div id="src">${markup}</div>`;
     const source = document.getElementById('src') as HTMLElement;
     const copy = source.cloneNode(true) as HTMLElement;
-    markForcedBreaks(source, copy);
+    markBreakHints(source, copy);
     return copy;
   }
 
@@ -295,5 +296,42 @@ describe('markForcedBreaks', () => {
   it('does not touch the source', () => {
     marked('<p id="a" data-break-after="page"></p><p id="b"></p>');
     expect(document.querySelectorAll('[data-break-before]')).toHaveLength(0);
+  });
+});
+
+describe('markBreakHints: keep with next', () => {
+  function kept(markup: string, css = '', options = {}): string[] {
+    document.head.innerHTML = css ? `<style>${css}</style>` : '';
+    document.body.innerHTML = `<div id="src">${markup}</div>`;
+    const source = document.getElementById('src') as HTMLElement;
+    const copy = source.cloneNode(true) as HTMLElement;
+    markBreakHints(source, copy, options);
+    document.head.innerHTML = '';
+    return Array.from(copy.querySelectorAll<HTMLElement>('*'))
+      .filter(hasKeepWithNext)
+      .map((el) => el.id);
+  }
+
+  it('keeps headings with next by default, like Word', () => {
+    expect(kept('<h1 id="a"></h1><h3 id="b"></h3><p id="c"></p>')).toEqual(['a', 'b']);
+  });
+
+  it('lets a heading opt out with data-keep-with-next="false"', () => {
+    expect(kept('<h2 id="a" data-keep-with-next="false"></h2><p id="b"></p>')).toEqual([]);
+  });
+
+  it('turns heading defaults off with keepHeadingsWithNext: false', () => {
+    expect(kept('<h2 id="a"></h2><p id="b" data-keep-with-next></p>', '', { keepHeadingsWithNext: false })).toEqual([
+      'b',
+    ]);
+  });
+
+  it('reads CSS break-after: avoid and legacy page-break-after: avoid', () => {
+    expect(
+      kept(
+        '<p id="a" class="lead"></p><p id="b" style="page-break-after: avoid"></p><p id="c"></p>',
+        '.lead { break-after: avoid }',
+      ),
+    ).toEqual(['a', 'b']);
   });
 });

@@ -13,8 +13,27 @@ export const PAGE_BREAK_BEFORE_ATTRIBUTE = 'data-break-before';
 /** `data-break-after="page"`: start the content after this element on a new page. */
 export const PAGE_BREAK_AFTER_ATTRIBUTE = 'data-break-after';
 
+/**
+ * `data-keep-with-next`: keep this element on the same page as the next one
+ * (Word's "keep with next"). `="false"` opts a heading out of the default.
+ */
+export const KEEP_WITH_NEXT_ATTRIBUTE = 'data-keep-with-next';
+
 /** CSS break values that force a page break (`break-*` and legacy `page-break-*`). */
 const FORCED_BREAK_VALUES = new Set(['page', 'always', 'left', 'right', 'recto', 'verso']);
+
+/** CSS `break-after: avoid` is the standard spelling of keep-with-next. */
+const AVOID_BREAK_VALUES = new Set(['avoid', 'avoid-page']);
+
+function cssAvoidsBreakAfter(style: CSSStyleDeclaration | undefined): boolean {
+  if (!style) return false;
+  return (
+    AVOID_BREAK_VALUES.has(style.getPropertyValue('break-after')) ||
+    AVOID_BREAK_VALUES.has(style.getPropertyValue('page-break-after'))
+  );
+}
+
+const HEADING = /^H[1-6]$/;
 
 function cssForcesBreak(style: CSSStyleDeclaration | undefined, side: 'before' | 'after'): boolean {
   if (!style) return false;
@@ -37,16 +56,37 @@ export function hasPageBreakBefore(el: HTMLElement): boolean {
   return el.getAttribute(PAGE_BREAK_BEFORE_ATTRIBUTE) === 'page';
 }
 
+/** True when the element keeps with the next one (normalized marker). */
+export function hasKeepWithNext(el: HTMLElement): boolean {
+  return el.hasAttribute(KEEP_WITH_NEXT_ATTRIBUTE) && el.getAttribute(KEEP_WITH_NEXT_ATTRIBUTE) !== 'false';
+}
+
+export interface BreakHintOptions {
+  /** Headings (h1–h6) keep with next, as in Word. Default: true. */
+  keepHeadingsWithNext?: boolean;
+}
+
 /**
- * Normalize forced page breaks of `source` onto its deep clone `copy` as
- * `data-break-before="page"` markers, which survive fragment wrapping.
+ * Normalize break hints of `source` onto its deep clone `copy`, as markers
+ * that survive fragment wrapping (attributes are copied by `domWrap`):
  *
- * Sources: `data-break-before/after="page"` and CSS `break-before/after`
- * (`page`, `left`, `right`, ...) or legacy `page-break-before/after: always`,
- * read from the live source so stylesheets apply. A break after an element
- * becomes a break before the next element in document order.
+ * - Forced page breaks → `data-break-before="page"`. Sources:
+ *   `data-break-before/after="page"` and CSS `break-before/after` (`page`,
+ *   `left`, `right`, ...) or legacy `page-break-before/after: always`. A break
+ *   after an element becomes a break before the next element in document
+ *   order.
+ * - Keep with next → `data-keep-with-next`. Sources: the attribute, CSS
+ *   `break-after: avoid` (or legacy `page-break-after: avoid`), and headings
+ *   unless `keepHeadingsWithNext` is false or the heading says `="false"`.
+ *
+ * Styles are read from the live source so stylesheets apply.
  */
-export function markForcedBreaks(source: HTMLElement, copy: HTMLElement): void {
+export function markBreakHints(
+  source: HTMLElement,
+  copy: HTMLElement,
+  options: BreakHintOptions = {},
+): void {
+  const keepHeadings = options.keepHeadingsWithNext !== false;
   const view = source.ownerDocument.defaultView;
   const sources = source.querySelectorAll('*');
   const copies = copy.querySelectorAll('*');
@@ -60,6 +100,14 @@ export function markForcedBreaks(source: HTMLElement, copy: HTMLElement): void {
     if (src.getAttribute(PAGE_BREAK_AFTER_ATTRIBUTE) === 'page' || cssForcesBreak(style, 'after')) {
       nextElementAfter(el, copy)?.setAttribute(PAGE_BREAK_BEFORE_ATTRIBUTE, 'page');
     }
+
+    const keepAttr = src.getAttribute(KEEP_WITH_NEXT_ATTRIBUTE);
+    const keep =
+      keepAttr === 'false'
+        ? false
+        : keepAttr !== null || cssAvoidsBreakAfter(style) || (keepHeadings && HEADING.test(src.tagName));
+    if (keep) el.setAttribute(KEEP_WITH_NEXT_ATTRIBUTE, '');
+    else el.removeAttribute(KEEP_WITH_NEXT_ATTRIBUTE);
   });
 }
 
@@ -203,11 +251,13 @@ export function createDomBreaker(options: DomWrapOptions = {}): {
   children: (el: HTMLElement) => HTMLElement[];
   wrap: (el: HTMLElement, children: HTMLElement[], info: WrapInfo) => HTMLElement;
   pageBreakBefore: (el: HTMLElement) => boolean;
+  keepWithNext: (el: HTMLElement) => boolean;
 } {
   return {
     breakBehavior: getBreakBehavior,
     children: domChildren,
     wrap: (el, children, info) => domWrap(el, children, info, options),
     pageBreakBefore: hasPageBreakBefore,
+    keepWithNext: hasKeepWithNext,
   };
 }

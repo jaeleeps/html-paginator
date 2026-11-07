@@ -16,6 +16,8 @@ interface Item {
   continuation?: boolean;
   /** Forced page break before this item. */
   brk?: boolean;
+  /** Keep with next. */
+  keep?: boolean;
 }
 
 function measure(item: Item): number {
@@ -32,6 +34,7 @@ function run(items: Item[], pageHeight: number | ((page: number) => number)) {
     children: (i) => i.kids ?? [],
     wrap: (i, kids, info) => ({ ...i, kids, continuation: info.continuation }),
     pageBreakBefore: (i) => i.brk === true,
+    keepWithNext: (i) => i.keep === true,
   });
 }
 
@@ -332,5 +335,48 @@ describe('distribute with forced page breaks', () => {
       pageBreakBefore: (i) => i.brk === true,
     });
     expect(pageLeaves(pages)).toEqual([[10, 10], [10, 10]]);
+  });
+});
+
+describe('distribute with keep-with-next', () => {
+  it('moves a kept item along with an atomic item that starts a new page', () => {
+    const pages = run([{ h: 30 }, { h: 10, keep: true }, { h: 30 }], 60);
+    expect(pageLeaves(pages)).toEqual([[30], [10, 30]]);
+  });
+
+  it('moves a chain of kept items together', () => {
+    const pages = run([{ h: 20 }, { h: 10, keep: true }, { h: 10, keep: true }, { h: 30 }], 60);
+    expect(pageLeaves(pages)).toEqual([[20], [10, 10, 30]]);
+  });
+
+  it('never empties a page to honor keep-with-next', () => {
+    const pages = run([{ h: 10, keep: true }, { h: 60 }], 60);
+    expect(pageLeaves(pages)).toEqual([[10], [60]]);
+  });
+
+  it('keeps the item in place when the next one starts on the same page', () => {
+    // The container's head fits after the kept item.
+    const pages = run([{ h: 30 }, { h: 10, keep: true }, { kids: [{ h: 10 }, { h: 10 }, { h: 30 }] }], 60);
+    expect(pageLeaves(pages)).toEqual([[30, 10, 10, 10], [30]]);
+  });
+
+  it('moves along when a container retries on a fresh page', () => {
+    const pages = run([{ h: 30 }, { h: 10, keep: true }, { kids: [{ h: 30 }, { h: 30 }] }], 60);
+    expect(pageLeaves(pages)).toEqual([[30], [10, 30], [30]]);
+  });
+
+  it('moves a kept child from the end of a split head into the tail', () => {
+    const pages = run([{ kids: [{ h: 30 }, { h: 10, keep: true }, { h: 30 }] }], 60);
+    expect(pageLeaves(pages)).toEqual([[30], [10, 30]]);
+  });
+
+  it('does not move a kept child before a forced break', () => {
+    const pages = run([{ kids: [{ h: 30 }, { h: 10, keep: true }, { h: 10, brk: true }] }], 60);
+    expect(pageLeaves(pages)).toEqual([[30, 10], [10]]);
+  });
+
+  it('does not strand the last item of the document', () => {
+    const pages = run([{ h: 30 }, { h: 10, keep: true }], 60);
+    expect(pageLeaves(pages)).toEqual([[30, 10]]);
   });
 });
