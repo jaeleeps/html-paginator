@@ -76,6 +76,12 @@ export interface SectionConfig {
    * apply from the next page.
    */
   start?: 'next' | 'odd' | 'even' | 'continuous';
+  /**
+   * Balance the columns on the section's last page to equal height (what a
+   * continuous section break after the section does in Word), also at the
+   * end of the document or before a section starting on a new page.
+   */
+  balanceColumns?: boolean;
 }
 
 /** Page numbering options. */

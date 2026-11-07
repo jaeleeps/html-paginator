@@ -208,6 +208,7 @@ export function createPaginator(config: PaginatorConfig): Paginator {
             ? (notes, enginePage) => measurer.measure(footnotes.area(notes), sheetOf(enginePage))
             : undefined,
         });
+        planner.finish();
         // What is rendered: each region's columns (balanced ones replacing
         // the engine's), placed on their sheets.
         const distributed = planner.regions.flatMap((region) =>

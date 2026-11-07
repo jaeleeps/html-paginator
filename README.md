@@ -227,7 +227,7 @@ createPaginator({
   }
   ```
 
-  Before a continuous break, the columns on that page are **balanced** to equal height, as in Word. Columns that hold footnotes are left unbalanced, and so are the columns at the end of the document (as in Word, where balancing needs a continuous break after them). A continuous section's other page settings (header, footer, margins) take effect from the next page. On a page with several sections, each is rendered in a `.hp-region` stacked in the body.
+  Before a continuous break, the columns on that page are **balanced** to equal height, as in Word. `balanceColumns: true` on a section also balances its last page of columns at the end of the document or before a section that starts on a new page (in Word, a continuous break after the section). Balanced columns end within one unsplittable chunk of each other (orphans/widows keep a few lines together). Columns that hold footnotes are left unbalanced. A continuous section's other page settings (header, footer, margins) take effect from the next page. On a page with several sections, each is rendered in a `.hp-region` stacked in the body.
 - Rendered as `.hp-body > .hp-column > .hp-column-body` (plus `.hp-column-rule` and `.hp-footnotes`); the geometry is inline, so it holds with `injectStyles: false`.
 - Declaratively: `data-hp-columns="2"`, `data-hp-column-gap`, `data-hp-column-rule` on the config, content or a `data-hp-section` group.
 
@@ -657,6 +657,7 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-hp-suppress-line-numbers` | content elements | Leave the element's lines unnumbered |
 | `data-hp-running` | content elements | Set a running header value of that name (headings set `h1`…`h6` on their own) |
 | `data-hp-section` | inside config | Section layout group (slots, margin, numbering, nested first/odd/even groups) |
+| `data-hp-balance-columns` | section group | Balance the columns on the section's last page |
 | `data-hp-section-start` | section group | `odd` / `even`: start on that side, inserting a blank page if needed; `continuous`: on the same page |
 
 ## How it works

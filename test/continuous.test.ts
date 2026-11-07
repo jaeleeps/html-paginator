@@ -177,10 +177,35 @@ describe('continuous sections', () => {
     expect(cols).toEqual([['c1', 'c2', 'c3', 'n1'], []]);
   });
 
+  it('balances the last page of a section with balanceColumns, at the end or before a new page', () => {
+    src(`${paras('c', 14, 20, 'cols')}<p data-h="20" data-section="next">next</p>`);
+    const run = (balanceColumns: boolean) =>
+      createPaginator({
+        source: '#src',
+        measurer: measurer(),
+        sections: { cols: { page: { columns: 2 }, balanceColumns }, next: {} },
+      })
+        .paginate()
+        .pages.map((page) => Array.from(page.querySelectorAll('.hp-column'), (c) => texts(c).length));
+    // Greedy: 10 + 4 on page 1. Balanced: 7 + 7. The next section is unaffected.
+    expect(run(false)).toEqual([[10, 4], []]);
+    expect(run(true)).toEqual([[7, 7], []]);
+
+    src(paras('c', 14, 20, 'cols'));
+    expect(run(true)).toEqual([[7, 7]]);
+    // Only the last page of the section is balanced.
+    src(paras('c', 25, 20, 'cols'));
+    expect(run(true)).toEqual([[10, 10], [3, 2]]);
+  });
+
   it('is read from data-hp-section-start="continuous"', () => {
     document.body.innerHTML = `
-      <template data-hp-config><div data-hp-section="cols" data-hp-section-start="continuous" data-hp-columns="2"></div></template>
+      <template data-hp-config><div data-hp-section="cols" data-hp-section-start="continuous" data-hp-columns="2" data-hp-balance-columns></div></template>
       <div data-hp-content><p>a</p></div>`;
-    expect(parseDeclarativeConfig(document)!.sections?.cols).toMatchObject({ start: 'continuous', page: { columns: 2 } });
+    expect(parseDeclarativeConfig(document)!.sections?.cols).toMatchObject({
+      start: 'continuous',
+      balanceColumns: true,
+      page: { columns: 2 },
+    });
   });
 });
