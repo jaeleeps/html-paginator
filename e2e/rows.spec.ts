@@ -39,6 +39,23 @@ test.describe('table rows across pages', () => {
     for (const p of dPages) expect(p.theads).toBe(1);
     expect(dPages.map((p) => p.tfoots)).toEqual([...dPages.slice(1).map(() => 0), 1]);
 
+    // Every part of a table has the same column grid.
+    const grids = await page.evaluate(() =>
+      Array.from(document.querySelectorAll<HTMLTableElement>('.hp-pages table'), (t) => ({
+        name: t.tBodies[0]!.textContent!.match(/([A-Z])-\d-\d\d/)![1]!,
+        edges: Array.from(t.tBodies[0]!.rows[0]!.cells, (c) => {
+          const r = c.getBoundingClientRect();
+          const left = t.getBoundingClientRect().left;
+          return [Math.round(r.left - left), Math.round(r.right - left)];
+        }),
+      })),
+    );
+    for (const name of ['A', 'B', 'D']) {
+      const parts = grids.filter((g) => g.name === name || (name === 'A' && g.name === 'S'));
+      expect(parts.length, name).toBeGreaterThan(1);
+      for (const part of parts) expect(part.edges, name).toEqual(parts[0]!.edges);
+    }
+
     // Nothing lost or duplicated, in order.
     const source = await page.evaluate(() => (window as any).sourceText as string);
     const tokens = (s: string) => s.match(/[A-Z]-\d-\d\d/g) ?? [];

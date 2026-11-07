@@ -231,8 +231,9 @@ export interface DomWrapOptions {
  * The wrapper is a shallow clone (same tag + attributes, so CSS still
  * applies). Continuation fragments get `data-hp-continued`.
  *
- * Tables are reassembled properly: caption and <thead> appear on the first
- * fragment (and on continuations when `repeatTableHead` is set); rows go
+ * Tables are reassembled properly: caption on the first fragment; colgroups
+ * on every fragment; <thead> on the first (and on continuations when
+ * `repeatTableHead` is set); rows go
  * into a fresh <tbody>; <tfoot> goes on the fragment holding the last row.
  */
 export function domWrap(
@@ -249,13 +250,15 @@ export function domWrap(
   if (el instanceof HTMLTableElement) {
     const table = clone as HTMLTableElement;
     const includeChrome = !info.continuation || options.repeatTableHead === true;
-    if (includeChrome) {
-      if (el.caption && !info.continuation) {
-        table.appendChild(el.caption.cloneNode(true));
-      }
-      if (el.tHead) {
-        table.appendChild(el.tHead.cloneNode(true));
-      }
+    if (el.caption && !info.continuation) {
+      table.appendChild(el.caption.cloneNode(true));
+    }
+    // Column definitions apply to every fragment.
+    for (const cols of el.querySelectorAll(':scope > colgroup, :scope > col')) {
+      table.appendChild(cols.cloneNode(true));
+    }
+    if (includeChrome && el.tHead) {
+      table.appendChild(el.tHead.cloneNode(true));
     }
     tableRows(el as HTMLTableElement); // Record the footer before rows move.
     const tbody = el.ownerDocument.createElement('tbody');
