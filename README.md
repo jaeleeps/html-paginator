@@ -299,6 +299,16 @@ The pipeline has two passes:
 
 5. **Print stylesheet** -- An injected `@page` rule sets the CSS page size and zeroes browser margins, so the library's own margin configuration is authoritative. Each page gets `page-break-after: always`.
 
+## Development
+
+```bash
+npm test            # unit tests (vitest + jsdom, stubbed layout)
+npm run test:e2e    # real Chromium: layout, print and PDF checks (Playwright)
+npm run typecheck
+```
+
+The e2e suite builds `dist/` first, then paginates `examples/invoice.html` and the fixtures in `e2e/fixtures/`. For each one it checks every page's size, that no content extends past a page body, that all content appears once and in order, and that each page of the printed PDF has the same content as its rendered page. Install the browser once with `npx playwright install chromium`.
+
 ## License
 
 [MIT](LICENSE) © Jaeyoung Lee

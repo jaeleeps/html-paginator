@@ -1,0 +1,90 @@
+<!doctype html>
+<!--
+  Stress fixture for real-browser checks. Every content piece carries a
+  unique marker (LOOSE-TOP, P01.., N01.., R01.., ...) so specs can verify
+  that pagination keeps all content, once, in order.
+  Covers: narrow first page (different width than later pages), loose
+  top-level text, a long splitting container, a nested container, mixed
+  inline text, a split table with caption/thead/tfoot, avoid and clip, and
+  containers that must retry on a fresh page.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>html-paginator stress fixture</title>
+<style>
+  body { margin: 0; font: 14px/1.5 Helvetica, Arial, sans-serif; }
+  .hd { border-bottom: 2px solid #1a56db; padding-bottom: 6px; margin-bottom: 10px; font-weight: bold; }
+  .ft { border-top: 1px solid #999; padding-top: 4px; margin-top: 10px; font-size: 11px; color: #555; }
+  p { margin: 0 0 8px; }
+  .box { border: 1px solid #ccc; padding: 6px 10px; margin-bottom: 10px; }
+  .box[data-hp-continued] { border-top-style: dashed; }
+  section { background: #f3f6ff; padding: 4px 8px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+  td, th { border: 1px solid #bbb; padding: 3px 6px; text-align: left; }
+  thead th { background: #e5edff; }
+  tfoot td { font-weight: bold; background: #fff4d6; }
+  .avoid { background: #e8fbe8; padding: 8px; margin-bottom: 10px; }
+  .fill { height: 600px; background: #eef; }
+  .tall { height: 500px; background: #efe; border-bottom: 1px solid #9c9; }
+  .clip { height: 1400px; background: repeating-linear-gradient(#fde8e8 0 40px, #fff 40px 80px); }
+</style>
+</head>
+<body>
+<div id="src">
+  LOOSE-TOP loose text directly in the content wrapper.
+  <p>INTRO-1 This document stress-tests html-paginator in real Chromium layout.</p>
+  <div class="box" id="long"></div>
+  <div class="box"><section id="nested"></section></div>
+  <div class="box" id="mixed"></div>
+  <table data-break="auto">
+    <caption>CAPTION-TABLE</caption>
+    <thead><tr><th>#</th><th>Item</th><th>Amount</th></tr></thead>
+    <tbody id="rows"></tbody>
+    <tfoot><tr><td colspan="3">TFOOT-TOTAL grand total $9,999.00</td></tr></tfoot>
+  </table>
+  <div class="avoid" data-break="avoid">
+    <h3>AVOID-HEAD heading kept with its body</h3>
+    <p id="avoid-body"></p>
+  </div>
+  <div class="clip" data-break="clip">CLIP-BLOCK oversized, should be clipped to one page</div>
+  <!-- Content after an overflowing page starts fresh, so FILL-1 leaves
+       ~290px: the containers' 500px first children cannot start there and
+       the containers must move on whole (the split "retry" path). -->
+  <div class="fill">FILL-1 fixed-height filler</div>
+  <div class="box"><div class="tall">RETRY-A</div><div class="tall">RETRY-B</div></div>
+  <div class="fill">FILL-2 fixed-height filler</div>
+  <div class="box"><section><div class="tall">NRETRY-A</div><div class="tall">NRETRY-B</div></section></div>
+  <p>END-MARKER last paragraph.</p>
+</div>
+<script src="/dist/index.global.js"></script>
+<script>
+  const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.';
+  const pad = (n) => String(n).padStart(2, '0');
+  const range = (n, f) => Array.from({ length: n }, (_, i) => f(pad(i + 1), i + 1)).join('');
+  const set = (id, html) => { document.getElementById(id).innerHTML = html; };
+  set('long', range(40, (k) => `<p>P${k} ${lorem}</p>`));
+  set('nested', range(20, (k) => `<p>N${k} nested ${lorem}</p>`));
+  set('mixed', `MIXED-START ${lorem.repeat(3)} <b>MIXED-BOLD</b> more inline text MIXED-END`);
+  set('rows', range(60, (k, n) => `<tr><td>R${k}</td><td>Line item ${n}</td><td>$${n * 10}.00</td></tr>`));
+  set('avoid-body', `AVOID-BODY ${lorem.repeat(4)}`);
+
+  // Exposed so specs can compare against the original content.
+  window.sourceText = document.getElementById('src').innerText;
+
+  htmlPaginator.createPaginator({
+    source: '#src',
+    repeatTableHead: true,
+    page: {
+      size: 'letter',
+      margin: '0.5in',
+      header: ({ page, totalPages }) => `<div class="hd">Stress report — page ${page} of ${totalPages}</div>`,
+      footer: ({ page }) => `<div class="ft">footer p${page}</div>`,
+    },
+    // Narrow cover page: wide side margins change wrapping vs later pages.
+    pageOverrides: { 1: { margin: '0.5in 2in' } },
+  }).paginate();
+  document.documentElement.dataset.paginated = 'true';
+</script>
+</body>
+</html>
