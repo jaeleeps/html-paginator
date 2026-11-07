@@ -46,20 +46,48 @@ export function warnNestedBreakAttributes(root: HTMLElement): void {
   }
 }
 
+/** True when the element has non-whitespace text directly inside it. */
+function hasDirectText(el: Element): boolean {
+  return Array.from(el.childNodes).some(
+    (n) => n.nodeType === Node.TEXT_NODE && (n.textContent ?? '').trim() !== '',
+  );
+}
+
+/**
+ * <tfoot> of the table a row is the last data row of. Recorded when the
+ * table's rows are first read — before trial wraps move them — so `domWrap`
+ * can put the footer on whichever fragment ends the table.
+ */
+const footByLastRow = new WeakMap<HTMLElement, HTMLTableSectionElement>();
+const seenTables = new WeakSet<HTMLTableElement>();
+
+function tableRows(table: HTMLTableElement): HTMLElement[] {
+  const rows = Array.from(table.tBodies).flatMap((tbody) => Array.from(tbody.rows));
+  if (!seenTables.has(table)) {
+    seenTables.add(table);
+    const last = rows[rows.length - 1];
+    if (last && table.tFoot) footByLastRow.set(last, table.tFoot);
+  }
+  return rows;
+}
+
 /**
  * Child items of an element for splitting purposes.
  * - <table> → data rows (tr of its tbody sections); caption/thead/tfoot are
  *   chrome rebuilt by `domWrap`, not splittable content
+ * - elements with direct text (e.g. `<p>Hello <b>world</b></p>`) → [] (atomic):
+ *   splitting between inline children would drop the text
  * - other elements → element children
  * - leaves (no element children) → [] (atomic)
  */
 export function domChildren(el: HTMLElement): HTMLElement[] {
   if (el instanceof HTMLTableElement) {
-    return Array.from(el.tBodies).flatMap((tbody) => Array.from(tbody.rows));
+    return tableRows(el);
   }
   if (el instanceof HTMLTableRowElement) {
     return []; // Never split a row at cell level.
   }
+  if (hasDirectText(el)) return [];
   return Array.from(el.children).filter((c): c is HTMLElement => c instanceof HTMLElement);
 }
 
@@ -76,7 +104,7 @@ export interface DomWrapOptions {
  *
  * Tables are reassembled properly: caption and <thead> appear on the first
  * fragment (and on continuations when `repeatTableHead` is set); rows go
- * into a fresh <tbody>.
+ * into a fresh <tbody>; <tfoot> goes on the fragment holding the last row.
  */
 export function domWrap(
   el: HTMLElement,
@@ -100,9 +128,12 @@ export function domWrap(
         table.appendChild(el.tHead.cloneNode(true));
       }
     }
+    tableRows(el as HTMLTableElement); // Record the footer before rows move.
     const tbody = el.ownerDocument.createElement('tbody');
     for (const row of children) tbody.appendChild(row);
     table.appendChild(tbody);
+    const foot = footByLastRow.get(children[children.length - 1] as HTMLElement);
+    if (foot) table.appendChild(foot.cloneNode(true));
     return table;
   }
 

@@ -68,9 +68,19 @@ describe('warnNestedBreakAttributes', () => {
 });
 
 describe('domChildren', () => {
-  it('returns element children, skipping text nodes', () => {
-    const el = html('<div>text<p>a</p><p>b</p></div>');
+  it('returns element children, ignoring whitespace-only text', () => {
+    const el = html('<div>\n  <p>a</p>\n  <p>b</p>\n</div>');
     expect(domChildren(el).map((c) => c.textContent)).toEqual(['a', 'b']);
+  });
+
+  it('treats elements with direct text as atomic (mixed inline content)', () => {
+    expect(domChildren(html('<div>text<p>a</p><p>b</p></div>'))).toEqual([]);
+    expect(domChildren(html('<p>Hello <b>world</b>!</p>'))).toEqual([]);
+  });
+
+  it('ignores text nested deeper than direct children', () => {
+    const el = html('<div><p>a <b>b</b></p><p>c</p></div>');
+    expect(domChildren(el)).toHaveLength(2);
   });
 
   it('returns [] for leaves', () => {
@@ -136,6 +146,45 @@ describe('domWrap', () => {
     expect(frag.caption).toBeNull();
     expect(frag.tHead).toBeNull();
     expect(frag.tBodies[0]?.rows).toHaveLength(1);
+  });
+
+  const footMarkup = `
+    <table>
+      <thead><tr><th>h</th></tr></thead>
+      <tbody><tr><td>1</td></tr><tr><td>2</td></tr><tr><td>3</td></tr></tbody>
+      <tfoot><tr><td>total</td></tr></tfoot>
+    </table>`;
+
+  it('puts tfoot only on the fragment holding the last row', () => {
+    const table = html(footMarkup);
+    const [r1, r2, r3] = domChildren(table);
+    const head = domWrap(table, [r1!, r2!], { continuation: false }) as HTMLTableElement;
+    const tail = domWrap(table, [r3!], { continuation: true }) as HTMLTableElement;
+    expect(head.tFoot).toBeNull();
+    expect(tail.tFoot?.textContent).toBe('total');
+  });
+
+  it('keeps tfoot when a fragment is split again', () => {
+    const table = html(footMarkup);
+    const [, r2, r3] = domChildren(table);
+    const tail = domWrap(table, [r2!, r3!], { continuation: true }) as HTMLTableElement;
+    const [t2, t3] = domChildren(tail);
+    expect(t2).toBe(r2);
+    const mid = domWrap(tail, [t2!], { continuation: true }) as HTMLTableElement;
+    const end = domWrap(tail, [t3!], { continuation: true }) as HTMLTableElement;
+    expect(mid.tFoot).toBeNull();
+    expect(end.tFoot?.textContent).toBe('total');
+  });
+
+  it('orders table sections caption, thead, tbody, tfoot', () => {
+    const table = html(footMarkup.replace('<thead>', '<caption>c</caption><thead>'));
+    const frag = domWrap(table, domChildren(table), { continuation: false });
+    expect(Array.from(frag.children, (c) => c.tagName)).toEqual([
+      'CAPTION',
+      'THEAD',
+      'TBODY',
+      'TFOOT',
+    ]);
   });
 
   it('table continuations repeat thead with repeatTableHead (but never caption)', () => {

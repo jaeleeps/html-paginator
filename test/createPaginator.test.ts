@@ -119,6 +119,17 @@ describe('paginate()', () => {
     ]);
   });
 
+  it('paginates loose top-level text instead of dropping it', () => {
+    const source = mountSource('intro text<p data-h="10">a</p>\n  <p data-h="10">b</p>');
+    const { pages } = createPaginator({ source, measurer: stubMeasurer() }).paginate();
+    const body = pages[0]?.querySelector(`.${CLASS_NAMES.body}`);
+    expect(Array.from(body?.children ?? [], (c) => c.outerHTML)).toEqual([
+      '<div>intro text</div>',
+      '<p data-h="10">a</p>',
+      '<p data-h="10">b</p>',
+    ]);
+  });
+
   it('re-paginating replaces the previous container (one final copy)', () => {
     const source = mountSource('<p data-h="10">a</p>');
     const paginator = createPaginator({ source, measurer: stubMeasurer() });
@@ -194,6 +205,37 @@ describe('content preservation when splitting', () => {
     expect(
       paginate('<p data-h="50">lead</p><div><p data-h="100">big</p><p data-h="20">small</p></div>'),
     ).toEqual([['lead'], ['big'], ['small']]);
+  });
+
+  it('never splits mixed text content (keeps loose text)', () => {
+    const source = mountSource(
+      '<p data-h="30">lead</p><div data-h="50">loose <b>bold</b> tail</div>',
+    );
+    const { pages } = createPaginator({ source, measurer: stubMeasurer(60) }).paginate();
+    expect(pages.map((p) => p.querySelector(`.${CLASS_NAMES.body}`)?.textContent)).toEqual([
+      'lead',
+      'loose bold tail',
+    ]);
+  });
+
+  it('places a split table\'s tfoot on its last page only', () => {
+    const source = mountSource(
+      '<table><tbody><tr data-h="40"><td>1</td></tr><tr data-h="40"><td>2</td></tr></tbody>' +
+        '<tfoot data-h="10"><tr><td>sum</td></tr></tfoot></table>',
+    );
+    const { pages } = createPaginator({ source, measurer: stubMeasurer(60) }).paginate();
+    expect(leafTexts(pages)).toEqual([['1'], ['2', 'sum']]);
+  });
+
+  it('measures tfoot into the final fragment', () => {
+    // Both rows fit a 60px page (40), but not with the 30px tfoot (70), so the
+    // last row moves and takes the footer with it: 1 | 2 + sum
+    const source = mountSource(
+      '<table><tbody><tr data-h="20"><td>1</td></tr><tr data-h="20"><td>2</td></tr></tbody>' +
+        '<tfoot data-h="30"><tr><td>sum</td></tr></tfoot></table>',
+    );
+    const { pages } = createPaginator({ source, measurer: stubMeasurer(60) }).paginate();
+    expect(leafTexts(pages)).toEqual([['1'], ['2', 'sum']]);
   });
 
   it('marks every fragment after the first of a 3-page container as continued', () => {
