@@ -20,7 +20,14 @@ test.describe('book with sections', () => {
         expected: labelOf(target(e.querySelector('a')!.getAttribute('href')!)),
       }));
       const ref = document.querySelector('.hp-pages #ref')!;
-      const result = { toc, ref: ref.textContent, refExpected: labelOf(target('#ch2')) };
+      const field = document.querySelector('.hp-pages #field')!;
+      const result = {
+        toc,
+        ref: ref.textContent,
+        refExpected: labelOf(target('#ch2')),
+        field: field.textContent,
+        fieldExpected: field.closest('.hp-page')!.querySelector('.hp-footer')!.textContent!.trim(),
+      };
       // Entries repeat chapter markers; drop them for the marker checks below.
       document.querySelectorAll('.hp-pages .hp-toc-entry').forEach((e) => e.remove());
       return result;
@@ -30,6 +37,9 @@ test.describe('book with sections', () => {
     expect(refs.toc[0]!.page).toBe('i');
     expect(refs.toc[1]!.page).toBe('1');
     expect(refs.ref).toBe(refs.refExpected);
+    // Page fields in body text match the footer of their page.
+    expect(refs.field).toBe(refs.fieldExpected);
+    expect(refs.field).toMatch(/^\d+ \/ \d+$/);
 
     const pages = await inspectPages(page);
     const source = markers(await page.evaluate(() => (window as any).sourceText as string), MARKER);

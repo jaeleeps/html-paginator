@@ -14,6 +14,7 @@ import { createDomMeasurer } from './measure';
 import { resolveSize } from './pageConfig';
 import { injectStyles } from './styles';
 import { createRowSplitter } from './rowSplit';
+import { prepareFields, resolveFields } from './fields';
 import { createFootnotes, injectFootnoteStyles } from './footnotes';
 import { freezeTableColumns } from './tableColumns';
 import { createTextSplitter } from './textSplit';
@@ -94,6 +95,7 @@ export function createPaginator(config: PaginatorConfig): Paginator {
       const footnotes = createFootnotes(copy);
       if (footnotes && resolved.injectStyles !== false) injectFootnoteStyles(doc);
       buildTableOfContents(copy);
+      prepareFields(copy);
 
       // Loose top-level text gets a <div> so it is paginated, not dropped.
       const items: HTMLElement[] = [];
@@ -168,6 +170,7 @@ export function createPaginator(config: PaginatorConfig): Paginator {
         });
         const total = built.pages.length;
         resolvePageRefs(built.pages, (index) => layout.context(index + 1, total).pageLabel);
+        resolveFields(built.pages, (index) => layout.context(index + 1, total));
 
         // data-break="clip": hide the overflow of pages whose single item
         // could not fit any page ('avoid' overflow stays visible).

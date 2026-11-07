@@ -13,6 +13,7 @@ export type {
   PageSlot,
   WrapInfo,
 } from './distribute';
+export { FIELD_ATTRIBUTE, prepareFields, resolveFields } from './fields';
 export {
   createFootnotes,
   FOOTNOTE_ATTRIBUTE,
