@@ -377,6 +377,31 @@ describe('distribute with keep-with-next', () => {
     expect(pageLeaves(pages)).toEqual([[30, 10], [10]]);
   });
 
+  it('moves a container whose head would be only kept children to the next page', () => {
+    // [heading 10 (keep), 50] after 45: the heading alone would fit, but
+    // stranding it is worse than moving the container (the page holds 45).
+    const pages = run([{ h: 45 }, { kids: [{ h: 10, keep: true }, { h: 50 }] }], 60);
+    expect(pageLeaves(pages)).toEqual([[45], [10, 50]]);
+  });
+
+  it('keeps a lone kept head where moving on cannot help (empty full page)', () => {
+    const pages = run([{ kids: [{ h: 10, keep: true }, { h: 60 }] }], 60);
+    expect(pageLeaves(pages)).toEqual([[10], [60]]);
+  });
+
+  it('may empty a partial page to keep items together', () => {
+    const pages = distribute<Item>({
+      items: [{ h: 50 }, { h: 10, keep: true, brk: true }, { h: 30 }],
+      measure,
+      pageHeight: (page) => (page === 2 ? 25 : 60),
+      breakBehavior: () => 'avoid',
+      pageBreakBefore: (i) => i.brk === true,
+      keepWithNext: (i) => i.keep === true,
+      partial: (page) => page === 2,
+    });
+    expect(pageLeaves(pages)).toEqual([[50], [], [10, 30]]);
+  });
+
   it('does not strand the last item of the document', () => {
     const pages = run([{ h: 30 }, { h: 10, keep: true }], 60);
     expect(pageLeaves(pages)).toEqual([[30, 10]]);

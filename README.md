@@ -166,8 +166,8 @@ Keep an element on the same page as the element after it, like Word's "Keep with
 
 - **Headings (`h1`–`h6`) keep with next by default**, as in Word. Opt one out with `data-keep-with-next="false"`, or turn the default off with `keepHeadingsWithNext: false`.
 - The standard CSS spelling works too: `break-after: avoid` (or legacy `page-break-after: avoid`).
-- When the next element has to start a new page, kept elements move with it, including chains such as a heading followed by a subheading. Inside a split container, a kept child moves to the next fragment.
-- Moving never empties a page. If the kept elements fill the page by themselves, they stay put.
+- When the next element has to start a new page, kept elements move with it, including chains such as a heading followed by a subheading. Inside a split container, a kept child moves to the next fragment, and a container whose part on the page would be only kept children (a section heading at the bottom of a page) moves on whole.
+- Moving never empties a page that the kept elements start: if they fill a page by themselves, they stay put. The space left below a continuous section break, or one of its columns, may be left empty, as in Word.
 
 ## Page configuration
 
@@ -227,7 +227,7 @@ createPaginator({
   }
   ```
 
-  Before a continuous break, the columns on that page are **balanced** to equal height, as in Word. `balanceColumns: true` on a section also balances its last page of columns at the end of the document or before a section that starts on a new page (in Word, a continuous break after the section). Balanced columns end within one unsplittable chunk of each other (orphans/widows keep a few lines together). Columns that hold footnotes are left unbalanced. A continuous section's other page settings (header, footer, margins) take effect from the next page. On a page with several sections, each is rendered in a `.hp-region` stacked in the body.
+  Before a continuous break, the columns on that page are **balanced** to equal height, as in Word. `balanceColumns: true` on a section also balances its last page of columns at the end of the document or before a section that starts on a new page (in Word, a continuous break after the section). Balanced columns end within one unsplittable chunk of each other (orphans/widows keep a few lines together). Columns that hold footnotes are left unbalanced. A continuous section's other page settings (header, footer, margins) take effect from the next page. On a page with several sections, each is rendered in a `.hp-region` stacked in the body; footnotes outside columns share one area at the bottom of the page.
 - Rendered as `.hp-body > .hp-column > .hp-column-body` (plus `.hp-column-rule` and `.hp-footnotes`); the geometry is inline, so it holds with `injectStyles: false`.
 - Declaratively: `data-hp-columns="2"`, `data-hp-column-gap`, `data-hp-column-rule` on the config, content or a `data-hp-section` group.
 

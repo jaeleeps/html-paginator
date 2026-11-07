@@ -1,0 +1,88 @@
+<!doctype html>
+<!--
+  Kitchen sink: every Word-like feature at once, to catch interactions.
+  Front matter (roman, TOC) -> chapter 1 (footnotes, table, captions) ->
+  continuous two-column section with footnotes, balanced before a
+  continuous single-column section -> chapter 2 landscape with a wide
+  table -> chapter 3 with endnotes. Header/footer distances, running
+  headers, chapter page numbers, line numbers and a watermark throughout.
+  Body text is numbered words (W0001...); notes use N, tables T.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>html-paginator kitchen sink fixture</title>
+<style>
+  body { margin: 0; font: 11px/16px Helvetica, Arial, sans-serif; }
+  p { margin: 0 0 6px; text-align: justify; }
+  h1 { font-size: 20px; line-height: 26px; margin: 0 0 10px; }
+  h2 { font-size: 14px; line-height: 20px; margin: 8px 0 4px; }
+  table { width: 100%; border-collapse: collapse; margin: 0 0 8px; }
+  th, td { border: 1px solid #999; padding: 2px 4px; text-align: left; }
+  figure { margin: 0 0 8px; }
+  .box { height: 60px; background: #ddd; }
+</style>
+</head>
+<body>
+<div id="src"></div>
+<script src="/dist/index.global.js"></script>
+<script>
+  let word = 0;
+  let note = 0;
+  const words = (n) => Array.from({ length: n }, () => `W${String(++word).padStart(4, '0')}`).join(' ');
+  const fn = () => `<span data-footnote>N${String(++note).padStart(2, '0')} footnote text ${'note '.repeat(note % 3 * 8)}</span>`;
+  const para = (i, withNote) => `<p>${words(18 + ((i * 29) % 70))}${withNote ? fn() : ''}</p>`;
+  const paras = (n, noteEvery) => Array.from({ length: n }, (_, i) => para(i, noteEvery && i % noteEvery === 2)).join('');
+  const table = (rows, cols, id) =>
+    `<table id="${id}" data-break="auto"><caption>Table <span data-hp-seq="Table"></span>. Data</caption><thead><tr>${Array.from({ length: cols }, (_, c) => `<th>H${c + 1}</th>`).join('')}</tr></thead><tbody>` +
+    Array.from({ length: rows }, (_, r) => `<tr>${Array.from({ length: cols }, (_, c) => `<td>T${r + 1}.${c + 1}</td>`).join('')}</tr>`).join('') +
+    '</tbody></table>';
+
+  document.getElementById('src').innerHTML = `
+    <div data-section="front">
+      <nav data-hp-toc data-hp-toc-levels="1-2"><h2 data-hp-toc-skip>Contents</h2></nav>
+      <nav data-hp-toc="Figure"><h2 data-hp-toc-skip>Figures</h2></nav>
+    </div>
+    <section data-section="chapter">
+      <h1 id="ch1">One</h1>${paras(10, 4)}
+      <figure><div class="box"></div><figcaption>Figure <span data-hp-seq="Figure"></span>. A box</figcaption></figure>
+      ${table(30, 4, 't1')}${paras(6, 3)}
+      <h2>One point one</h2>${paras(8, 5)}
+    </section>
+    <section data-section="news"><h2>News in columns</h2>${paras(14, 4)}</section>
+    <section data-section="after"><h2>After the columns</h2>${paras(3, 0)}</section>
+    <section data-section="wide">
+      <h1 id="ch2">Two</h1>${paras(2, 0)}${table(45, 10, 't2')}${paras(3, 2)}
+    </section>
+    <section data-section="chapter">
+      <h1 id="ch3">Three</h1>${paras(12, 4)}
+      <p>${words(10)}<span data-endnote>Endnote E1 text.</span> See page <a id="ref" href="#ch2" data-hp-page-ref>?</a>.</p>
+      <div data-hp-endnotes><h2 data-hp-toc-skip>Notes</h2></div>
+    </section>`;
+
+  htmlPaginator.createPaginator({
+    source: '#src',
+    page: {
+      size: 'letter',
+      margin: '1in 0.9in',
+      headerDistance: '0.5in',
+      footerDistance: '0.5in',
+      header: ({ running }) => `<div class="run">${running.h1 ?? 'Front'}</div>`,
+      footer: ({ pageLabel, lastPageLabel }) => `<div style="text-align:center">Page ${pageLabel} of ${lastPageLabel}</div>`,
+      watermark: '<span>DRAFT</span>',
+      lineNumbers: { countBy: 5, restart: 'page' },
+    },
+    pageNumbers: { chapter: 1 },
+    repeatTableHead: true,
+    sections: {
+      front: { pageNumbers: { start: 1, format: 'lower-roman', chapter: 0 }, page: { lineNumbers: null } },
+      chapter: { pageNumbers: { start: 1 } },
+      news: { start: 'continuous', page: { columns: 2, columnGap: '0.3in', columnRule: '1px solid #999' } },
+      after: { start: 'continuous' },
+      wide: { pageNumbers: { start: 1 }, page: { orientation: 'landscape', lineNumbers: null } },
+    },
+  }).paginate();
+  document.documentElement.dataset.paginated = 'true';
+</script>
+</body>
+</html>

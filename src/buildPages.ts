@@ -65,7 +65,8 @@ export interface BuildPagesOptions extends PageVariants {
  *
  * Entries with different `region`s on one page (a continuous section
  * break) are stacked in the body as `.hp-region`s, each with its own
- * columns (or a single `.hp-column-body`) and footnotes.
+ * columns (or a single `.hp-column-body`). Footnotes of columns stay at
+ * the column bottom; the others share one area at the page bottom.
  */
 export function buildPages(
   distributed: DistributedPage<HTMLElement>[],
@@ -108,6 +109,8 @@ export function buildPages(
    */
   const fillColumns = (box: HTMLElement, entries: DistributedPage<HTMLElement>[], layout: RegionColumns): void => {
     box.style.columnGap = layout.columnGap;
+    // No line between columns that hold nothing (content moved on).
+    const empty = entries.every((entry) => entry.items.length === 0 && (entry.notes?.length ?? 0) === 0);
     for (let i = 0; i < layout.columns; i++) {
       const column = doc.createElement('div');
       column.className = CLASS_NAMES.column;
@@ -119,7 +122,7 @@ export function buildPages(
         minWidth: '0',
         position: 'relative',
       });
-      if (i > 0 && layout.columnRule) {
+      if (i > 0 && layout.columnRule && !empty) {
         const rule = doc.createElement('div');
         rule.className = CLASS_NAMES.columnRule;
         Object.assign(rule.style, {
@@ -217,6 +220,9 @@ export function buildPages(
       }
     } else {
       Object.assign(body.style, { display: 'flex', flexDirection: 'column', flex: '1 1 auto', minHeight: '0' });
+      // Footnotes of single-column regions go to the bottom of the page, as
+      // in Word (columns keep theirs at the column bottom).
+      const pageNotes: HTMLElement[] = [];
       regions.forEach((entries, index) => {
         const region = doc.createElement('div');
         region.className = CLASS_NAMES.region;
@@ -239,10 +245,11 @@ export function buildPages(
           for (const item of entry.items) content.appendChild(item);
           region.appendChild(content);
           bodies.push(content);
-          const area = notesArea(entry);
-          if (area) region.appendChild(area);
+          pageNotes.push(...(entry.notes ?? []));
         }
       });
+      const area = notesArea({ ...dist, notes: pageNotes });
+      if (area) pageEl.appendChild(area);
     }
 
     if (footer) {
