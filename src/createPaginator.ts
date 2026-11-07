@@ -1,7 +1,7 @@
 import type { MeasureAdapter, PaginateResult, Paginator, PaginatorConfig } from './types';
 import { buildPages } from './buildPages';
 import { distribute } from './distribute';
-import type { FragmentInfo, PageSlot } from './distribute';
+import type { FragmentInfo } from './distribute';
 import {
   BREAK_ATTRIBUTE,
   createDomBreaker,
@@ -19,6 +19,8 @@ import { collectEndnotes } from './endnotes';
 import { prepareFields, resolveFields } from './fields';
 import { createFootnotes, injectFootnoteStyles, renumberFootnotes } from './footnotes';
 import { numberLines } from './lineNumbers';
+import { createSheetPlanner } from './sheets';
+import type { SheetRegion } from './sheets';
 import { freezeTableColumns } from './tableColumns';
 import { createTextSplitter } from './textSplit';
 import { buildTableOfContents, resolvePageRefs } from './toc';
@@ -144,34 +146,41 @@ export function createPaginator(config: PaginatorConfig): Paginator {
 
       const measured = new WeakSet<HTMLElement>();
 
-      // Multi-column pages: each column is an engine page. Engine page n
-      // (1-based) lies on sheet physicalOf[n - 1], in column columnOf[n - 1].
-      const physicalOf: number[] = [];
-      const columnOf: number[] = [];
-      const physical = (enginePage: number): number =>
-        physicalOf[enginePage - 1] ?? physicalOf[physicalOf.length - 1] ?? enginePage;
-      const openColumn = (enginePage: number, slot: PageSlot): number => {
-        if (enginePage <= physicalOf.length) return physical(enginePage);
-        const sheet = physicalOf[physicalOf.length - 1] ?? 0;
-        const column = columnOf[columnOf.length - 1] ?? 0;
-        // The next column of the sheet, unless a section starts (new sheet).
-        if (sheet > 0 && !slot.sectionStart && !slot.blank && column + 1 < layout.config(sheet).columns) {
-          physicalOf.push(sheet);
-          columnOf.push(column + 1);
-        } else {
-          layout.open(sheet + 1, slot);
-          physicalOf.push(sheet + 1);
-          columnOf.push(0);
-        }
-        return physical(enginePage);
+      // Engine pages are the columns of regions on sheets (see sheets.ts).
+      const breaker = createDomBreaker({ repeatTableHead: resolved.repeatTableHead });
+      const setColumns = measurer.columns?.bind(measurer);
+      /** Measure for `region` from now on: its sheet, at its column width. */
+      const useRegion = (region: SheetRegion<HTMLElement>): number => {
+        setColumns?.(region.sheet, region.columns, region.columnGap);
+        return region.sheet;
       };
-      const info = (i: FragmentInfo): FragmentInfo => ({ ...i, page: physical(i.page) });
+      const planner = createSheetPlanner<HTMLElement>({
+        layout,
+        config: resolved,
+        bodyHeight: (sheet) => measurer.pageHeight(sheet),
+        // Trial layouts of copies of the items, in columns of `height`.
+        balance: (items, height, region) => {
+          const sheet = useRegion(region);
+          const columns = distribute<HTMLElement>({
+            items: items.map((el) => el.cloneNode(true) as HTMLElement),
+            measure: (el) => measurer.measure(el, sheet),
+            pageHeight: () => height,
+            ...breaker,
+            fragment: fragment && ((el, fits) => fragment(el, fits, { page: sheet })),
+          });
+          return columns.length <= region.columns && !columns.some((column) => column.overflows)
+            ? columns
+            : null;
+        },
+      });
+      const sheetOf = (enginePage: number): number => useRegion(planner.region(enginePage));
+      const info = (i: FragmentInfo): FragmentInfo => ({ ...i, page: sheetOf(i.page) });
 
       try {
-        const distributed = distribute<HTMLElement>({
+        distribute<HTMLElement>({
           items,
           measure: (el, enginePage) => {
-            const page = physical(enginePage);
+            const page = sheetOf(enginePage);
             // First measurement of an item: freeze its tables' columns at
             // the width of the page it is laid out on.
             if (layoutIn && !measured.has(el)) {
@@ -180,11 +189,12 @@ export function createPaginator(config: PaginatorConfig): Paginator {
             }
             return measurer.measure(el, page);
           },
-          pageHeight: (enginePage, slot) => measurer.pageHeight(openColumn(enginePage, slot)),
-          // Sections always start a new sheet, after the current one.
-          blankPageBefore: (section) =>
-            layout.blankPageBefore(section, (physicalOf[physicalOf.length - 1] ?? 0) + 1),
-          ...createDomBreaker({ repeatTableHead: resolved.repeatTableHead }),
+          pageHeight: (enginePage, slot) => planner.pageHeight(enginePage, slot),
+          opened: (page) => planner.opened(page),
+          partial: (page) => planner.partial(page),
+          // Sections start a new sheet (except continuous ones, never blank).
+          blankPageBefore: (section) => layout.blankPageBefore(section, planner.sheets + 1),
+          ...breaker,
           fragment: fragment && ((el, fits, i) => fragment(el, fits, info(i))),
           notes: footnotes ? (el) => footnotes.notesOf(el) : undefined,
           fragmentNote:
@@ -192,18 +202,27 @@ export function createPaginator(config: PaginatorConfig): Paginator {
               ? (note, fits, i) => footnotes.inArea(note, () => splitText(note, fits, info(i)))
               : undefined,
           notesHeight: footnotes
-            ? (notes, enginePage) => measurer.measure(footnotes.area(notes), physical(enginePage))
+            ? (notes, enginePage) => measurer.measure(footnotes.area(notes), sheetOf(enginePage))
             : undefined,
         });
-        distributed.forEach((dist, index) => {
-          dist.page = physicalOf[index] ?? dist.page;
-          if (layout.config(dist.page).columns > 1) dist.column = columnOf[index];
-        });
+        // What is rendered: each region's columns (balanced ones replacing
+        // the engine's), placed on their sheets.
+        const distributed = planner.regions.flatMap((region) =>
+          (region.balanced ?? region.pages).map((page, column) =>
+            Object.assign(page, {
+              page: region.sheet,
+              column: region.columns > 1 ? column : undefined,
+              region: region.index,
+            }),
+          ),
+        );
 
         const built = buildPages(distributed, {
           document: doc,
           layout,
           renderNotes: footnotes ? (notes) => footnotes.area(notes) : undefined,
+          regionColumns: (page, index) =>
+            planner.regions.find((region) => region.sheet === page && region.index === index),
         });
         const total = built.pages.length;
         resolvePageRefs(built.pages, (index) => layout.context(index + 1, total).pageLabel);

@@ -83,6 +83,17 @@ export interface DistributeOptions<T, S = string> {
    */
   fragment?: (item: T, fits: (head: T) => boolean, info: FragmentInfo) => Fragment<T> | null;
   /**
+   * Page `page` is shorter than a fresh page would be (e.g. the rest of a
+   * sheet below a continuous section break): an item that does not fit it
+   * while it is empty moves on to the next page instead of overflowing it.
+   */
+  partial?: (page: number) => boolean;
+  /**
+   * Called with each page as it opens. The object is live: items are added
+   * to it until the next page opens.
+   */
+  opened?: (page: DistributedPage<T, S>) => void;
+  /**
    * Footnotes an item brings to its page (Word footnotes): they go to the
    * page where the item lands, and their area takes height from the body.
    * Requires `notesHeight`.
@@ -134,6 +145,8 @@ export interface DistributedPage<T, S = string> {
    * several engine pages side by side on one sheet (multi-column pages).
    */
   column?: number;
+  /** Region of the sheet this entry is in (0-based, stacked top to bottom). */
+  region?: number;
 }
 
 interface Pending<T> {
@@ -457,6 +470,7 @@ export function distribute<T, S = string>(
     }
     pages.push(opened);
     placed.set(opened, []);
+    options.opened?.(opened);
     return opened;
   };
 
@@ -476,6 +490,17 @@ export function distribute<T, S = string>(
   /** Holds something already (items, or notes continued from the page before). */
   const occupied = (page: DistributedPage<T, S>): boolean =>
     page.items.length > 0 || (page.notes?.length ?? 0) > 0;
+
+  /** An item that does not fit `page` should move on rather than overflow it. */
+  const movesOn = (page: DistributedPage<T, S>): boolean =>
+    occupied(page) || options.partial?.(page.page) === true;
+
+  /**
+   * The page after `page` for `first`: an empty (partial) page is left in
+   * the current section, so a section start is not started again.
+   */
+  const nextPage = (page: DistributedPage<T, S>, first: T): DistributedPage<T, S> =>
+    occupied(page) ? openPage(first) : newPage({ section: currentSection, sectionStart: false, blank: false });
 
   const pending: Pending<T>[] = items.map((item) => ({ item, continuation: false }));
 
@@ -512,11 +537,11 @@ export function distribute<T, S = string>(
         continue;
       }
 
-      if (occupied(current)) {
+      if (movesOn(current)) {
         // Nothing fits the remaining space — retry on a fresh page, where
         // splitting gets the full page height to work with.
         const kept = takeKept(current);
-        current = openPage(kept[0]?.item ?? (tail as T));
+        current = nextPage(current, kept[0]?.item ?? (tail as T));
         pending.unshift(...kept, { item: tail as T, continuation: entry.continuation });
         continue;
       }
@@ -554,9 +579,9 @@ export function distribute<T, S = string>(
 
     // Atomic path ('avoid'/'clip'/leaf, or unsplittable remainder):
     // retry on a new page (re-measured there) unless this one is still empty.
-    if (occupied(current)) {
+    if (movesOn(current)) {
       const kept = takeKept(current);
-      current = openPage(kept[0]?.item ?? entry.item);
+      current = nextPage(current, kept[0]?.item ?? entry.item);
       pending.unshift(...kept, entry);
       continue;
     }

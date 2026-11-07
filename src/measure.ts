@@ -49,6 +49,8 @@ export interface DomMeasurer {
    * it back where it was.
    */
   layout<R>(item: HTMLElement, page: number, fn: () => R): R;
+  /** Measure on `page` at the width of one of `columns` columns. */
+  columns(page: number, columns: number, gap: string): void;
   /** Remove all probe elements from the document. */
   dispose(): void;
 }
@@ -183,6 +185,10 @@ export function createDomMeasurer(options: DomMeasurerOptions): DomMeasurer {
 
     layout(item, page, fn) {
       return layoutIn(item, page, fn);
+    },
+
+    columns(page, columns, gap) {
+      getProbe(page).body.style.width = columns > 1 ? columnWidth(columns, gap) : '';
     },
 
     dispose(): void {
