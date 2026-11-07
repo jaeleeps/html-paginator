@@ -6,6 +6,7 @@ import type {
   PageNumbering,
   Paginator,
   PaginatorConfig,
+  SectionConfig,
 } from './types';
 import { createPaginator } from './createPaginator';
 
@@ -44,6 +45,10 @@ import { createPaginator } from './createPaginator';
  * - `data-hp-page-start` / `data-hp-page-format` set page numbering
  *   (e.g. `data-hp-page-start="0"`, `data-hp-page-format="lower-roman"`).
  * - `data-hp-repeat-table-head` (boolean attribute) enables repeatTableHead.
+ * - `<div data-hp-section="name">` groups describe `sections[name]` (started
+ *   in content by `data-section="name"`): their own slots, size/margin,
+ *   numbering attributes, `data-hp-section-start="odd|even"`, and nested
+ *   first/odd/even page groups.
  */
 export const DECLARATIVE_ATTRIBUTES = {
   config: 'data-hp-config',
@@ -56,6 +61,8 @@ export const DECLARATIVE_ATTRIBUTES = {
   repeatTableHead: 'data-hp-repeat-table-head',
   pageStart: 'data-hp-page-start',
   pageFormat: 'data-hp-page-format',
+  section: 'data-hp-section',
+  sectionStart: 'data-hp-section-start',
 } as const;
 
 const A = DECLARATIVE_ATTRIBUTES;
@@ -116,12 +123,62 @@ function parsePageAttrs(el: Element): PageConfig {
   return config;
 }
 
-/** First element with `attr` that is not inside a page override group. */
-function findSharedSlot(root: ParentNode, attr: string): Element | null {
+/** Section group an element belongs to (null at the top level). */
+const sectionOf = (el: Element): Element | null => el.parentElement?.closest(`[${A.section}]`) ?? null;
+
+/**
+ * First element with `attr` directly in a scope (the top level, or one
+ * section group): not inside a page group or another section group.
+ */
+function findSharedSlot(root: ParentNode, attr: string, owner: Element | null): Element | null {
   for (const el of root.querySelectorAll(`[${attr}]`)) {
-    if (!el.closest(`[${A.page}]`)) return el;
+    if (!el.closest(`[${A.page}]`) && sectionOf(el) === owner) return el;
   }
   return null;
+}
+
+/** Page config of a group: size/margin attributes plus its header/footer slots. */
+function parseGroup(group: Element): PageConfig {
+  const config = parsePageAttrs(group);
+  const h = group.querySelector(`[${A.header}]`);
+  if (h) config.header = slotToTemplate(h, A.header);
+  const f = group.querySelector(`[${A.footer}]`);
+  if (f) config.footer = slotToTemplate(f, A.footer);
+  return config;
+}
+
+/** Shared slots of a scope, applied onto its page config. */
+function applySharedSlots(root: ParentNode, page: PageConfig, owner: Element | null): void {
+  const header = findSharedSlot(root, A.header, owner);
+  if (header) page.header = slotToTemplate(header, A.header);
+  const footer = findSharedSlot(root, A.footer, owner);
+  if (footer) page.footer = slotToTemplate(footer, A.footer);
+}
+
+const SECTION_STARTS = new Set(['next', 'odd', 'even']);
+
+function parseSection(root: ParentNode, group: Element): SectionConfig {
+  const section: SectionConfig = { page: parsePageAttrs(group) };
+  applySharedSlots(root, section.page!, group);
+
+  for (const pageGroup of root.querySelectorAll(`[${A.page}]`)) {
+    if (sectionOf(pageGroup) !== group) continue;
+    const value = (pageGroup.getAttribute(A.page) ?? '').trim();
+    if (value === 'first') section.firstPage = parseGroup(pageGroup);
+    else if (value === 'odd') section.oddPages = parseGroup(pageGroup);
+    else if (value === 'even') section.evenPages = parseGroup(pageGroup);
+    else console.warn(`html-paginator: ${A.page}="${value}" is not supported inside a section, group ignored`, pageGroup);
+  }
+
+  const numbering = parseNumbering(group);
+  if (numbering) section.pageNumbers = numbering;
+
+  const start = group.getAttribute(A.sectionStart)?.trim();
+  if (start !== undefined) {
+    if (SECTION_STARTS.has(start)) section.start = start as SectionConfig['start'];
+    else console.warn(`html-paginator: invalid ${A.sectionStart}="${start}", ignored`, group);
+  }
+  return section;
 }
 
 /**
@@ -149,19 +206,13 @@ export function parseDeclarativeConfig(doc: Document): PaginatorConfig | null {
   if (numbering) config.pageNumbers = numbering;
 
   if (root) {
-    const header = findSharedSlot(root, A.header);
-    if (header) page.header = slotToTemplate(header, A.header);
-    const footer = findSharedSlot(root, A.footer);
-    if (footer) page.footer = slotToTemplate(footer, A.footer);
+    applySharedSlots(root, page, null);
 
     const overrides: Record<number, PageConfig> = {};
     for (const group of root.querySelectorAll(`[${A.page}]`)) {
+      if (sectionOf(group) !== null) continue; // parsed with its section
       const value = (group.getAttribute(A.page) ?? '').trim();
-      const override = parsePageAttrs(group);
-      const h = group.querySelector(`[${A.header}]`);
-      if (h) override.header = slotToTemplate(h, A.header);
-      const f = group.querySelector(`[${A.footer}]`);
-      if (f) override.footer = slotToTemplate(f, A.footer);
+      const override = parseGroup(group);
 
       if (value === 'first') config.firstPage = override;
       else if (value === 'odd') config.oddPages = override;
@@ -176,6 +227,12 @@ export function parseDeclarativeConfig(doc: Document): PaginatorConfig | null {
       }
     }
     if (Object.keys(overrides).length > 0) config.pageOverrides = overrides;
+
+    const sections: Record<string, SectionConfig> = {};
+    for (const group of root.querySelectorAll(`[${A.section}]`)) {
+      sections[group.getAttribute(A.section) ?? ''] = parseSection(root, group);
+    }
+    if (Object.keys(sections).length > 0) config.sections = sections;
   }
 
   return config;

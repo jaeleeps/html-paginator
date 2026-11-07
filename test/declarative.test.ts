@@ -165,6 +165,57 @@ describe('declarative first/odd/even groups', () => {
   });
 });
 
+describe('declarative sections', () => {
+  const markup = `
+    <template data-hp-config>
+      <div data-hp-footer>{{pageLabel}}</div>
+      <div data-hp-page="first"><div data-hp-footer="none"></div></div>
+      <div data-hp-section="front" data-hp-page-start="1" data-hp-page-format="lower-roman">
+        <div data-hp-header>Front</div>
+      </div>
+      <div data-hp-section="body" data-hp-page-start="1" data-hp-section-start="odd" data-hp-margin="1in">
+        <div data-hp-footer>Body {{pageLabel}}</div>
+        <div data-hp-page="first"><div data-hp-header="none"></div></div>
+        <div data-hp-page="even"><div data-hp-header>Even body</div></div>
+      </div>
+    </template>
+    <div data-hp-content></div>`;
+
+  it('parses section groups without leaking into the top level', () => {
+    document.body.innerHTML = markup;
+    const config = parseDeclarativeConfig(document)!;
+    expect(render(config.page?.footer, { page: 1, totalPages: 1 })).toContain('>1<');
+    expect(config.firstPage).toEqual({ footer: null });
+    expect(config.oddPages).toBeUndefined();
+    expect(config.evenPages).toBeUndefined();
+    expect(Object.keys(config.sections ?? {})).toEqual(['front', 'body']);
+  });
+
+  it('reads each section\'s slots, numbering, start side and page groups', () => {
+    document.body.innerHTML = markup;
+    const { front, body } = parseDeclarativeConfig(document)!.sections!;
+    expect(render(front?.page?.header, { page: 1, totalPages: 1 })).toContain('Front');
+    expect(front?.pageNumbers).toEqual({ start: 1, format: 'lower-roman' });
+    expect(body).toMatchObject({ start: 'odd', pageNumbers: { start: 1 }, firstPage: { header: null } });
+    expect(body?.page?.margin).toBe('1in');
+    expect(render(body?.page?.footer, { page: 2, totalPages: 2, pageLabel: '7' })).toContain('Body 7');
+    expect(render(body?.evenPages?.header, { page: 2, totalPages: 2 })).toContain('Even body');
+  });
+
+  it('warns on numbered page groups and invalid start sides inside sections', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    document.body.innerHTML = `
+      <template data-hp-config>
+        <div data-hp-section="s" data-hp-section-start="left"><div data-hp-page="2"></div></div>
+      </template>
+      <div data-hp-content></div>`;
+    const config = parseDeclarativeConfig(document)!;
+    expect(config.sections?.s?.start).toBeUndefined();
+    expect(config.pageOverrides).toBeUndefined();
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe('declarative page numbering', () => {
   it('reads data-hp-page-start / data-hp-page-format', () => {
     document.body.innerHTML = `

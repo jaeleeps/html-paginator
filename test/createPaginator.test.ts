@@ -458,6 +458,76 @@ describe('keep with next', () => {
   });
 });
 
+describe('sections', () => {
+  const footers = (pages: HTMLElement[]) =>
+    pages.map((p) => p.querySelector(`.${CLASS_NAMES.footer}`)?.textContent ?? null);
+
+  it('restarts numbering and switches layout per section', () => {
+    const source = mountSource(
+      '<p data-h="10">cover</p>' +
+        '<div data-section="front"><p data-h="50">toc</p><p data-h="50">preface</p></div>' +
+        '<div data-section="body"><p data-h="50">one</p><p data-h="50">two</p></div>',
+    );
+    const { pages } = createPaginator({
+      source,
+      measurer: stubMeasurer(60),
+      page: { footer: ({ pageLabel }) => `<footer>${pageLabel}</footer>` },
+      firstPage: { footer: null },
+      sections: {
+        front: { pageNumbers: { start: 1, format: 'lower-roman' } },
+        body: {
+          pageNumbers: { start: 1 },
+          page: { footer: ({ pageLabel, lastPageLabel }) => `<footer>${pageLabel} of ${lastPageLabel}</footer>` },
+        },
+      },
+    }).paginate();
+    expect(footers(pages)).toEqual([null, 'i', 'ii', '1 of 2', '2 of 2']);
+  });
+
+  it('passes section info to templates', () => {
+    const source = mountSource(
+      '<div data-section="a"><p data-h="50">1</p><p data-h="50">2</p></div><p data-h="10" data-section="b">3</p>',
+    );
+    const { pages } = createPaginator({
+      source,
+      measurer: stubMeasurer(60),
+      sections: { a: {}, b: {} },
+      page: { header: ({ section, sectionPage, sectionPages }) => `<h6>${section}:${sectionPage}/${sectionPages}</h6>` },
+    }).paginate();
+    expect(pages.map((p) => p.querySelector(`.${CLASS_NAMES.header}`)?.textContent)).toEqual([
+      'a:1/2',
+      'a:2/2',
+      'b:1/1',
+    ]);
+  });
+
+  it('inserts a blank page so a section starts on an odd page', () => {
+    const source = mountSource('<p data-h="10">intro</p><h2 data-h="10" data-section="ch">Chapter</h2>');
+    const { pages } = createPaginator({
+      source,
+      measurer: stubMeasurer(60),
+      page: { footer: ({ page }) => `<footer>${page}</footer>` },
+      sections: { ch: { start: 'odd' } },
+    }).paginate();
+    expect(pages.map((p) => p.querySelector(`.${CLASS_NAMES.body}`)?.textContent)).toEqual([
+      'intro',
+      '',
+      'Chapter',
+    ]);
+    // The blank page still gets its header/footer.
+    expect(footers(pages)).toEqual(['1', '2', '3']);
+  });
+
+  it('warns once about section names without config', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mountSource('<p data-h="10" data-section="x">a</p><p data-h="10" data-section="x">b</p>');
+    const { totalPages } = createPaginator({ source: '#src', measurer: stubMeasurer() }).paginate();
+    expect(totalPages).toBe(2);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0]?.[0])).toContain('data-section="x"');
+  });
+});
+
 describe('forced page breaks', () => {
   function pageTexts(markup: string, pageHeight = 100): string[] {
     const source = mountSource(markup);

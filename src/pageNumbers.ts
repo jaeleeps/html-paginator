@@ -65,5 +65,7 @@ export function pageContext(
     pageLabel: formatPageNumber(pageNumber, numbering.format),
     lastPageNumber,
     lastPageLabel: formatPageNumber(lastPageNumber, numbering.format),
+    sectionPage: page,
+    sectionPages: totalPages,
   };
 }

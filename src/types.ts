@@ -21,6 +21,12 @@ export interface PageContext {
   lastPageNumber: number;
   /** `lastPageNumber` formatted with `pageNumbers.format`. */
   lastPageLabel: string;
+  /** Name of the page's section (undefined before the first section). */
+  section?: string;
+  /** 1-based page index within the section (Word's SECTIONPAGES context). */
+  sectionPage: number;
+  /** Number of pages in the section. */
+  sectionPages: number;
 }
 
 /** Page number styles (Word's "Format Page Numbers"), or a custom formatter. */
@@ -31,6 +37,30 @@ export type PageNumberFormat =
   | 'lower-alpha'
   | 'upper-alpha'
   | ((n: number) => string);
+
+/**
+ * A section's layout (Word's section break). Content starts a section with
+ * `data-section="name"`. Layers merge over the top-level ones: `page`,
+ * `oddPages` and `evenPages` inherit; `firstPage` applies to the section's
+ * own first page.
+ */
+export interface SectionConfig {
+  page?: PageConfig;
+  firstPage?: PageConfig;
+  oddPages?: PageConfig;
+  evenPages?: PageConfig;
+  /**
+   * `start` restarts numbering at that number; without it numbering
+   * continues from the previous page. `format` defaults to the top-level one.
+   */
+  pageNumbers?: PageNumbering;
+  /**
+   * Which side the section starts on: 'next' (default) page, or the next
+   * 'odd' / 'even' physical page, inserting a blank page when needed (for
+   * duplex printing: chapters on right-hand pages).
+   */
+  start?: 'next' | 'odd' | 'even';
+}
 
 /** Page numbering options. */
 export interface PageNumbering {
@@ -103,6 +133,8 @@ export interface PaginatorConfig {
   evenPages?: PageConfig;
   /** Displayed page numbering (start number and style). */
   pageNumbers?: PageNumbering;
+  /** Section layouts by name, started by `data-section="name"` in content. */
+  sections?: Record<string, SectionConfig>;
   /**
    * Headings (h1–h6) keep with the next element, as in Word, so they are
    * never stranded at the bottom of a page. Default: true.

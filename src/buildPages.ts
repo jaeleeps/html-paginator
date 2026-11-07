@@ -1,8 +1,8 @@
 import type { DistributedPage } from './distribute';
 import type { PageConfig } from './types';
-import { resolvePageConfig } from './pageConfig';
 import type { PageVariants } from './pageConfig';
-import { pageContext } from './pageNumbers';
+import { createPageLayout } from './layout';
+import type { PageLayout } from './layout';
 import { renderTemplate } from './renderTemplate';
 
 export const CLASS_NAMES = {
@@ -18,6 +18,8 @@ export interface BuildPagesOptions extends PageVariants {
   page?: PageConfig;
   /** Per-page overrides (1-based). */
   pageOverrides?: Record<number, PageConfig>;
+  /** Page layout recorded during distribution (built from the options otherwise). */
+  layout?: PageLayout;
   document: Document;
 }
 
@@ -47,9 +49,11 @@ export function buildPages(
 
   const pages: HTMLElement[] = [];
 
+  const layout = options.layout ?? createPageLayout(options);
+
   for (const dist of distributed) {
-    const config = resolvePageConfig(dist.page, options.page, options.pageOverrides, options);
-    const ctx = pageContext(dist.page, totalPages, options.pageNumbers);
+    const config = layout.config(dist.page);
+    const ctx = layout.context(dist.page, totalPages);
 
     const pageEl = doc.createElement('div');
     pageEl.className = CLASS_NAMES.page;

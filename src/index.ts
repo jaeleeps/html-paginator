@@ -5,7 +5,9 @@
 
 export { createPaginator, DEFAULT_PAGE_SIZE } from './createPaginator';
 export { distribute } from './distribute';
-export type { DistributeOptions, DistributedPage, WrapInfo } from './distribute';
+export type { DistributeOptions, DistributedPage, PageSlot, WrapInfo } from './distribute';
+export { createPageLayout } from './layout';
+export type { PageLayout, PageLayoutConfig } from './layout';
 export {
   BREAK_ATTRIBUTE,
   CONTINUED_ATTRIBUTE,
@@ -15,7 +17,9 @@ export {
   getBreakBehavior,
   hasKeepWithNext,
   hasPageBreakBefore,
+  getSection,
   KEEP_WITH_NEXT_ATTRIBUTE,
+  SECTION_ATTRIBUTE,
   markBreakHints,
   PAGE_BREAK_AFTER_ATTRIBUTE,
   PAGE_BREAK_BEFORE_ATTRIBUTE,
@@ -48,6 +52,7 @@ export type {
   PageNumberFormat,
   PageNumbering,
   PageSizePreset,
+  SectionConfig,
   PaginateResult,
   Paginator,
   PaginatorConfig,

@@ -19,6 +19,18 @@ export const PAGE_BREAK_AFTER_ATTRIBUTE = 'data-break-after';
  */
 export const KEEP_WITH_NEXT_ATTRIBUTE = 'data-keep-with-next';
 
+/**
+ * `data-section="name"`: start a new section (Word's section break) using
+ * `sections[name]`. Implies a page break.
+ */
+export const SECTION_ATTRIBUTE = 'data-section';
+
+/** Section started by an element; continuation fragments never restart it. */
+export function getSection(el: HTMLElement): string | undefined {
+  if (el.hasAttribute(CONTINUED_ATTRIBUTE)) return undefined;
+  return el.getAttribute(SECTION_ATTRIBUTE) ?? undefined;
+}
+
 /** CSS break values that force a page break (`break-*` and legacy `page-break-*`). */
 const FORCED_BREAK_VALUES = new Set(['page', 'always', 'left', 'right', 'recto', 'verso']);
 
@@ -252,6 +264,7 @@ export function createDomBreaker(options: DomWrapOptions = {}): {
   wrap: (el: HTMLElement, children: HTMLElement[], info: WrapInfo) => HTMLElement;
   pageBreakBefore: (el: HTMLElement) => boolean;
   keepWithNext: (el: HTMLElement) => boolean;
+  section: (el: HTMLElement) => string | undefined;
 } {
   return {
     breakBehavior: getBreakBehavior,
@@ -259,5 +272,6 @@ export function createDomBreaker(options: DomWrapOptions = {}): {
     wrap: (el, children, info) => domWrap(el, children, info, options),
     pageBreakBefore: hasPageBreakBefore,
     keepWithNext: hasKeepWithNext,
+    section: getSection,
   };
 }

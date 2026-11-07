@@ -18,6 +18,8 @@ interface Item {
   brk?: boolean;
   /** Keep with next. */
   keep?: boolean;
+  /** Section started by this item. */
+  section?: string;
 }
 
 function measure(item: Item): number {
@@ -378,5 +380,75 @@ describe('distribute with keep-with-next', () => {
   it('does not strand the last item of the document', () => {
     const pages = run([{ h: 30 }, { h: 10, keep: true }], 60);
     expect(pageLeaves(pages)).toEqual([[30, 10]]);
+  });
+});
+
+describe('distribute with sections', () => {
+  function runSections(items: Item[], pageHeight = 60, blank?: (s: string, page: number) => boolean) {
+    const slots: string[] = [];
+    const pages = distribute<Item>({
+      items,
+      measure,
+      pageHeight: (page, slot) => {
+        slots.push(`${page}:${slot.section ?? '-'}:${slot.sectionStart ? 'start' : ''}${slot.blank ? 'blank' : ''}`);
+        return pageHeight;
+      },
+      breakBehavior: (i) => i.behavior ?? (i.kids ? 'auto' : 'avoid'),
+      children: (i) => i.kids ?? [],
+      wrap: (i, kids, info) => ({ ...i, kids, continuation: info.continuation }),
+      // Continuation fragments never restart their section.
+      section: (i) => (i.continuation ? undefined : i.section),
+      blankPageBefore: blank,
+    });
+    return { pages, slots };
+  }
+
+  it('starts a section on a new page and tags pages', () => {
+    const { pages, slots } = runSections([{ h: 10 }, { h: 10, section: 'b' }, { h: 10 }]);
+    expect(pageLeaves(pages)).toEqual([[10], [10, 10]]);
+    expect(pages.map((p) => [p.section, p.sectionStart])).toEqual([
+      [undefined, false],
+      ['b', true],
+    ]);
+    expect(slots).toEqual(['1:-:', '2:b:start']);
+  });
+
+  it('starts a section on the first page without a blank page', () => {
+    const { pages } = runSections([{ h: 10, section: 'a' }, { h: 10 }]);
+    expect(pages.map((p) => [p.section, p.sectionStart])).toEqual([['a', true]]);
+  });
+
+  it('keeps continuation pages of a split section element in that section', () => {
+    const { pages } = runSections([{ section: 'a', kids: [{ h: 30 }, { h: 30 }, { h: 30 }] }]);
+    expect(pageLeaves(pages)).toEqual([[30, 30], [30]]);
+    expect(pages.map((p) => [p.section, p.sectionStart])).toEqual([
+      ['a', true],
+      ['a', false],
+    ]);
+  });
+
+  it('starts a section nested inside a container', () => {
+    const { pages } = runSections([{ kids: [{ h: 10 }, { h: 10, section: 'b' }] }]);
+    expect(pageLeaves(pages)).toEqual([[10], [10]]);
+    expect(pages.map((p) => p.section)).toEqual([undefined, 'b']);
+  });
+
+  it('inserts a blank page before a section when asked', () => {
+    const { pages, slots } = runSections(
+      [{ h: 10 }, { h: 10, section: 'ch' }],
+      60,
+      (_s, page) => page % 2 === 0, // start sections on odd pages
+    );
+    expect(pageLeaves(pages)).toEqual([[10], [], [10]]);
+    expect(pages.map((p) => p.blank === true)).toEqual([false, true, false]);
+    expect(slots).toEqual(['1:-:', '2:-:blank', '3:ch:start']);
+  });
+
+  it('starts a new section instance each time the same name appears', () => {
+    const { pages } = runSections([{ h: 10, section: 'ch' }, { h: 10, section: 'ch' }]);
+    expect(pages.map((p) => [p.section, p.sectionStart])).toEqual([
+      ['ch', true],
+      ['ch', true],
+    ]);
   });
 });

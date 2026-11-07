@@ -201,7 +201,8 @@ Template functions receive the page context:
 |-------|---------|
 | `page` / `totalPages` | Physical page index (1-based) and page count |
 | `pageNumber` / `pageLabel` | Displayed number and its formatted label |
-| `lastPageNumber` / `lastPageLabel` | Same for the last page, for "Page X of Y" |
+| `lastPageNumber` / `lastPageLabel` | Same for the last page of the numbering run, for "Page X of Y" |
+| `section` / `sectionPage` / `sectionPages` | Section name, page index within it, and its page count |
 
 Set the start number and style with `pageNumbers`, like Word's "Format Page Numbers":
 
@@ -286,6 +287,40 @@ createPaginator({
 - As in Word, odd/even follows the **displayed** page number. With `pageNumbers: { start: 0 }`, the page after the cover shows "1" and is odd.
 - Declaratively: `data-hp-page="first"`, `"odd"` or `"even"` groups (next to numbered groups) in the config template.
 
+### Sections
+
+Word's section breaks: parts of a document with their own numbering and headers/footers. Typical use: front matter numbered i, ii, iii, then a body that restarts at 1, with each chapter starting on a right-hand page.
+
+```html
+<div data-section="front">…table of contents, preface…</div>
+<section data-section="body">…chapter 1…</section>
+<section data-section="chapter">…chapter 2…</section>
+<section data-section="chapter">…chapter 3…</section>
+```
+
+```js
+createPaginator({
+  source: '#content',
+  page: {
+    footer: ({ pageLabel, lastPageLabel }) => `<div>${pageLabel} / ${lastPageLabel}</div>`,
+    header: ({ section, sectionPage }) => `<div>${section} · ${sectionPage}</div>`,
+  },
+  firstPage: { header: null, footer: null },                 // cover
+  sections: {
+    front: { pageNumbers: { start: 1, format: 'lower-roman' } },
+    body: { pageNumbers: { start: 1 }, start: 'odd' },       // restart at 1, right-hand page
+    chapter: { start: 'odd' },                               // continue numbering
+  },
+});
+```
+
+- `data-section="name"` starts a new section and implies a page break. A name can repeat: each occurrence starts a new section that uses the same settings.
+- A section's `page`, `oddPages` and `evenPages` merge over the top-level ones, like Word's "Link to Previous". Its `firstPage` applies to the section's own first page.
+- `pageNumbers.start` restarts numbering. Without it, numbering continues from the previous page. The `format` falls back to the top-level one.
+- `start: 'odd' | 'even'` starts the section on the next odd or even **physical** page (right- or left-hand side in duplex printing), inserting a blank page when needed. The blank page belongs to the previous section.
+- Templates also receive `section`, `sectionPage` and `sectionPages`. `lastPageNumber` / `lastPageLabel` refer to the last page of the current numbering run, so "Page X of Y" works inside a restarted body.
+- Declaratively: `<div data-hp-section="name">` groups in the config template, with their own header/footer slots, `data-hp-margin`, `data-hp-page-start`, `data-hp-page-format`, `data-hp-section-start="odd"`, and nested `data-hp-page="first|odd|even"` groups.
+
 ## Table splitting
 
 Tables with `data-break="auto"` split at row boundaries. The `<caption>` stays on the first fragment and `<tfoot>` goes on the fragment holding the last row (its height counts toward that page). Use `repeatTableHead` to repeat `<thead>` on continuation pages:
@@ -363,6 +398,9 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-break` | content elements | Break behavior: `auto`, `avoid`, or `clip` |
 | `data-break-before` / `data-break-after` | content elements | `="page"` forces a page break |
 | `data-keep-with-next` | content elements | Keep on the same page as the next element (`="false"` opts a heading out) |
+| `data-section` | content elements | Start a new section (`sections[name]`); implies a page break |
+| `data-hp-section` | inside config | Section layout group (slots, margin, numbering, nested first/odd/even groups) |
+| `data-hp-section-start` | section group | `odd` / `even`: start on that side, inserting a blank page if needed |
 
 ## How it works
 

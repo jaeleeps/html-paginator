@@ -45,6 +45,8 @@ describe('pageContext', () => {
       pageLabel: '2',
       lastPageNumber: 5,
       lastPageLabel: '5',
+      sectionPage: 2,
+      sectionPages: 5,
     });
   });
 
