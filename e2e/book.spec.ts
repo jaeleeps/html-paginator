@@ -8,6 +8,29 @@ test.describe('book with sections', () => {
     const errors = await openPaginated(page, 'e2e/fixtures/book.html');
     expect(errors).toEqual([]);
 
+    // TOC entries and page references show the page label (from the footer)
+    // of the page their heading lands on.
+    const refs = await page.evaluate(() => {
+      const labelOf = (el: Element) =>
+        (el.closest('.hp-page')!.querySelector('.hp-footer')!.textContent ?? '').split(' / ')[0]!.trim();
+      const target = (href: string) => document.querySelector(`.hp-pages ${href}`)!;
+      const toc = Array.from(document.querySelectorAll('.hp-pages .hp-toc-entry'), (e) => ({
+        text: e.querySelector('.hp-toc-text')!.textContent,
+        page: e.querySelector('.hp-toc-page')!.textContent,
+        expected: labelOf(target(e.querySelector('a')!.getAttribute('href')!)),
+      }));
+      const ref = document.querySelector('.hp-pages #ref')!;
+      const result = { toc, ref: ref.textContent, refExpected: labelOf(target('#ch2')) };
+      // Entries repeat chapter markers; drop them for the marker checks below.
+      document.querySelectorAll('.hp-pages .hp-toc-entry').forEach((e) => e.remove());
+      return result;
+    });
+    expect(refs.toc.map((e) => e.text)).toEqual(['Preface', 'CH1 Chapter 1', 'CH2 Chapter 2', 'CH3 Chapter 3']);
+    for (const e of refs.toc) expect(e.page, e.text!).toBe(e.expected);
+    expect(refs.toc[0]!.page).toBe('i');
+    expect(refs.toc[1]!.page).toBe('1');
+    expect(refs.ref).toBe(refs.refExpected);
+
     const pages = await inspectPages(page);
     const source = markers(await page.evaluate(() => (window as any).sourceText as string), MARKER);
     expect(pages.flatMap((p) => markers(p.text, MARKER))).toEqual(source);
