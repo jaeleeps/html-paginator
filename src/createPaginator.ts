@@ -157,6 +157,7 @@ export function createPaginator(config: PaginatorConfig): Paginator {
         setColumns?.(region.sheet, region.columns, region.columnGap);
         return region.sheet;
       };
+      const balanceHeights = new WeakMap<SheetRegion<HTMLElement>, Map<HTMLElement, number>>();
       const planner = createSheetPlanner<HTMLElement>({
         layout,
         config: resolved,
@@ -164,9 +165,26 @@ export function createPaginator(config: PaginatorConfig): Paginator {
         // Trial layouts of copies of the items, in columns of `height`.
         balance: (items, height, region) => {
           const sheet = useRegion(region);
+          // A copy's first measurement is its original's, measured once per
+          // region (the trials re-measure only the fragments they make).
+          let heights = balanceHeights.get(region);
+          if (!heights) balanceHeights.set(region, (heights = new Map()));
+          const originals = new Map<HTMLElement, HTMLElement>();
+          const copies = items.map((el) => {
+            const copy = el.cloneNode(true) as HTMLElement;
+            originals.set(copy, el);
+            return copy;
+          });
           const columns = distribute<HTMLElement>({
-            items: items.map((el) => el.cloneNode(true) as HTMLElement),
-            measure: (el) => measurer.measure(el, sheet),
+            items: copies,
+            measure: (el) => {
+              const original = originals.get(el);
+              if (!original) return measurer.measure(el, sheet);
+              originals.delete(el);
+              let h = heights!.get(original);
+              if (h === undefined) heights!.set(original, (h = measurer.measure(el, sheet)));
+              return h;
+            },
             pageHeight: () => height,
             ...breaker,
             fragment: fragment && ((el, fits) => fragment(el, fits, { page: sheet })),

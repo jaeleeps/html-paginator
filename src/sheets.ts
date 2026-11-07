@@ -131,14 +131,16 @@ export function createSheetPlanner<T>(options: SheetPlannerOptions<T>): SheetPla
     const total = pages.reduce((sum, page) => sum + page.usedHeight, 0);
     // Smallest column height that holds everything in the columns.
     let low = Math.max(1, Math.floor(total / region.columns));
-    let high = Math.ceil(region.height);
+    // The engine's own columns already fit in their tallest one.
+    let high = Math.min(Math.ceil(region.height), Math.ceil(Math.max(...pages.map((page) => page.usedHeight))));
     let best: DistributedPage<T>[] | null = null;
     while (low < high) {
       const mid = Math.floor((low + high) / 2);
       const columns = options.balance(items, mid, region);
       if (columns) {
         best = columns;
-        high = mid;
+        // Nothing between the tallest column it made and `mid` does better.
+        high = Math.min(mid, Math.ceil(Math.max(...columns.map((page) => page.usedHeight))));
       } else {
         low = mid + 1;
       }
