@@ -13,6 +13,13 @@ export type {
   PageSlot,
   WrapInfo,
 } from './distribute';
+export {
+  collectEndnotes,
+  ENDNOTE_ATTRIBUTE,
+  ENDNOTE_CLASS_NAMES,
+  ENDNOTES_ATTRIBUTE,
+} from './endnotes';
+export type { EndnoteOptions } from './endnotes';
 export { FIELD_ATTRIBUTE, prepareFields, resolveFields } from './fields';
 export {
   createFootnotes,

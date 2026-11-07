@@ -37,6 +37,22 @@ test.describe('book with sections', () => {
     expect(refs.toc[0]!.page).toBe('i');
     expect(refs.toc[1]!.page).toBe('1');
     expect(refs.ref).toBe(refs.refExpected);
+    // Endnotes: the reference links to its note, collected after the end.
+    const endnote = await page.evaluate(() => {
+      const ref = document.querySelector('.hp-pages .hp-endnote-ref a')!;
+      const note = document.querySelector(`.hp-pages ${ref.getAttribute('href')}`)!;
+      const pages = Array.from(document.querySelectorAll('.hp-pages > .hp-page'));
+      return {
+        ref: ref.textContent,
+        note: note.textContent,
+        notePage: pages.indexOf(note.closest('.hp-page')!),
+        lastPage: pages.length - 1,
+        afterEnd: note.closest('.hp-page')!.textContent!.indexOf('Notes') > -1,
+      };
+    });
+    expect(endnote).toMatchObject({ ref: 'i', note: 'i ENDNOTE-ONE explained.', afterEnd: true });
+    expect(endnote.notePage).toBe(endnote.lastPage);
+
     // Page fields in body text match the footer of their page.
     expect(refs.field).toBe(refs.fieldExpected);
     expect(refs.field).toMatch(/^\d+ \/ \d+$/);

@@ -44,10 +44,10 @@ function parseLevels(raw: string | null): [number, number] {
   return low <= high ? [low, high] : [high, low];
 }
 
-/** Text of a heading without footnote reference numbers. */
+/** Text of a heading without footnote/endnote reference numbers. */
 function headingText(heading: HTMLElement): string {
   const copy = heading.cloneNode(true) as HTMLElement;
-  copy.querySelectorAll('.hp-footnote-ref').forEach((ref) => ref.remove());
+  copy.querySelectorAll('.hp-footnote-ref, .hp-endnote-ref').forEach((ref) => ref.remove());
   return (copy.textContent ?? '').replace(/\s+/g, ' ').trim();
 }
 
