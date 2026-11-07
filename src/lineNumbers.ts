@@ -84,6 +84,14 @@ export function numberLines(pages: readonly LineNumberedPage[]): number {
       const position = doc.defaultView?.getComputedStyle(body).position;
       if (!position || position === 'static') body.style.position = 'relative';
       const origin = body.getBoundingClientRect();
+      // Beside a later column the numbers sit in the gap: at most half of
+      // it away, so they stay clear of the column before.
+      const distance = options.distance ?? DEFAULT_DISTANCE;
+      const column = body.closest<HTMLElement>('.hp-column');
+      const gap = column && column.dataset.column !== '1' && column.parentElement
+        ? doc.defaultView?.getComputedStyle(column.parentElement).columnGap
+        : undefined;
+      const offset = gap && gap !== 'normal' ? `min(${distance}, ${gap} / 2)` : distance;
       for (const line of lines) {
         counter++;
         total++;
@@ -94,7 +102,7 @@ export function numberLines(pages: readonly LineNumberedPage[]): number {
         mark.setAttribute('aria-hidden', 'true');
         Object.assign(mark.style, {
           position: 'absolute',
-          right: `calc(100% + ${options.distance ?? DEFAULT_DISTANCE})`,
+          right: `calc(100% + ${offset})`,
           top: `${line.top - origin.top}px`,
           height: `${line.bottom - line.top}px`,
           display: 'flex',

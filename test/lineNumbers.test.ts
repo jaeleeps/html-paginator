@@ -48,6 +48,18 @@ describe('numberLines', () => {
     expect(b.style.position).toBe('relative');
   });
 
+  it('keeps numbers beside a later column within half the gap', () => {
+    const row = body(`<div class="hp-column" data-column="1"><div class="c"><p data-y="0">a</p></div></div>
+      <div class="hp-column" data-column="2"><div class="c"><p data-y="0">b</p></div></div>`);
+    row.style.columnGap = '20px';
+    const [first, second] = Array.from(row.querySelectorAll<HTMLElement>('.c'));
+    numberLines([{ bodies: [first!, second!], options: {}, sectionStart: false }]);
+    const right = (el: HTMLElement) => el.querySelector<HTMLElement>('.hp-line-number')!.style.right;
+    // As resolved by jsdom: 0.25in, and min(0.25in, 20px / 2).
+    expect(right(first!)).toBe('calc(100% + 24px)');
+    expect(right(second!)).toBe('calc(100% + 10px)');
+  });
+
   it('shows multiples of countBy, from start', () => {
     const b = body([0, 10, 20, 30, 40, 50].map((y) => `<p data-y="${y}">l</p>`).join(''));
     numberLines([{ bodies: [b], options: { start: 3, countBy: 5 }, sectionStart: false }]);

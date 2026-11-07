@@ -293,8 +293,12 @@ export function distribute<T, S = string>(
 
     // Keep with next: whole kept children at the end of the head move to the
     // tail with what follows them (a forced break ends the head on purpose).
+    // The head may be emptied where moving on helps: on a page holding
+    // something already, or a partial one.
     if (!forced && !headEndsWithFragment && tailKids.length > 0) {
-      while (headKids.length > 1 && keeps(headKids[headKids.length - 1] as T)) {
+      const target = pages[page - 1];
+      const keepAtLeast = target && movesOn(target) ? 0 : 1;
+      while (headKids.length > keepAtLeast && keeps(headKids[headKids.length - 1] as T)) {
         tailKids.unshift(headKids.pop() as T);
       }
     }
@@ -419,12 +423,14 @@ export function distribute<T, S = string>(
 
   /**
    * Take kept (keep-with-next) items off the end of `page` so they move on
-   * with the item that no longer fits. Never empties the page.
+   * with the item that no longer fits. Never empties a full page (the next
+   * one would be no larger); a partial page may be left empty.
    */
   const takeKept = (page: DistributedPage<T, S>): Pending<T>[] => {
     const log = placed.get(page)!;
     const kept: Pending<T>[] = [];
-    while (page.items.length > 1 && keeps(page.items[page.items.length - 1] as T)) {
+    const keepAtLeast = options.partial?.(page.page) === true ? 0 : 1;
+    while (page.items.length > keepAtLeast && keeps(page.items[page.items.length - 1] as T)) {
       page.items.pop();
       const last = log.pop()!;
       page.usedHeight -= last.height;
