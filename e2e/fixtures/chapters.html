@@ -1,0 +1,37 @@
+<!doctype html>
+<!--
+  Chapter-prefixed page numbers (Word: Format Page Numbers > Include
+  chapter number): every chapter (h1) is a section restarting numbering at
+  1; labels read "<chapter>-<page>" in footers, the TOC and page references.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>html-paginator chapter page numbers fixture</title>
+<style>
+  body { margin: 0; font: 12px/18px Helvetica, Arial, sans-serif; }
+  p { margin: 0 0 8px; }
+  h1 { font-size: 22px; margin: 0 0 12px; }
+</style>
+</head>
+<body>
+<div id="src">
+  <nav data-hp-toc data-hp-toc-levels="1"><h2 data-hp-toc-skip>Contents</h2></nav>
+  <div id="chapters"></div>
+</div>
+<script src="/dist/index.global.js"></script>
+<script>
+  const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.';
+  document.getElementById('chapters').innerHTML = [[1, 18], [2, 50], [3, 34]]
+    .map(([n, len]) => `<section data-section="chapter"><h1 id="ch${n}">Chapter ${n}</h1>${Array.from({ length: len }, (_, i) => `<p>C${n}-P${i + 1} ${lorem} ${lorem}</p>`).join('')}</section>`)
+    .join('') + '<p>See chapter 3 on page <a id="ref" href="#ch3" data-hp-page-ref>?</a>.</p>';
+  htmlPaginator.createPaginator({
+    source: '#src',
+    page: { size: 'letter', margin: '0.75in', footer: ({ pageLabel }) => `<div style="text-align:center">Page ${pageLabel}</div>` },
+    pageNumbers: { chapter: 1 },
+    sections: { chapter: { pageNumbers: { start: 1 } } },
+  }).paginate();
+  document.documentElement.dataset.paginated = 'true';
+</script>
+</body>
+</html>

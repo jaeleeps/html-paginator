@@ -90,6 +90,15 @@ export interface PageNumbering {
   start?: number;
   /** Number style. Default: 'decimal'. */
   format?: PageNumberFormat;
+  /**
+   * Put the chapter number in front (Word: "include chapter number"): the
+   * heading level that starts chapters (1 = h1), e.g. "2-5"; 0 turns it off
+   * (in a section). The chapter is the first such heading on the page, else
+   * the last one before it. Default: none.
+   */
+  chapter?: number;
+  /** Between the chapter and page number. Default: '-'. */
+  chapterSeparator?: string;
 }
 
 /**
