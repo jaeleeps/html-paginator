@@ -21,11 +21,11 @@ function measure(item: Item): number {
   return item.h ?? 0;
 }
 
-function run(items: Item[], pageHeight: number) {
+function run(items: Item[], pageHeight: number | ((page: number) => number)) {
   return distribute<Item>({
     items,
     measure,
-    pageHeight: () => pageHeight,
+    pageHeight: typeof pageHeight === 'number' ? () => pageHeight : pageHeight,
     breakBehavior: (i) => i.behavior ?? (i.kids ? 'auto' : 'avoid'),
     children: (i) => i.kids ?? [],
     wrap: (i, kids, info) => ({ ...i, kids, continuation: info.continuation }),
@@ -130,6 +130,67 @@ describe('distribute with splitting', () => {
       pageHeight: () => 60,
     });
     expect(pageLeaves(pages)).toEqual([[25], [20, 20, 20]]);
+  });
+});
+
+describe('distribute with splitting: edge cases', () => {
+  it('sizes each fragment to its own page height', () => {
+    // Page 1 body 30 (cover header), later pages 60.
+    const leaves20 = Array.from({ length: 5 }, () => ({ h: 20 }));
+    const pages = run([{ kids: leaves20 }], (page) => (page === 1 ? 30 : 60));
+    expect(pageLeaves(pages)).toEqual([[20], [20, 20, 20], [20]]);
+  });
+
+  it('fills a page exactly with a split head', () => {
+    const pages = run([{ h: 20 }, { kids: [{ h: 20 }, { h: 20 }, { h: 20 }] }], 60);
+    expect(pageLeaves(pages)).toEqual([[20, 20, 20], [20]]);
+    expect(pages[0]?.usedHeight).toBe(60);
+  });
+
+  it('force-splits when the oversized child is the last one (no tail)', () => {
+    const pages = run([{ kids: [{ h: 10 }, { h: 100 }] }], 60);
+    expect(pageLeaves(pages)).toEqual([[10], [100]]);
+    expect(pages.map((p) => p.overflows)).toEqual([false, true]);
+  });
+
+  it('starts the next item on a fresh page after a forced split', () => {
+    const pages = run([{ kids: [{ h: 100 }] }, { h: 10 }], 60);
+    expect(pageLeaves(pages)).toEqual([[100], [10]]);
+  });
+
+  it('treats an auto container without children as atomic', () => {
+    const pages = run([{ h: 10 }, { kids: [], pad: 100 }], 60);
+    expect(pages.map((p) => p.items.length)).toEqual([1, 1]);
+    expect(pages[1]?.overflows).toBe(true);
+  });
+
+  it('keeps an oversized avoid container whole on its own page', () => {
+    const pages = run(
+      [{ h: 10 }, { behavior: 'avoid', kids: [{ h: 50 }, { h: 50 }] }, { h: 10 }],
+      60,
+    );
+    expect(pageLeaves(pages)).toEqual([[10], [50, 50], [10]]);
+    expect(pages.map((p) => p.overflows)).toEqual([false, true, false]);
+  });
+
+  it('treats clip like avoid when distributing', () => {
+    const pages = run([{ h: 30 }, { behavior: 'clip', kids: [{ h: 20 }, { h: 20 }] }], 60);
+    expect(pageLeaves(pages)).toEqual([[30], [20, 20]]);
+  });
+
+  it('marks only fragments after the first as continuations across many pages', () => {
+    const kids = Array.from({ length: 4 }, () => ({ h: 50 }));
+    const pages = run([{ kids }], 60);
+    expect(pages.map((p) => p.items[0]?.continuation)).toEqual([false, true, true, true]);
+  });
+
+  it('calls pageHeight once per page, in order', () => {
+    const calls: number[] = [];
+    run([{ h: 50 }, { h: 50 }, { h: 50 }], (page) => {
+      calls.push(page);
+      return 60;
+    });
+    expect(calls).toEqual([1, 2, 3]);
   });
 });
 

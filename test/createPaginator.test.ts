@@ -252,6 +252,101 @@ describe('content preservation when splitting', () => {
   });
 });
 
+describe('paginate() edge cases', () => {
+  it('handles an empty source (no pages)', () => {
+    mountSource('');
+    const { pages, totalPages } = createPaginator({
+      source: '#src',
+      measurer: stubMeasurer(),
+    }).paginate();
+    expect(totalPages).toBe(0);
+    expect(pages).toEqual([]);
+  });
+
+  it('cleans up when paginate() throws: probes removed, source visible', () => {
+    // jsdom has no layout, so the default DOM measurer reports 0 height.
+    mountSource('<p>a</p>');
+    expect(() => createPaginator({ source: '#src', injectStyles: false }).paginate()).toThrow(
+      /pageHeight\(1\)/,
+    );
+    expect(document.querySelectorAll(`.${CLASS_NAMES.page}`)).toHaveLength(0);
+    expect((document.getElementById('src') as HTMLElement).style.display).toBe('');
+  });
+
+  it('drops the previous result when a re-paginate throws', () => {
+    const source = mountSource('<p data-h="10">a</p>');
+    let broken = false;
+    const paginator = createPaginator({
+      source,
+      measurer: { measure: () => (broken ? NaN : 10), pageHeight: () => 60 },
+    });
+    paginator.paginate();
+    broken = true;
+    expect(() => paginator.paginate()).toThrow(/measure/);
+    expect(document.querySelectorAll(`.${CLASS_NAMES.container}`)).toHaveLength(0);
+    expect(source.style.display).toBe('');
+  });
+
+  it('does not dispose a caller-provided measurer', () => {
+    mountSource('<p data-h="10">a</p>');
+    const dispose = vi.fn();
+    createPaginator({ source: '#src', measurer: { ...stubMeasurer(), dispose } }).paginate();
+    expect(dispose).not.toHaveBeenCalled();
+  });
+
+  it('picks up source changes on re-paginate', () => {
+    const source = mountSource('<p data-h="10">a</p>');
+    const paginator = createPaginator({ source, measurer: stubMeasurer(60) });
+    expect(paginator.paginate().totalPages).toBe(1);
+    source.insertAdjacentHTML('beforeend', '<p data-h="55">b</p>');
+    expect(paginator.paginate().totalPages).toBe(2);
+  });
+
+  it('restores the original inline display on reset()', () => {
+    const source = mountSource('<p data-h="10">a</p>');
+    source.style.display = 'flex';
+    const paginator = createPaginator({ source, measurer: stubMeasurer() });
+    paginator.paginate();
+    paginator.paginate();
+    paginator.reset();
+    expect(source.style.display).toBe('flex');
+  });
+
+  it('applies clip overflow to a force-split fragment holding the clip element', () => {
+    const source = mountSource(
+      '<div><div data-break="clip" data-h="100">big</div><p data-h="10">after</p></div>',
+    );
+    const { pages } = createPaginator({ source, measurer: stubMeasurer(60) }).paginate();
+    const bodies = pages.map((p) => p.querySelector<HTMLElement>(`.${CLASS_NAMES.body}`));
+    expect(bodies.map((b) => b?.textContent)).toEqual(['big', 'after']);
+    expect(bodies.map((b) => b?.style.overflow)).toEqual(['hidden', '']);
+  });
+
+  it('warns on an invalid data-break value and treats it as auto', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const source = mountSource(
+      '<div data-break="nope"><p data-h="40">A</p><p data-h="40">B</p></div>',
+    );
+    const { totalPages } = createPaginator({ source, measurer: stubMeasurer(60) }).paginate();
+    expect(totalPages).toBe(2); // split like auto
+    expect(warn).toHaveBeenCalled();
+    expect(String(warn.mock.calls[0]?.[0])).toContain('invalid data-break="nope"');
+  });
+
+  it('applies per-page overrides by final page number', () => {
+    const source = mountSource('<p data-h="50">a</p><p data-h="50">b</p><p data-h="50">c</p>');
+    const { pages } = createPaginator({
+      source,
+      measurer: stubMeasurer(60),
+      page: { footer: '<footer>default</footer>' },
+      pageOverrides: { 1: { footer: null }, 3: { footer: '<footer>last</footer>' } },
+    }).paginate();
+    expect(pages.map((p) => p.querySelector(`.${CLASS_NAMES.footer}`)?.textContent ?? null)).toEqual(
+      [null, 'default', 'last'],
+    );
+  });
+});
+
 describe('reset()', () => {
   it('removes pages and restores the source', () => {
     const source = mountSource('<p data-h="10">a</p>');
