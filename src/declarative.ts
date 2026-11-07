@@ -77,6 +77,7 @@ export const DECLARATIVE_ATTRIBUTES = {
   columnRule: 'data-hp-column-rule',
   headerDistance: 'data-hp-header-distance',
   footerDistance: 'data-hp-footer-distance',
+  verticalAlign: 'data-hp-vertical-align',
   lineNumbers: 'data-hp-line-numbers',
   lineNumbersStart: 'data-hp-line-numbers-start',
   lineNumbersCountBy: 'data-hp-line-numbers-count-by',
@@ -169,6 +170,8 @@ function parsePageAttrs(el: Element): PageConfig {
   if (headerDistance) config.headerDistance = headerDistance;
   const footerDistance = el.getAttribute(A.footerDistance);
   if (footerDistance) config.footerDistance = footerDistance;
+  const verticalAlign = el.getAttribute(A.verticalAlign);
+  if (verticalAlign) config.verticalAlign = verticalAlign.trim() as PageConfig['verticalAlign'];
   const columns = el.getAttribute(A.columns);
   if (columns) config.columns = Number(columns.trim());
   const columnGap = el.getAttribute(A.columnGap);

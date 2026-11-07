@@ -20,6 +20,7 @@ export interface ResolvedPageConfig {
   lineNumbers?: PageConfig['lineNumbers'];
   headerDistance?: string;
   footerDistance?: string;
+  verticalAlign: NonNullable<PageConfig['verticalAlign']>;
 }
 
 export const DEFAULT_COLUMN_GAP = '0.5in';
@@ -125,5 +126,16 @@ export function mergePageLayers(...layers: (PageConfig | undefined)[]): Resolved
     lineNumbers: merged.lineNumbers,
     headerDistance: merged.headerDistance,
     footerDistance: merged.footerDistance,
+    verticalAlign: resolveVerticalAlign(merged.verticalAlign),
   };
+}
+
+const VERTICAL_ALIGNS = ['top', 'center', 'bottom'] as const;
+
+function resolveVerticalAlign(value: PageConfig['verticalAlign']): ResolvedPageConfig['verticalAlign'] {
+  if (value === undefined) return 'top';
+  if (!VERTICAL_ALIGNS.includes(value)) {
+    throw new Error(`html-paginator: verticalAlign must be top, center or bottom, got "${String(value)}"`);
+  }
+  return value;
 }

@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  Vertical alignment (Word: Page Setup > Vertical alignment). A cover section
+  centered on its page, body pages at the top, and a colophon section aligned
+  to the bottom, above its footnote. Margins between the cover's elements
+  collapse as they do at the top.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>html-paginator vertical alignment fixture</title>
+<style>
+  body { margin: 0; font: 12px/18px Helvetica, Arial, sans-serif; }
+  p { margin: 0 0 6px; }
+  h1 { margin: 0 0 24px; font-size: 32px; line-height: 40px; text-align: center; }
+  .subtitle { margin-top: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div id="src">
+  <section data-section="cover">
+    <h1>COVER TITLE</h1>
+    <p class="subtitle">A subtitle under the title</p>
+  </section>
+  <section data-section="main" id="main"></section>
+  <section data-section="colophon">
+    <p>COLOPHON set in Helvetica.<span data-footnote>A note under the colophon.</span></p>
+    <p>Printed on demand.</p>
+  </section>
+</div>
+<script src="/dist/index.global.js"></script>
+<script>
+  const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.';
+  document.getElementById('main').innerHTML = Array.from({ length: 40 }, (_, i) => `<p>M${i + 1} ${lorem} ${lorem}</p>`).join('');
+  htmlPaginator.createPaginator({
+    source: '#src',
+    page: {
+      size: 'letter',
+      margin: '1in',
+      footer: ({ pageLabel }) => `<div style="text-align:center">${pageLabel}</div>`,
+    },
+    sections: {
+      cover: { page: { verticalAlign: 'center' } },
+      main: {},
+      colophon: { page: { verticalAlign: 'bottom' } },
+    },
+  }).paginate();
+  document.documentElement.dataset.paginated = 'true';
+</script>
+</body>
+</html>
