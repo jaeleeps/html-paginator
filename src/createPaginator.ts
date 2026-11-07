@@ -18,6 +18,7 @@ import { numberSequences, resolveCrossRefs } from './captions';
 import { collectEndnotes } from './endnotes';
 import { prepareFields, resolveFields } from './fields';
 import { createFootnotes, injectFootnoteStyles, renumberFootnotes } from './footnotes';
+import { numberLines } from './lineNumbers';
 import { freezeTableColumns } from './tableColumns';
 import { createTextSplitter } from './textSplit';
 import { buildTableOfContents, resolvePageRefs } from './toc';
@@ -207,12 +208,12 @@ export function createPaginator(config: PaginatorConfig): Paginator {
         const total = built.pages.length;
         resolvePageRefs(built.pages, (index) => layout.context(index + 1, total).pageLabel);
         resolveFields(built.pages, (index) => layout.context(index + 1, total));
+        // A sheet starts a section when its first column does.
+        const sectionStarts: boolean[] = [];
+        for (const dist of distributed) {
+          if (sectionStarts.length < dist.page) sectionStarts.push(dist.sectionStart === true);
+        }
         if (footnotes) {
-          // A sheet starts a section when its first column does.
-          const sectionStarts: boolean[] = [];
-          for (const dist of distributed) {
-            if (sectionStarts.length < dist.page) sectionStarts.push(dist.sectionStart === true);
-          }
           renumberFootnotes(built.pages, sectionStarts, resolved.footnotes);
         }
 
@@ -248,6 +249,15 @@ export function createPaginator(config: PaginatorConfig): Paginator {
         sourceEl = source;
         sourceDisplay = source.style.display;
         source.style.display = 'none';
+
+        // Line numbers come from the rendered lines, so they go in last.
+        const sheets = built.pages.map((_, index) => ({
+          bodies: [] as HTMLElement[],
+          options: layout.config(index + 1).lineNumbers,
+          sectionStart: sectionStarts[index] === true,
+        }));
+        distributed.forEach((dist, index) => sheets[dist.page - 1]?.bodies.push(built.bodies[index]!));
+        if (sheets.some((sheet) => sheet.options)) numberLines(sheets);
 
         return { pages: built.pages, totalPages: built.pages.length };
       } finally {

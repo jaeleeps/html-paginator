@@ -1,5 +1,6 @@
 import type { EndnoteOptions } from './endnotes';
 import type { FootnoteOptions } from './footnotes';
+import type { LineNumberOptions } from './lineNumbers';
 
 /** Preset page sizes. */
 export type PageSizePreset = 'letter' | 'legal' | 'a4' | 'a5';
@@ -117,6 +118,11 @@ export interface PageConfig {
   columnGap?: string;
   /** Line between columns (CSS border, e.g. '1px solid #999'). Default: none. */
   columnRule?: string;
+  /**
+   * Line numbers in the left margin (Word: Layout > Line Numbers); `null`
+   * turns them off (e.g. in one section). Default: none.
+   */
+  lineNumbers?: LineNumberOptions | null;
 }
 
 /** Values accepted by the `data-break` attribute on content elements. */

@@ -8,6 +8,7 @@ import type {
   PaginatorConfig,
   SectionConfig,
 } from './types';
+import type { LineNumberOptions } from './lineNumbers';
 import { createPaginator } from './createPaginator';
 
 /**
@@ -41,6 +42,8 @@ import { createPaginator } from './createPaginator';
  * - `data-hp-orientation="landscape"` turns pages (or a section) sideways.
  * - `data-hp-columns="2"` (with `data-hp-column-gap`, `data-hp-column-rule`)
  *   flows pages (or a section) in newspaper columns.
+ * - `data-hp-line-numbers="page|section|continuous"` (where numbering
+ *   restarts; "none" turns it off) with `-start`, `-count-by`, `-distance`.
  * - `data-hp-size` accepts a preset ('letter', 'a4', ...) or explicit
  *   dimensions as "<width> <height>" (e.g. "8.5in 11in").
  * - `{{page}}`, `{{totalPages}}`, `{{pageNumber}}`, `{{pageLabel}}`,
@@ -67,6 +70,10 @@ export const DECLARATIVE_ATTRIBUTES = {
   columns: 'data-hp-columns',
   columnGap: 'data-hp-column-gap',
   columnRule: 'data-hp-column-rule',
+  lineNumbers: 'data-hp-line-numbers',
+  lineNumbersStart: 'data-hp-line-numbers-start',
+  lineNumbersCountBy: 'data-hp-line-numbers-count-by',
+  lineNumbersDistance: 'data-hp-line-numbers-distance',
   repeatTableHead: 'data-hp-repeat-table-head',
   pageStart: 'data-hp-page-start',
   pageFormat: 'data-hp-page-format',
@@ -137,6 +144,19 @@ function parsePageAttrs(el: Element): PageConfig {
   if (columnGap) config.columnGap = columnGap;
   const columnRule = el.getAttribute(A.columnRule);
   if (columnRule) config.columnRule = columnRule;
+  const lineNumbers = el.getAttribute(A.lineNumbers)?.trim();
+  if (lineNumbers === 'none') config.lineNumbers = null;
+  else if (lineNumbers !== undefined) {
+    const options: LineNumberOptions = {};
+    if (lineNumbers) options.restart = lineNumbers as LineNumberOptions['restart'];
+    const start = el.getAttribute(A.lineNumbersStart);
+    if (start) options.start = Number(start);
+    const countBy = el.getAttribute(A.lineNumbersCountBy);
+    if (countBy) options.countBy = Number(countBy);
+    const distance = el.getAttribute(A.lineNumbersDistance);
+    if (distance) options.distance = distance;
+    config.lineNumbers = options;
+  }
   return config;
 }
 

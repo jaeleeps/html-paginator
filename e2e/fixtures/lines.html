@@ -1,0 +1,56 @@
+<!doctype html>
+<!--
+  Line numbers (Word: Layout > Line Numbers). Section "main": every line,
+  restarting each page; the table and the suppressed quote get none.
+  Section "cols": two columns, every 5th line, restarting at the section.
+  Fixed line heights let the test count the lines of each element.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>html-paginator line numbers fixture</title>
+<style>
+  body { margin: 0; font: 12px/18px Helvetica, Arial, sans-serif; }
+  p { margin: 0 0 6px; text-align: justify; }
+  h2 { margin: 6px 0; font-size: 16px; line-height: 24px; }
+  table { border-collapse: collapse; margin: 0 0 6px; }
+  td { border: 1px solid #999; padding: 2px 4px; }
+  blockquote { margin: 0 0 6px 2em; font-style: italic; }
+</style>
+</head>
+<body>
+<div id="src">
+  <section data-section="main" id="main"></section>
+  <section data-section="cols" id="cols"></section>
+</div>
+<script src="/dist/index.global.js"></script>
+<script>
+  const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip.';
+  const para = (i) => `<p>P${i} ${lorem.repeat(1 + (i % 4))}</p>`;
+  let main = '<h2>MAIN numbered lines</h2>';
+  for (let i = 1; i <= 24; i++) {
+    main += para(i);
+    if (i === 4) main += '<table><tr><td>TABLE cell one</td><td>cell two</td></tr><tr><td>row two</td><td>no numbers</td></tr></table>';
+    if (i === 7) main += `<blockquote data-hp-suppress-line-numbers><p>QUOTE ${lorem}</p></blockquote>`;
+  }
+  document.getElementById('main').innerHTML = main;
+  let cols = '<h2>COLS every fifth line</h2>';
+  for (let i = 1; i <= 16; i++) cols += para(100 + i);
+  document.getElementById('cols').innerHTML = cols;
+  htmlPaginator.createPaginator({
+    source: '#src',
+    page: {
+      size: 'letter',
+      margin: '0.75in 0.75in 0.75in 1in',
+      footer: ({ pageLabel }) => `<div style="text-align:center">${pageLabel}</div>`,
+      lineNumbers: { distance: '0.3in' },
+    },
+    sections: {
+      main: {},
+      cols: { page: { columns: 2, lineNumbers: { countBy: 5, restart: 'section', distance: '0.15in' } } },
+    },
+  }).paginate();
+  document.documentElement.dataset.paginated = 'true';
+</script>
+</body>
+</html>
