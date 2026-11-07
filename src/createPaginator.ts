@@ -14,6 +14,7 @@ import { createDomMeasurer } from './measure';
 import { resolveSize } from './pageConfig';
 import { injectStyles } from './styles';
 import { createRowSplitter } from './rowSplit';
+import { numberSequences, resolveCrossRefs } from './captions';
 import { collectEndnotes } from './endnotes';
 import { prepareFields, resolveFields } from './fields';
 import { createFootnotes, injectFootnoteStyles, renumberFootnotes } from './footnotes';
@@ -96,6 +97,8 @@ export function createPaginator(config: PaginatorConfig): Paginator {
       const footnotes = createFootnotes(copy);
       if (footnotes && resolved.injectStyles !== false) injectFootnoteStyles(doc);
       collectEndnotes(copy, resolved.endnotes);
+      numberSequences(copy);
+      resolveCrossRefs(copy);
       buildTableOfContents(copy);
       prepareFields(copy);
 
