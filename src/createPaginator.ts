@@ -58,9 +58,17 @@ export function createPaginator(config: PaginatorConfig): Paginator {
       warnNestedBreakAttributes(source);
 
       // Work on clones so the source stays intact for reset()/re-pagination.
-      const items = Array.from(source.children)
-        .filter((c): c is HTMLElement => c instanceof HTMLElement)
-        .map((c) => c.cloneNode(true) as HTMLElement);
+      // Loose top-level text gets a <div> so it is paginated, not dropped.
+      const items: HTMLElement[] = [];
+      for (const node of Array.from(source.childNodes)) {
+        if (node instanceof HTMLElement) {
+          items.push(node.cloneNode(true) as HTMLElement);
+        } else if (node.nodeType === Node.TEXT_NODE && (node.textContent ?? '').trim() !== '') {
+          const div = doc.createElement('div');
+          div.textContent = node.textContent;
+          items.push(div);
+        }
+      }
 
       const measurer: MeasureAdapter =
         resolved.measurer ??

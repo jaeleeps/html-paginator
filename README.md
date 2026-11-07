@@ -120,6 +120,8 @@ Add `data-break` to content elements to control how they split across pages:
 **Rules:**
 - Nested `avoid`/`clip` is not supported -- the outer value wins and a console warning is emitted.
 - Leaf elements (those with no child elements) are inherently atomic and never split.
+- Elements with text directly inside them (e.g. `<p>Hello <b>world</b></p>`) are atomic too: they never split between inline children.
+- Loose text placed directly in the content wrapper is wrapped in a `<div>` and paginated like any other block.
 - Elements without `data-break` default to `auto` (splittable at child boundaries).
 
 ## Page configuration
@@ -201,7 +203,7 @@ pageOverrides: {
 
 ## Table splitting
 
-Tables with `data-break="auto"` split at row boundaries. Use `repeatTableHead` to repeat `<thead>` on continuation pages:
+Tables with `data-break="auto"` split at row boundaries. The `<caption>` stays on the first fragment and `<tfoot>` goes on the fragment holding the last row (its height counts toward that page). Use `repeatTableHead` to repeat `<thead>` on continuation pages:
 
 ```js
 createPaginator({ source: '#content', repeatTableHead: true });
