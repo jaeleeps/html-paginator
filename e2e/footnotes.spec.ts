@@ -62,4 +62,21 @@ test.describe('footnotes', () => {
       expect(p.text).toContain(`PAGE-${i + 1}`);
     });
   });
+
+  test('restarts numbering on each page when asked', async ({ page }) => {
+    const errors = await openPaginated(page, 'e2e/fixtures/footnotes.html?restart=page');
+    expect(errors).toEqual([]);
+    const pages = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('.hp-pages > .hp-page'), (pg) => ({
+        refs: Array.from(pg.querySelectorAll('.hp-body .hp-footnote-ref'), (r) => r.textContent).filter(Boolean),
+        marks: Array.from(pg.querySelectorAll('.hp-footnote-mark'), (m) => m.textContent),
+      })),
+    );
+    const letters = 'abcdefghijklmnopqrstuvwxyz';
+    expect(pages.flatMap((p) => p.marks)).toHaveLength(18);
+    for (const [i, p] of pages.entries()) {
+      expect(p.marks, `page ${i + 1}`).toEqual(Array.from(letters.slice(0, p.marks.length)));
+      expect(p.refs, `page ${i + 1}`).toEqual(p.marks);
+    }
+  });
 });

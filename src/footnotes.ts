@@ -1,3 +1,6 @@
+import { formatPageNumber } from './pageNumbers';
+import type { PageNumberFormat } from './types';
+
 /**
  * Footnotes (Word footnotes; CSS GCPM `float: footnote`).
  *
@@ -19,6 +22,16 @@ export const FOOTNOTE_CLASS_NAMES = {
   ref: 'hp-footnote-ref',
   mark: 'hp-footnote-mark',
 } as const;
+
+export interface FootnoteOptions {
+  /**
+   * Where numbering starts over (Word: continuous, restart each section,
+   * restart each page). Default: 'continuous'.
+   */
+  restart?: 'continuous' | 'section' | 'page';
+  /** Number style, as for page numbers (e.g. 'lower-roman'). Default: decimal. */
+  format?: PageNumberFormat;
+}
 
 const STYLE_ATTRIBUTE = 'data-html-paginator-footnotes';
 
@@ -113,4 +126,34 @@ export function createFootnotes(root: HTMLElement): Footnotes | null {
       return area;
     },
   };
+}
+
+/**
+ * Number references and notes as the options ask, once pages are known.
+ * `sectionStarts[i]` tells whether page i starts a section.
+ */
+export function renumberFootnotes(
+  pages: HTMLElement[],
+  sectionStarts: readonly boolean[],
+  options: FootnoteOptions = {},
+): void {
+  const restart = options.restart ?? 'continuous';
+  if (restart === 'continuous' && options.format === undefined) return;
+
+  let counter = 0;
+  pages.forEach((page, index) => {
+    if (restart === 'page' || (restart === 'section' && sectionStarts[index])) counter = 0;
+    const labels = new Map<string, string>();
+    for (const note of page.querySelectorAll<HTMLElement>(`.${FOOTNOTE_CLASS_NAMES.note}`)) {
+      const label = formatPageNumber(++counter, options.format);
+      labels.set(note.getAttribute(NOTE_ATTRIBUTE) ?? '', label);
+      const mark = note.querySelector(`.${FOOTNOTE_CLASS_NAMES.mark}`);
+      if (mark) mark.textContent = label;
+    }
+    for (const ref of page.querySelectorAll<HTMLElement>(`.${FOOTNOTE_CLASS_NAMES.ref}`)) {
+      const label = labels.get(ref.getAttribute(NOTE_ATTRIBUTE) ?? '');
+      // Empty copies left by line splits stay empty.
+      if (label !== undefined && ref.textContent !== '') ref.textContent = label;
+    }
+  });
 }

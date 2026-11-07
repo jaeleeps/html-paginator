@@ -15,7 +15,7 @@ import { resolveSize } from './pageConfig';
 import { injectStyles } from './styles';
 import { createRowSplitter } from './rowSplit';
 import { prepareFields, resolveFields } from './fields';
-import { createFootnotes, injectFootnoteStyles } from './footnotes';
+import { createFootnotes, injectFootnoteStyles, renumberFootnotes } from './footnotes';
 import { freezeTableColumns } from './tableColumns';
 import { createTextSplitter } from './textSplit';
 import { buildTableOfContents, resolvePageRefs } from './toc';
@@ -171,6 +171,13 @@ export function createPaginator(config: PaginatorConfig): Paginator {
         const total = built.pages.length;
         resolvePageRefs(built.pages, (index) => layout.context(index + 1, total).pageLabel);
         resolveFields(built.pages, (index) => layout.context(index + 1, total));
+        if (footnotes) {
+          renumberFootnotes(
+            built.pages,
+            distributed.map((page) => page.sectionStart === true),
+            resolved.footnotes,
+          );
+        }
 
         // data-break="clip": hide the overflow of pages whose single item
         // could not fit any page ('avoid' overflow stays visible).

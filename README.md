@@ -353,7 +353,12 @@ Wrap a note's text in `data-footnote` where its reference goes. The note moves t
 ```
 
 - The note is replaced by a numbered reference (`sup.hp-footnote-ref`). Its content becomes `div.hp-footnote` inside the page's `div.hp-footnotes` area, which sits between the body and the footer and starts with `div.hp-footnote-separator` (a short rule).
-- Numbering is continuous through the document.
+- Numbering is continuous through the document by default. Word's other options are available too, and a format can be any page-number style:
+
+  ```js
+  createPaginator({ source: '#content', footnotes: { restart: 'page', format: 'lower-alpha' } });
+  // restart: 'continuous' (default) | 'section' | 'page'
+  ```
 - The footnote area takes its height from the body. Pagination keeps every reference on the same page as its note: a paragraph or table row splits before the line with the reference, or moves on, rather than leave its note behind.
 - Default styles are small text and a one-third-width separator. They use zero specificity, so any rule of yours wins:
 
@@ -424,6 +429,7 @@ Create a paginator instance.
 | `page` | `PageConfig` | letter, no margin | Default page definition |
 | `pageOverrides` | `Record<number, PageConfig>` | `{}` | Per-page overrides (1-based) |
 | `repeatTableHead` | `boolean` | `false` | Repeat `<thead>` on table continuation pages |
+| `footnotes` | `{ restart?, format? }` | continuous, decimal | Footnote numbering: restart `'continuous'`, `'section'` or `'page'`; number format |
 | `splitTableRows` | `boolean` | `true` | Let rows break across pages (cells split between lines) |
 | `splitParagraphs` | `boolean` | `true` | Split paragraphs between lines (widow/orphan control via CSS `orphans`/`widows`) |
 | `keepHeadingsWithNext` | `boolean` | `true` | Headings keep with the next element |
