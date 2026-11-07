@@ -171,13 +171,39 @@ In declarative mode: `data-hp-margin="0.6in"`.
 
 In the JS API, `header` and `footer` accept:
 
-- **Template function**: `({ page, totalPages }) => '<div>...</div>'`
+- **Template function**: `({ page, totalPages, pageLabel, ... }) => '<div>...</div>'` (see [Page numbers](#page-numbers))
 - **HTML string**: `'<div class="header">Static header</div>'`
 - **HTMLElement**: a DOM element (cloned per page)
 - **CSS selector**: matches a `<template>` or element in the document
 - **`null`**: explicitly removes the header/footer (useful in `pageOverrides`)
 
-In declarative mode, `{{page}}` and `{{totalPages}}` are interpolated in the template HTML.
+In declarative mode, the same context fields are interpolated in the template HTML: `{{page}}`, `{{totalPages}}`, `{{pageNumber}}`, `{{pageLabel}}`, `{{lastPageNumber}}` and `{{lastPageLabel}}`.
+
+### Page numbers
+
+Template functions receive the page context:
+
+| Field | Meaning |
+|-------|---------|
+| `page` / `totalPages` | Physical page index (1-based) and page count |
+| `pageNumber` / `pageLabel` | Displayed number and its formatted label |
+| `lastPageNumber` / `lastPageLabel` | Same for the last page, for "Page X of Y" |
+
+Set the start number and style with `pageNumbers`, like Word's "Format Page Numbers":
+
+```js
+createPaginator({
+  source: '#content',
+  // Cover is page 0, so page 2 reads "1", and "of" counts only numbered pages.
+  pageNumbers: { start: 0, format: 'decimal' },
+  page: { footer: ({ pageLabel, lastPageLabel }) => `<div>Page ${pageLabel} of ${lastPageLabel}</div>` },
+  pageOverrides: { 1: { footer: null } },
+});
+```
+
+Formats: `'decimal'` (default), `'lower-roman'` / `'upper-roman'` (i, ii, … / I, II, …), `'lower-alpha'` / `'upper-alpha'` (a … z, aa, bb, as in Word), or a function `(n) => string`. Numbers a format can't express (zero, negative numbers, roman above 3999) are shown as decimal.
+
+Declaratively: `data-hp-page-start="0"` and `data-hp-page-format="lower-roman"` on the config (or content) element.
 
 ### Per-page overrides
 
@@ -293,7 +319,10 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-hp-size` | config or content | Page size preset or `"<width> <height>"` |
 | `data-hp-margin` | config, content, or page group | CSS margin shorthand |
 | `data-hp-repeat-table-head` | config or content | Repeat `<thead>` on split tables |
+| `data-hp-page-start` | config or content | Number shown on the first page (default `1`) |
+| `data-hp-page-format` | config or content | `decimal`, `lower-roman`, `upper-roman`, `lower-alpha`, `upper-alpha` |
 | `data-break` | content elements | Break behavior: `auto`, `avoid`, or `clip` |
+| `data-break-before` / `data-break-after` | content elements | `="page"` forces a page break |
 
 ## How it works
 

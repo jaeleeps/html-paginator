@@ -4,6 +4,7 @@ import {
   bindPrintPagination,
   parseDeclarativeConfig,
 } from '../src/declarative';
+import { pageContext } from '../src/pageNumbers';
 import type { MeasureAdapter, PageContext } from '../src/types';
 
 // jsdom has no layout; inject fixed metrics for pagination tests.
@@ -15,9 +16,12 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function render(tpl: unknown, ctx: PageContext): string {
+function render(
+  tpl: unknown,
+  ctx: Pick<PageContext, 'page' | 'totalPages'> & Partial<PageContext>,
+): string {
   expect(typeof tpl).toBe('function');
-  return (tpl as (ctx: PageContext) => string)(ctx);
+  return (tpl as (ctx: PageContext) => string)({ ...pageContext(ctx.page, ctx.totalPages), ...ctx });
 }
 
 const FULL_MARKUP = `
@@ -140,6 +144,49 @@ describe('parseDeclarativeConfig edge cases', () => {
       <div data-hp-content></div>`;
     const config = parseDeclarativeConfig(document);
     expect(render(config?.page?.header, { page: 7, totalPages: 9 })).toContain('7-7/9');
+  });
+});
+
+describe('declarative page numbering', () => {
+  it('reads data-hp-page-start / data-hp-page-format', () => {
+    document.body.innerHTML = `
+      <template data-hp-config data-hp-page-start="0" data-hp-page-format="lower-roman"></template>
+      <div data-hp-content></div>`;
+    expect(parseDeclarativeConfig(document)?.pageNumbers).toEqual({ start: 0, format: 'lower-roman' });
+  });
+
+  it('reads numbering from the content element when there is no config', () => {
+    document.body.innerHTML = '<div data-hp-content data-hp-page-start="5"></div>';
+    expect(parseDeclarativeConfig(document)?.pageNumbers).toEqual({ start: 5 });
+  });
+
+  it('warns on and ignores invalid numbering attributes', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    document.body.innerHTML = '<div data-hp-content data-hp-page-start="x" data-hp-page-format="greek"></div>';
+    expect(parseDeclarativeConfig(document)?.pageNumbers).toBeUndefined();
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+
+  it('interpolates numbering placeholders and leaves unknown ones', () => {
+    document.body.innerHTML = `
+      <template data-hp-config>
+        <div data-hp-footer>{{ pageLabel }}|{{pageNumber}}|{{lastPageLabel}}|{{lastPageNumber}}|{{other}}</div>
+      </template>
+      <div data-hp-content></div>`;
+    const footer = parseDeclarativeConfig(document)?.page?.footer;
+    expect(
+      render(footer, { page: 2, totalPages: 3, pageNumber: 1, pageLabel: 'i', lastPageNumber: 2, lastPageLabel: 'ii' }),
+    ).toContain('i|1|ii|2|{{other}}');
+  });
+
+  it('renders roman labels end to end', () => {
+    document.body.innerHTML = `
+      <template data-hp-config data-hp-page-format="upper-roman">
+        <div data-hp-footer>{{pageLabel}}</div>
+      </template>
+      <div data-hp-content><p>a</p></div>`;
+    autoPaginate(document, { measurer });
+    expect(document.querySelector('.hp-footer')?.textContent).toBe('I');
   });
 });
 

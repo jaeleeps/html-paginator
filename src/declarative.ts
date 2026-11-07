@@ -1,6 +1,9 @@
 import type {
   HeaderFooterTemplate,
   PageConfig,
+  PageContext,
+  PageNumberFormat,
+  PageNumbering,
   Paginator,
   PaginatorConfig,
 } from './types';
@@ -33,8 +36,11 @@ import { createPaginator } from './createPaginator';
  *   `data-hp-header="none"` / `data-hp-footer="none"` removes them.
  * - `data-hp-size` accepts a preset ('letter', 'a4', ...) or explicit
  *   dimensions as "<width> <height>" (e.g. "8.5in 11in").
- * - `{{page}}` / `{{totalPages}}` are interpolated per page. As with the JS
- *   API, header/footer height must not depend on these values.
+ * - `{{page}}`, `{{totalPages}}`, `{{pageNumber}}`, `{{pageLabel}}`,
+ *   `{{lastPageNumber}}` and `{{lastPageLabel}}` are interpolated per page.
+ *   As with the JS API, header/footer height must not depend on them.
+ * - `data-hp-page-start` / `data-hp-page-format` set page numbering
+ *   (e.g. `data-hp-page-start="0"`, `data-hp-page-format="lower-roman"`).
  * - `data-hp-repeat-table-head` (boolean attribute) enables repeatTableHead.
  */
 export const DECLARATIVE_ATTRIBUTES = {
@@ -46,6 +52,8 @@ export const DECLARATIVE_ATTRIBUTES = {
   size: 'data-hp-size',
   margin: 'data-hp-margin',
   repeatTableHead: 'data-hp-repeat-table-head',
+  pageStart: 'data-hp-page-start',
+  pageFormat: 'data-hp-page-format',
 } as const;
 
 const A = DECLARATIVE_ATTRIBUTES;
@@ -53,10 +61,41 @@ const A = DECLARATIVE_ATTRIBUTES;
 function slotToTemplate(el: Element, attr: string): HeaderFooterTemplate {
   if (el.getAttribute(attr) === 'none') return null;
   const html = el.outerHTML;
-  return ({ page, totalPages }) =>
-    html
-      .replace(/\{\{\s*page\s*\}\}/g, String(page))
-      .replace(/\{\{\s*totalPages\s*\}\}/g, String(totalPages));
+  return (ctx) =>
+    html.replace(PLACEHOLDER, (match, key: string) =>
+      PLACEHOLDER_KEYS.has(key) ? String(ctx[key as keyof PageContext]) : match,
+    );
+}
+
+const PLACEHOLDER = /\{\{\s*(\w+)\s*\}\}/g;
+const PLACEHOLDER_KEYS = new Set<string>([
+  'page',
+  'totalPages',
+  'pageNumber',
+  'pageLabel',
+  'lastPageNumber',
+  'lastPageLabel',
+]);
+
+const PAGE_FORMATS = new Set(['decimal', 'lower-roman', 'upper-roman', 'lower-alpha', 'upper-alpha']);
+
+/** Read data-hp-page-start / data-hp-page-format (first element that has them). */
+function parseNumbering(...els: (Element | null)[]): PageNumbering | undefined {
+  const numbering: PageNumbering = {};
+  for (const el of els) {
+    const start = el?.getAttribute(A.pageStart);
+    if (start != null && numbering.start === undefined) {
+      const n = Number(start.trim());
+      if (start.trim() !== '' && Number.isInteger(n)) numbering.start = n;
+      else console.warn(`html-paginator: invalid ${A.pageStart}="${start}", ignored`, el);
+    }
+    const format = el?.getAttribute(A.pageFormat);
+    if (format != null && numbering.format === undefined) {
+      if (PAGE_FORMATS.has(format.trim())) numbering.format = format.trim() as PageNumberFormat;
+      else console.warn(`html-paginator: invalid ${A.pageFormat}="${format}", ignored`, el);
+    }
+  }
+  return Object.keys(numbering).length > 0 ? numbering : undefined;
 }
 
 function parseSize(value: string): PageConfig['size'] {
@@ -103,6 +142,9 @@ export function parseDeclarativeConfig(doc: Document): PaginatorConfig | null {
   if (configEl?.hasAttribute(A.repeatTableHead) || content.hasAttribute(A.repeatTableHead)) {
     config.repeatTableHead = true;
   }
+
+  const numbering = parseNumbering(configEl, content);
+  if (numbering) config.pageNumbers = numbering;
 
   if (root) {
     const header = findSharedSlot(root, A.header);

@@ -9,10 +9,35 @@ export interface PageDimensions {
 
 /** Context passed to header/footer template functions. */
 export interface PageContext {
-  /** 1-based page number. */
+  /** 1-based physical page index. */
   page: number;
   /** Total page count, computed after distribution. */
   totalPages: number;
+  /** Displayed page number: `page` shifted by `pageNumbers.start`. */
+  pageNumber: number;
+  /** `pageNumber` formatted with `pageNumbers.format` (e.g. 'iv'). */
+  pageLabel: string;
+  /** Displayed number of the last page (for "Page X of Y"). */
+  lastPageNumber: number;
+  /** `lastPageNumber` formatted with `pageNumbers.format`. */
+  lastPageLabel: string;
+}
+
+/** Page number styles (Word's "Format Page Numbers"), or a custom formatter. */
+export type PageNumberFormat =
+  | 'decimal'
+  | 'lower-roman'
+  | 'upper-roman'
+  | 'lower-alpha'
+  | 'upper-alpha'
+  | ((n: number) => string);
+
+/** Page numbering options. */
+export interface PageNumbering {
+  /** Number displayed on the first page. Default: 1 (0 = unnumbered cover). */
+  start?: number;
+  /** Number style. Default: 'decimal'. */
+  format?: PageNumberFormat;
 }
 
 /**
@@ -67,6 +92,8 @@ export interface PaginatorConfig {
   page?: PageConfig;
   /** Per-page overrides (1-based page number), merged over the default. */
   pageOverrides?: Record<number, PageConfig>;
+  /** Displayed page numbering (start number and style). */
+  pageNumbers?: PageNumbering;
   /** Repeat <thead> on table continuation pages. Default: false. */
   repeatTableHead?: boolean;
   /**

@@ -1,6 +1,7 @@
-import type { PageConfig } from './types';
+import type { PageConfig, PageNumbering } from './types';
 import { CLASS_NAMES } from './buildPages';
 import { resolvePageConfig } from './pageConfig';
+import { pageContext } from './pageNumbers';
 import { renderTemplate } from './renderTemplate';
 
 /**
@@ -28,6 +29,8 @@ export interface DomMeasurerOptions {
   page?: PageConfig;
   /** Per-page overrides (1-based). */
   pageOverrides?: Record<number, PageConfig>;
+  /** Displayed page numbering (probe headers/footers use its format). */
+  pageNumbers?: PageNumbering;
 }
 
 export interface DomMeasurer {
@@ -81,7 +84,7 @@ export function createDomMeasurer(options: DomMeasurerOptions): DomMeasurer {
 
   const mountProbe = (page: number): Probe => {
     const config = resolvePageConfig(page, options.page, options.pageOverrides);
-    const ctx = { page, totalPages: PROBE_CTX_TOTAL_PAGES };
+    const ctx = pageContext(page, PROBE_CTX_TOTAL_PAGES, options.pageNumbers);
 
     const pageEl = doc.createElement('div');
     pageEl.className = CLASS_NAMES.page;

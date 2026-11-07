@@ -84,6 +84,7 @@ export function createPaginator(config: PaginatorConfig): Paginator {
           document: doc,
           page: resolved.page,
           pageOverrides: resolved.pageOverrides,
+          pageNumbers: resolved.pageNumbers,
         });
 
       try {
@@ -98,6 +99,7 @@ export function createPaginator(config: PaginatorConfig): Paginator {
           document: doc,
           page: resolved.page,
           pageOverrides: resolved.pageOverrides,
+          pageNumbers: resolved.pageNumbers,
         });
 
         // data-break="clip": hide the overflow of pages whose single item
