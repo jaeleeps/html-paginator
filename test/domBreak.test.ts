@@ -293,6 +293,15 @@ describe('markBreakHints', () => {
     expect(breaking(copy)).toEqual([]);
   });
 
+  it('maps CSS break-inside: avoid to data-break="avoid" unless data-break is set', () => {
+    const copy = marked(
+      '<p id="a" class="keep"></p><p id="b" style="page-break-inside: avoid"></p><p id="c" class="keep" data-break="clip"></p><p id="d"></p>',
+      '.keep { break-inside: avoid }',
+    );
+    const behavior = (id: string) => copy.querySelector(`#${id}`)?.getAttribute(BREAK_ATTRIBUTE);
+    expect(['a', 'b', 'c', 'd'].map(behavior)).toEqual(['avoid', 'avoid', 'clip', null]);
+  });
+
   it('does not touch the source', () => {
     marked('<p id="a" data-break-after="page"></p><p id="b"></p>');
     expect(document.querySelectorAll('[data-break-before]')).toHaveLength(0);

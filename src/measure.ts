@@ -42,6 +42,11 @@ export interface DomMeasurer {
   measure(item: HTMLElement, page?: number): number;
   /** Available body height of the given page (1-based). */
   pageHeight(page: number): number;
+  /**
+   * Run `fn` while `item` is laid out in the body of `page`'s probe, then put
+   * it back where it was.
+   */
+  layout<R>(item: HTMLElement, page: number, fn: () => R): R;
   /** Remove all probe elements from the document. */
   dispose(): void;
 }
@@ -122,6 +127,23 @@ export function createDomMeasurer(options: DomMeasurerOptions): DomMeasurer {
     return { pageEl, header, body, footer };
   };
 
+  // Temporarily move the item into the probe body so it is laid out at the
+  // real page-body width, then restore its original position.
+  const layoutIn = <R>(item: HTMLElement, page: number | undefined, fn: () => R): R => {
+    // Without a page, reuse the last probe (page 1 before any is opened).
+    const probe = page !== undefined ? getProbe(page) : (currentProbe ?? getProbe(1));
+    const parent = item.parentNode;
+    const nextSibling = item.nextSibling;
+
+    probe.body.appendChild(item);
+    try {
+      return fn();
+    } finally {
+      probe.body.removeChild(item);
+      if (parent) parent.insertBefore(item, nextSibling);
+    }
+  };
+
   return {
     pageHeight(page: number): number {
       const probe = getProbe(page);
@@ -135,20 +157,11 @@ export function createDomMeasurer(options: DomMeasurerOptions): DomMeasurer {
     },
 
     measure(item: HTMLElement, page?: number): number {
-      // Without a page, reuse the last probe (page 1 before any is opened).
-      const probe = page !== undefined ? getProbe(page) : (currentProbe ?? getProbe(1));
+      return layoutIn(item, page, () => measureOuterHeight(item));
+    },
 
-      // Temporarily move the item into the probe body so it is laid out at
-      // the real page-body width, then restore its original position.
-      const parent = item.parentNode;
-      const nextSibling = item.nextSibling;
-
-      probe.body.appendChild(item);
-      const height = measureOuterHeight(item);
-      probe.body.removeChild(item);
-
-      if (parent) parent.insertBefore(item, nextSibling);
-      return height;
+    layout(item, page, fn) {
+      return layoutIn(item, page, fn);
     },
 
     dispose(): void {

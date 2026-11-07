@@ -119,10 +119,21 @@ Add `data-break` to content elements to control how they split across pages:
 
 **Rules:**
 - Nested `avoid`/`clip` is not supported -- the outer value wins and a console warning is emitted.
-- Leaf elements (those with no child elements) are inherently atomic and never split.
-- Elements with text directly inside them (e.g. `<p>Hello <b>world</b></p>`) are atomic too: they never split between inline children.
+- Paragraphs (elements holding text, e.g. `<p>Hello <b>world</b></p>`) split between lines, like Word. See [Paragraph splitting](#paragraph-splitting).
+- Other leaf elements (no child elements, no text, e.g. images) are atomic and never split.
+- CSS `break-inside: avoid` (or legacy `page-break-inside: avoid`) works like `data-break="avoid"`, unless the element sets `data-break` itself.
 - Loose text placed directly in the content wrapper is wrapped in a `<div>` and paginated like any other block.
 - Elements without `data-break` default to `auto` (splittable at child boundaries).
+
+### Paragraph splitting
+
+A paragraph that does not fit is split between lines, as in Word. The first lines fill the page, and the rest continue at the top of the next page:
+
+- **Widow/orphan control:** at least 2 lines stay at the bottom of a page and at least 2 move to the next. Change these with the standard CSS `orphans` / `widows` properties, e.g. `p { orphans: 3; widows: 3 }`. If no split respects them, the paragraph moves whole.
+- Lines are found where the paragraph is really laid out, inside its containers and at the page width. Inline formatting (`<b>`, `<a>`, `<br>`, …) is kept on both sides.
+- The continuation has no first-line indent and no top margin, and the head has no bottom margin. In justified text, the head's last line is justified too.
+- Keep a paragraph whole with `data-break="avoid"` or `break-inside: avoid`. Turn splitting off everywhere with `splitParagraphs: false`.
+- Only elements with inline content are split. Paragraphs containing blocks or inline-blocks move whole.
 
 ### Forced page breaks
 
@@ -352,8 +363,10 @@ Create a paginator instance.
 | `page` | `PageConfig` | letter, no margin | Default page definition |
 | `pageOverrides` | `Record<number, PageConfig>` | `{}` | Per-page overrides (1-based) |
 | `repeatTableHead` | `boolean` | `false` | Repeat `<thead>` on table continuation pages |
+| `splitParagraphs` | `boolean` | `true` | Split paragraphs between lines (widow/orphan control via CSS `orphans`/`widows`) |
+| `keepHeadingsWithNext` | `boolean` | `true` | Headings keep with the next element |
 | `injectStyles` | `boolean` | `true` | Inject built-in print/screen stylesheet |
-| `measurer` | `MeasureAdapter` | DOM layout | Custom measurement adapter: `measure(el, page?)` (outer height of `el` on that page), `pageHeight(page)` (available body height), optional `dispose()` |
+| `measurer` | `MeasureAdapter` | DOM layout | Custom measurement adapter: `measure(el, page?)` (outer height of `el` on that page), `pageHeight(page)` (available body height), optional `layout(el, page, fn)` (run `fn` while `el` is laid out on that page; needed for paragraph splitting), optional `dispose()` |
 
 **`Paginator`**
 
@@ -418,6 +431,7 @@ The pipeline has two passes:
 
 3. **Split or place** -- When an item doesn't fit:
    - **Splittable** (`data-break="auto"` with children): `splitToFit` recursively splits the container at child boundaries. The head fragment stays on the current page; the tail is re-queued for the next page. Tables split at row level with optional `<thead>` repetition. If no children fit an empty page, `forceSplit` takes the first (deepest splittable) child so pagination can continue.
+   - **Paragraphs** (`auto` elements holding inline text): split between lines. Line boxes are found in the real layout, and the largest head within `orphans`/`widows` that fits stays on the page.
    - **Atomic** (`avoid`, `clip`, or leaf): the item is placed alone on a new page. If it exceeds the page height, it overflows in place (`overflows: true`). For `clip` items, `overflow: hidden` is applied to the page body.
 
 ### Pass 2 -- Rendering

@@ -106,6 +106,12 @@ export interface MeasureAdapter {
   measure(item: HTMLElement, page?: number): number;
   /** Available body height of the given page (1-based). */
   pageHeight(page: number): number;
+  /**
+   * Run `fn` while `item` is laid out on the given page, then restore it.
+   * Needed to split paragraphs between lines (see `splitParagraphs`);
+   * without it, paragraphs move to the next page whole.
+   */
+  layout?<R>(item: HTMLElement, page: number, fn: () => R): R;
   /** Clean up any probe state. */
   dispose?(): void;
 }
@@ -140,6 +146,14 @@ export interface PaginatorConfig {
    * never stranded at the bottom of a page. Default: true.
    */
   keepHeadingsWithNext?: boolean;
+  /**
+   * Split paragraphs (elements holding text) between lines when they do not
+   * fit, like Word, keeping at least CSS `orphans` lines at the bottom of a
+   * page and `widows` lines at the top of the next (both default to 2).
+   * `data-break="avoid"` or `break-inside: avoid` keeps one whole.
+   * Default: true.
+   */
+  splitParagraphs?: boolean;
   /** Repeat <thead> on table continuation pages. Default: false. */
   repeatTableHead?: boolean;
   /**
