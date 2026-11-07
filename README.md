@@ -370,6 +370,20 @@ Wrap a note's text in `data-footnote` where its reference goes. The note moves t
 - An `id` on the `data-footnote` element moves to the note, so you can link to it. Footnote reference numbers are left out of TOC entries.
 - A note longer than the space left on a page is not continued on the next page (Word can do that). The note and its reference move on together.
 
+### Endnotes
+
+`data-endnote` works like `data-footnote`, but the notes are collected at the end of the document, as with Word's endnotes:
+
+```html
+<p>As shown before<span data-endnote>See the 2019 study.</span>, …</p>
+…
+<section data-hp-endnotes><h2>Notes</h2></section>   <!-- optional: where the notes go -->
+```
+
+- References are numbered `i`, `ii`, `iii`… (Word's default). Change the style with `endnotes: { format: 'decimal' }`. Each reference links to its note.
+- Notes go into the `data-hp-endnotes` element after its existing content, or into a `div.hp-endnotes` appended to the content. Each note is a `div.hp-endnote` with `sup.hp-endnote-mark`.
+- Notes are ordinary content, so they paginate and split between lines like paragraphs. Long notes fit fine here, while a footnote has to fit on one page.
+
 ### Table of contents and page references
 
 Word's TOC and PAGEREF fields. Mark a container with `data-hp-toc` and it is filled with one entry per heading: the heading text, a dot leader, and the page it lands on. Any element with `data-hp-page-ref` shows the page of its target:
@@ -431,6 +445,7 @@ Create a paginator instance.
 | `page` | `PageConfig` | letter, no margin | Default page definition |
 | `pageOverrides` | `Record<number, PageConfig>` | `{}` | Per-page overrides (1-based) |
 | `repeatTableHead` | `boolean` | `false` | Repeat `<thead>` on table continuation pages |
+| `endnotes` | `{ format? }` | lower-roman | Endnote number format |
 | `footnotes` | `{ restart?, format? }` | continuous, decimal | Footnote numbering: restart `'continuous'`, `'section'` or `'page'`; number format |
 | `splitTableRows` | `boolean` | `true` | Let rows break across pages (cells split between lines) |
 | `splitParagraphs` | `boolean` | `true` | Split paragraphs between lines (widow/orphan control via CSS `orphans`/`widows`) |
@@ -483,6 +498,8 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-keep-with-next` | content elements | Keep on the same page as the next element (`="false"` opts a heading out) |
 | `data-hp-field` | inline content | Page field: `pageLabel`, `totalPages`, `sectionPage`, … of the page it lands on |
 | `data-repeat-head` | `<table>` | Repeat this table's `<thead>` on continuation pages (`="false"` opts out of `repeatTableHead`) |
+| `data-endnote` | inline content | Endnote: numbered reference; the note goes to the end (or into `data-hp-endnotes`) |
+| `data-hp-endnotes` | content container | Where endnotes are collected |
 | `data-footnote` | inline content | Footnote: replaced by a numbered reference, its content shown at the bottom of the page |
 | `data-hp-toc` | content container | Fill with a table of contents (`data-hp-toc-levels="1-3"`) |
 | `data-hp-toc-level` / `data-hp-toc-skip` | content elements | Add an element to the TOC at a level / leave a heading out |

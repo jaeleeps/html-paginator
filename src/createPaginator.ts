@@ -14,6 +14,7 @@ import { createDomMeasurer } from './measure';
 import { resolveSize } from './pageConfig';
 import { injectStyles } from './styles';
 import { createRowSplitter } from './rowSplit';
+import { collectEndnotes } from './endnotes';
 import { prepareFields, resolveFields } from './fields';
 import { createFootnotes, injectFootnoteStyles, renumberFootnotes } from './footnotes';
 import { freezeTableColumns } from './tableColumns';
@@ -94,6 +95,7 @@ export function createPaginator(config: PaginatorConfig): Paginator {
       // Footnotes first: TOC entries leave their reference numbers out.
       const footnotes = createFootnotes(copy);
       if (footnotes && resolved.injectStyles !== false) injectFootnoteStyles(doc);
+      collectEndnotes(copy, resolved.endnotes);
       buildTableOfContents(copy);
       prepareFields(copy);
 

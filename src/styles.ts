@@ -42,6 +42,10 @@ export function buildStylesheet(size: PageDimensions): string {
   color: inherit;
   text-decoration: none;
 }
+:where(.hp-endnote-ref a) {
+  color: inherit;
+  text-decoration: none;
+}
 @page {
   size: ${size.width} ${size.height};
   margin: 0;

@@ -1,3 +1,4 @@
+import type { EndnoteOptions } from './endnotes';
 import type { FootnoteOptions } from './footnotes';
 
 /** Preset page sizes. */
@@ -158,6 +159,8 @@ export interface PaginatorConfig {
   splitParagraphs?: boolean;
   /** Footnote numbering (see `data-footnote`). */
   footnotes?: FootnoteOptions;
+  /** Endnote numbering (see `data-endnote`). */
+  endnotes?: EndnoteOptions;
   /**
    * Let table rows break across pages, like Word ("Allow row to break across
    * pages"): cells split between lines at a common cut, with CSS
