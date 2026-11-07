@@ -28,7 +28,7 @@
     "build": "tsup src/index.ts src/auto.ts --format esm,cjs --dts --clean && tsup src/index.ts --format iife --global-name htmlPaginator --outDir dist --no-clean --no-dts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.src.json && tsc --noEmit",
     "prepack": "npm run build",
     "prepublishOnly": "npm run typecheck && npm test",
     "test:e2e": "npm run build && playwright test"
