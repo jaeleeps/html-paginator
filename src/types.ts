@@ -31,6 +31,14 @@ export interface PageContext {
   sectionPage: number;
   /** Number of pages in the section. */
   sectionPages: number;
+  /**
+   * Running header values (Word's STYLEREF), by name: "h1"…"h6" for
+   * headings, or a `data-hp-running` name. The first value set on the page,
+   * else the last one set before it.
+   */
+  running: Record<string, string>;
+  /** The last running value set on the page, else the last one before it (STYLEREF \l). */
+  runningLast: Record<string, string>;
 }
 
 /** Page number styles (Word's "Format Page Numbers"), or a custom formatter. */

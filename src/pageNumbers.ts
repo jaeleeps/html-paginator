@@ -67,5 +67,7 @@ export function pageContext(
     lastPageLabel: formatPageNumber(lastPageNumber, numbering.format),
     sectionPage: page,
     sectionPages: totalPages,
+    running: {},
+    runningLast: {},
   };
 }
