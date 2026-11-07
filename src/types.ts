@@ -103,6 +103,11 @@ export interface PaginatorConfig {
   evenPages?: PageConfig;
   /** Displayed page numbering (start number and style). */
   pageNumbers?: PageNumbering;
+  /**
+   * Headings (h1–h6) keep with the next element, as in Word, so they are
+   * never stranded at the bottom of a page. Default: true.
+   */
+  keepHeadingsWithNext?: boolean;
   /** Repeat <thead> on table continuation pages. Default: false. */
   repeatTableHead?: boolean;
   /**

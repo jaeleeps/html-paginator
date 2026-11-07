@@ -144,6 +144,20 @@ h2.chapter { break-before: page; }
 - Breaks inside `data-break="avoid"`/`"clip"` elements are ignored, because those elements are never split.
 - The print stylesheet cancels these breaks inside generated pages, since pagination has already applied them. Without that, the browser would start extra sheets when printing.
 
+### Keep with next
+
+Keep an element on the same page as the element after it, like Word's "Keep with next". It stops headings and lead-in lines from being stranded at the bottom of a page:
+
+```html
+<p data-keep-with-next>The following table lists…</p>
+<table>…</table>
+```
+
+- **Headings (`h1`–`h6`) keep with next by default**, as in Word. Opt one out with `data-keep-with-next="false"`, or turn the default off with `keepHeadingsWithNext: false`.
+- The standard CSS spelling works too: `break-after: avoid` (or legacy `page-break-after: avoid`).
+- When the next element has to start a new page, kept elements move with it, including chains such as a heading followed by a subheading. Inside a split container, a kept child moves to the next fragment.
+- Moving never empties a page. If the kept elements fill the page by themselves, they stay put.
+
 ## Page configuration
 
 ### Size presets
@@ -348,6 +362,7 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-hp-page-format` | config or content | `decimal`, `lower-roman`, `upper-roman`, `lower-alpha`, `upper-alpha` |
 | `data-break` | content elements | Break behavior: `auto`, `avoid`, or `clip` |
 | `data-break-before` / `data-break-after` | content elements | `="page"` forces a page break |
+| `data-keep-with-next` | content elements | Keep on the same page as the next element (`="false"` opts a heading out) |
 
 ## How it works
 

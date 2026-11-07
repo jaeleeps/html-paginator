@@ -1,0 +1,48 @@
+<!doctype html>
+<!--
+  Keep-with-next fixture. Fixed heights make the scenarios deterministic:
+  the letter page body is 960px (11in - 2 x 0.5in), each scenario starts on
+  a fresh page with an 880px filler, leaving 80px.
+  A. heading (30px) + paragraph (120px): the heading moves with the paragraph
+  B. same, heading opted out (data-keep-with-next="false"): stays stranded
+  C. lead-in with CSS break-after: avoid (30px) + table (60px rows): the
+     first row does not fit, so the lead-in moves with the table
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>html-paginator keep-with-next fixture</title>
+<style>
+  body { margin: 0; font: 14px/1.4 Helvetica, Arial, sans-serif; }
+  .fill { height: 880px; background: #eef; }
+  h2 { height: 30px; margin: 0; font-size: 18px; line-height: 30px; }
+  .body { height: 120px; margin: 0; background: #efe; }
+  .lead { height: 30px; margin: 0; break-after: avoid; }
+  table { width: 100%; border-collapse: collapse; }
+  tr { height: 60px; }
+  td { padding: 0 6px; border: 0; background: #fee; }
+</style>
+</head>
+<body>
+<div id="src">
+  <div class="fill">FILL-A</div>
+  <h2>KEEP-HEAD heading</h2>
+  <p class="body">KEEP-BODY paragraph</p>
+
+  <div class="fill" data-break-before="page">FILL-B</div>
+  <h2 data-keep-with-next="false">STRAND-HEAD heading</h2>
+  <p class="body">STRAND-BODY paragraph</p>
+
+  <div class="fill" data-break-before="page">FILL-C</div>
+  <p class="lead">LEAD-IN the table below</p>
+  <table><tbody>
+    <tr><td>ROW-1</td></tr><tr><td>ROW-2</td></tr><tr><td>ROW-3</td></tr>
+  </tbody></table>
+</div>
+<script src="/dist/index.global.js"></script>
+<script>
+  htmlPaginator.createPaginator({ source: '#src', page: { size: 'letter', margin: '0.5in' } }).paginate();
+  document.documentElement.dataset.paginated = 'true';
+</script>
+</body>
+</html>

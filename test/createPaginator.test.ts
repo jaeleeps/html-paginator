@@ -427,6 +427,37 @@ describe('first, odd and even pages', () => {
   });
 });
 
+describe('keep with next', () => {
+  const markup = '<p data-h="40">intro</p><h2 data-h="10">Heading</h2><p data-h="30">body</p>';
+  const texts = (pages: HTMLElement[]) =>
+    pages.map((p) => p.querySelector(`.${CLASS_NAMES.body}`)?.textContent);
+
+  it('moves a heading to the next page with its paragraph', () => {
+    const source = mountSource(markup);
+    const { pages } = createPaginator({ source, measurer: stubMeasurer(60) }).paginate();
+    expect(texts(pages)).toEqual(['intro', 'Headingbody']);
+  });
+
+  it('can strand headings when keepHeadingsWithNext is false', () => {
+    const source = mountSource(markup);
+    const { pages } = createPaginator({
+      source,
+      measurer: stubMeasurer(60),
+      keepHeadingsWithNext: false,
+    }).paginate();
+    expect(texts(pages)).toEqual(['introHeading', 'body']);
+  });
+
+  it('keeps a heading with the first rows of a table', () => {
+    const source = mountSource(
+      '<p data-h="40">intro</p><h3 data-h="10">Rows</h3>' +
+        '<table><tbody><tr data-h="20"><td>1</td></tr><tr data-h="20"><td>2</td></tr></tbody></table>',
+    );
+    const { pages } = createPaginator({ source, measurer: stubMeasurer(60) }).paginate();
+    expect(texts(pages)).toEqual(['intro', 'Rows12']);
+  });
+});
+
 describe('forced page breaks', () => {
   function pageTexts(markup: string, pageHeight = 100): string[] {
     const source = mountSource(markup);
