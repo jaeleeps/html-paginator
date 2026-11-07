@@ -286,7 +286,27 @@ In the JS API, `header` and `footer` accept:
 - **CSS selector**: matches a `<template>` or element in the document
 - **`null`**: explicitly removes the header/footer (useful in `pageOverrides`)
 
-In declarative mode, the same context fields are interpolated in the template HTML: `{{page}}`, `{{totalPages}}`, `{{pageNumber}}`, `{{pageLabel}}`, `{{lastPageNumber}}` and `{{lastPageLabel}}`.
+In declarative mode, the same context fields are interpolated in the template HTML: `{{page}}`, `{{totalPages}}`, `{{pageNumber}}`, `{{pageLabel}}`, `{{lastPageNumber}}`, `{{lastPageLabel}}`, `{{section}}`, `{{sectionPage}}` and `{{sectionPages}}`, plus running headers as `{{running.h1}}` / `{{runningLast.term}}`.
+
+### Running headers
+
+Word's STYLEREF field: a header or footer that shows the current chapter title, or in a dictionary, the first and last entry on the page. Every heading sets a running value named after its level (`h1` … `h6`), and any element can set one with `data-hp-running="name"`:
+
+```js
+createPaginator({
+  source: '#content',
+  page: {
+    header: ({ running, runningLast }) =>
+      `<div>${running.h1 ?? ''} — ${running.term ?? ''}–${runningLast.term ?? ''}</div>`,
+  },
+});
+```
+
+- `running[name]` is the first value set on the page, or, when the page sets none, the last one set before it (Word's STYLEREF).
+- `runningLast[name]` is the last value set on the page, or else the same carried value (STYLEREF `\l`).
+- The text is the element's text, without footnote or endnote reference numbers. A paragraph continued from the previous page does not set its value again.
+- Headers and footers are measured with the longest value of each name, so a page's real header is never taller than the measured one. A long title may still wrap; keep headers that use running values to a fixed number of lines if pages should be filled exactly.
+- Declaratively: `{{running.h1}}`, `{{runningLast.term}}` (HTML-escaped).
 
 ### Watermarks and page backgrounds
 
@@ -635,6 +655,7 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-hp-header-distance` / `data-hp-footer-distance` | config / content / section group | Header/footer distance from the sheet edge (Word layout) |
 | `data-hp-line-numbers` (+ `-start`, `-count-by`, `-distance`) | config / content / section group | Line numbers: `page`, `section`, `continuous` restart, or `none` |
 | `data-hp-suppress-line-numbers` | content elements | Leave the element's lines unnumbered |
+| `data-hp-running` | content elements | Set a running header value of that name (headings set `h1`…`h6` on their own) |
 | `data-hp-section` | inside config | Section layout group (slots, margin, numbering, nested first/odd/even groups) |
 | `data-hp-section-start` | section group | `odd` / `even`: start on that side, inserting a blank page if needed; `continuous`: on the same page |
 

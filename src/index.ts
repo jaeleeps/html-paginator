@@ -41,6 +41,8 @@ export {
 } from './footnotes';
 export type { FootnoteOptions, Footnotes } from './footnotes';
 export { FOOTER_AREA_CLASS, HEADER_AREA_CLASS, marginSides } from './pageFrame';
+export { longestRunning, RUNNING_ATTRIBUTE, runningValues } from './running';
+export type { RunningValues } from './running';
 export { createSheetPlanner, regionUsed } from './sheets';
 export type { RegionColumns, SheetPlanner, SheetPlannerOptions, SheetRegion } from './sheets';
 export { LINE_NUMBER_CLASS, numberLines, SUPPRESS_LINE_NUMBERS_ATTRIBUTE } from './lineNumbers';

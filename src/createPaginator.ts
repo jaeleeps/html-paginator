@@ -19,6 +19,7 @@ import { collectEndnotes } from './endnotes';
 import { prepareFields, resolveFields } from './fields';
 import { createFootnotes, injectFootnoteStyles, renumberFootnotes } from './footnotes';
 import { numberLines } from './lineNumbers';
+import { longestRunning, runningValues } from './running';
 import { createSheetPlanner } from './sheets';
 import type { SheetRegion } from './sheets';
 import { freezeTableColumns } from './tableColumns';
@@ -122,6 +123,8 @@ export function createPaginator(config: PaginatorConfig): Paginator {
       // Pages (and their sections) are recorded as distribution opens them;
       // measurement and rendering both read page config from this layout.
       const layout = createPageLayout(resolved);
+      // Headers are measured with the longest running values.
+      layout.setRunning(longestRunning(copy));
       const measurer: MeasureAdapter =
         resolved.measurer ?? createDomMeasurer({ document: doc, layout });
 
@@ -216,6 +219,11 @@ export function createPaginator(config: PaginatorConfig): Paginator {
             }),
           ),
         );
+
+        // Running header values from the items on each sheet.
+        const sheetItems: HTMLElement[][] = [];
+        for (const dist of distributed) (sheetItems[dist.page - 1] ??= []).push(...dist.items);
+        layout.setRunning(longestRunning(copy), runningValues(Array.from(sheetItems, (items) => items ?? [])));
 
         const built = buildPages(distributed, {
           document: doc,

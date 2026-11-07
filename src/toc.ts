@@ -49,7 +49,7 @@ function parseLevels(raw: string | null): [number, number] {
 }
 
 /** Text of a heading without footnote/endnote reference numbers. */
-function headingText(heading: HTMLElement): string {
+export function headingText(heading: HTMLElement): string {
   const copy = heading.cloneNode(true) as HTMLElement;
   copy.querySelectorAll('.hp-footnote-ref, .hp-endnote-ref').forEach((ref) => ref.remove());
   return (copy.textContent ?? '').replace(/\s+/g, ' ').trim();

@@ -2,6 +2,7 @@ import type { PageSlot } from './distribute';
 import { mergePageLayers } from './pageConfig';
 import type { ResolvedPageConfig } from './pageConfig';
 import { formatPageNumber } from './pageNumbers';
+import type { RunningValues } from './running';
 import type { PageConfig, PageContext, PageNumbering, SectionConfig } from './types';
 
 /** Everything that decides how a page looks and how it is numbered. */
@@ -37,6 +38,11 @@ export interface PageLayout {
    * are assumed to continue up to `placeholderTotal` pages.
    */
   probeContext(page: number, placeholderTotal: number): PageContext;
+  /**
+   * Running header values: `pages[i]` for page i + 1 once known; until then
+   * (while measuring) every page gets `probe`.
+   */
+  setRunning(probe: Record<string, string>, pages?: readonly RunningValues[]): void;
 }
 
 interface PagePlan {
@@ -105,10 +111,14 @@ export function createPageLayout(config: PageLayoutConfig): PageLayout {
     return plans[page - 1] as PagePlan;
   };
 
+  let runningProbe: Record<string, string> = {};
+  let runningPages: readonly RunningValues[] | undefined;
+
   const buildContext = (
     page: number,
     totalPages: number,
     last: { number: number; plan: PagePlan },
+    running: RunningValues,
   ): PageContext => {
     const p = plan(page);
     const sectionPages = plans.filter((q) => q.instance === p.instance).length;
@@ -122,6 +132,8 @@ export function createPageLayout(config: PageLayoutConfig): PageLayout {
       section: p.section,
       sectionPage: p.sectionPage,
       sectionPages,
+      running: running.running,
+      runningLast: running.runningLast,
     };
   };
 
@@ -156,15 +168,23 @@ export function createPageLayout(config: PageLayoutConfig): PageLayout {
       const p = plan(page);
       let last = p;
       for (let i = page; i < totalPages && plans[i]!.run === p.run; i++) last = plans[i]!;
-      return buildContext(page, totalPages, { number: last.number, plan: last });
+      const running = runningPages?.[page - 1] ?? { running: {}, runningLast: {} };
+      return buildContext(page, totalPages, { number: last.number, plan: last }, running);
     },
 
     probeContext(page, placeholderTotal) {
       const p = plan(page);
-      return buildContext(page, placeholderTotal, {
-        number: p.number + Math.max(0, placeholderTotal - page),
-        plan: p,
-      });
+      return buildContext(
+        page,
+        placeholderTotal,
+        { number: p.number + Math.max(0, placeholderTotal - page), plan: p },
+        { running: runningProbe, runningLast: runningProbe },
+      );
+    },
+
+    setRunning(probe, pages) {
+      runningProbe = probe;
+      runningPages = pages;
     },
   };
 }

@@ -47,6 +47,8 @@ describe('pageContext', () => {
       lastPageLabel: '5',
       sectionPage: 2,
       sectionPages: 5,
+      running: {},
+      runningLast: {},
     });
   });
 

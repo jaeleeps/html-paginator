@@ -49,7 +49,9 @@ import { createPaginator } from './createPaginator';
  * - `data-hp-size` accepts a preset ('letter', 'a4', ...) or explicit
  *   dimensions as "<width> <height>" (e.g. "8.5in 11in").
  * - `{{page}}`, `{{totalPages}}`, `{{pageNumber}}`, `{{pageLabel}}`,
- *   `{{lastPageNumber}}` and `{{lastPageLabel}}` are interpolated per page.
+ *   `{{lastPageNumber}}`, `{{lastPageLabel}}`, `{{section}}`,
+ *   `{{sectionPage}}` and `{{sectionPages}}` are interpolated per page, and
+ *   `{{running.h1}}` / `{{runningLast.name}}` give running header text.
  *   As with the JS API, header/footer height must not depend on them.
  * - `data-hp-page-start` / `data-hp-page-format` set page numbering
  *   (e.g. `data-hp-page-start="0"`, `data-hp-page-format="lower-roman"`).
@@ -91,12 +93,15 @@ function slotToTemplate(el: Element, attr: string): HeaderFooterTemplate {
   if (el.getAttribute(attr) === 'none') return null;
   const html = el.outerHTML;
   return (ctx) =>
-    html.replace(PLACEHOLDER, (match, key: string) =>
-      PLACEHOLDER_KEYS.has(key) ? String(ctx[key as keyof PageContext]) : match,
-    );
+    html.replace(PLACEHOLDER, (match, key: string) => {
+      // {{running.h1}} / {{runningLast.chapter}}: text from the content.
+      const running = /^(running|runningLast)\.(.+)$/.exec(key);
+      if (running) return escapeHtml(ctx[running[1] as 'running' | 'runningLast']?.[running[2]!] ?? '');
+      return PLACEHOLDER_KEYS.has(key) ? String(ctx[key as keyof PageContext] ?? '') : match;
+    });
 }
 
-const PLACEHOLDER = /\{\{\s*(\w+)\s*\}\}/g;
+const PLACEHOLDER = /\{\{\s*([\w.:-]+)\s*\}\}/g;
 const PLACEHOLDER_KEYS = new Set<string>([
   'page',
   'totalPages',
@@ -104,7 +109,13 @@ const PLACEHOLDER_KEYS = new Set<string>([
   'pageLabel',
   'lastPageNumber',
   'lastPageLabel',
+  'section',
+  'sectionPage',
+  'sectionPages',
 ]);
+
+const escapeHtml = (text: string): string =>
+  text.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]!);
 
 const PAGE_FORMATS = new Set(['decimal', 'lower-roman', 'upper-roman', 'lower-alpha', 'upper-alpha']);
 
