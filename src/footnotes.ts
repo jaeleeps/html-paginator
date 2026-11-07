@@ -33,6 +33,20 @@ export interface FootnoteOptions {
   restart?: 'continuous' | 'section' | 'page';
   /** Number style, as for page numbers (e.g. 'lower-roman'). Default: decimal. */
   format?: PageNumberFormat;
+  /**
+   * Where the notes go on the page (Word: Bottom of page / Beneath text):
+   * at the bottom, or right below the text. Default: 'page'.
+   */
+  position?: 'page' | 'beneath-text';
+}
+
+/** Whether notes go right below the text (validating `position`). */
+export function notesBeneathText(options: FootnoteOptions = {}): boolean {
+  const position = options.position ?? 'page';
+  if (position !== 'page' && position !== 'beneath-text') {
+    throw new Error(`html-paginator: footnotes.position must be page or beneath-text, got "${String(position)}"`);
+  }
+  return position === 'beneath-text';
 }
 
 /** Separator above a note continued from the previous page. */

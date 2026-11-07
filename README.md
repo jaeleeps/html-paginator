@@ -544,6 +544,7 @@ Wrap a note's text in `data-footnote` where its reference goes. The note moves t
   ```
 
   Declaratively: `data-hp-footnote-restart="page"` and `data-hp-footnote-format="lower-alpha"` on the config element (or the content).
+- `footnotes: { position: 'beneath-text' }` puts the notes right below the last line of text instead of at the bottom of the page (Word: footnote location "Beneath text"); the space left goes below them, and pagination does not change. In columns, each column's notes go below its text. Declaratively: `data-hp-footnote-position="beneath-text"`.
 - The footnote area takes its height from the body. Pagination keeps every reference on the same page as its note: a paragraph or table row splits before the line with the reference, or moves on, rather than leave its note behind.
 - Default styles are small text and a one-third-width separator. They use zero specificity, so any rule of yours wins:
 
@@ -724,7 +725,7 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-hp-columns` / `data-hp-column-gap` / `data-hp-column-rule` | config / content / section group | Newspaper columns, the space and line between them |
 | `data-hp-header-distance` / `data-hp-footer-distance` | config / content / section group | Header/footer distance from the sheet edge (Word layout) |
 | `data-hp-mirror-margins` / `data-hp-gutter` | config / content / section group | Facing-page margins and binding gutter |
-| `data-hp-footnote-restart` / `data-hp-footnote-format` | config / content | Footnote numbering: `continuous`, `section` or `page`; number style |
+| `data-hp-footnote-restart` / `-format` / `-position` | config / content | Footnote numbering: `continuous`, `section` or `page`; number style; `page` or `beneath-text` |
 | `data-hp-endnote-location` / `-restart` / `-format` | config / content | Endnotes at the end of the `document` or each `section`; `continuous` or `section` numbering; number style |
 | `data-hp-vertical-align` | config / content / section group | `top`, `center` or `bottom` (Word's vertical alignment) |
 | `data-hp-page-border` / `-from` / `-offset` | config / content / section group | Page border (CSS border or `none`), measured from `edge` or `text` |

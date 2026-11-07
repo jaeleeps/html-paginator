@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createFootnotes, createPaginator, distribute, NOTE_ATTRIBUTE } from '../src/index';
+import { createFootnotes, createPaginator, distribute, NOTE_ATTRIBUTE, parseDeclarativeConfig } from '../src/index';
 import type { BreakBehavior, MeasureAdapter } from '../src/index';
 
 afterEach(() => {
@@ -253,5 +253,47 @@ describe('footnote numbering', () => {
 
   it('rejects an unknown restart', () => {
     expect(() => numbers({ restart: 'chapter' as never })).toThrow(/footnotes.restart must be continuous, section or page/);
+  });
+});
+
+describe('footnote position', () => {
+  const measurer = (): MeasureAdapter => ({
+    measure: (el) => (el.classList.contains('hp-footnotes') ? 10 : Number(el.getAttribute('data-h') ?? 0)),
+    pageHeight: () => 100,
+  });
+  const run = (markup: string, config: Partial<Parameters<typeof createPaginator>[0]> = {}) => {
+    document.body.innerHTML = `<div id="src">${markup}</div>`;
+    return createPaginator({ source: '#src', measurer: measurer(), injectStyles: false, ...config }).paginate().pages;
+  };
+
+  it('puts the notes right below the text with position: beneath-text', () => {
+    const markup = '<p data-h="30">a<span data-footnote>n</span></p>';
+    const [bottom] = run(markup);
+    expect(bottom!.querySelector<HTMLElement>('.hp-footnotes')!.style.marginBottom).toBe('');
+    expect(bottom!.querySelector<HTMLElement>('.hp-body')!.style.flex).toBe('');
+
+    const [beneath] = run(markup, { footnotes: { position: 'beneath-text' } });
+    // The body takes its content's height; the space left goes below the notes.
+    expect(beneath!.querySelector<HTMLElement>('.hp-body')!.style.flex).toBe('0 1 auto');
+    expect(beneath!.querySelector<HTMLElement>('.hp-footnotes')!.style.marginBottom).toBe('auto');
+  });
+
+  it('does the same in each column', () => {
+    const [page] = run('<p data-h="80">a<span data-footnote>n</span></p><p data-h="80">b</p>', {
+      page: { columns: 2 },
+      footnotes: { position: 'beneath-text' },
+    });
+    const [first, second] = Array.from(page!.querySelectorAll<HTMLElement>('.hp-column-body'));
+    expect(first!.style.flex).toBe('0 1 auto');
+    // A column without notes still fills its column.
+    expect(second!.style.flex).toBe('1 1 auto');
+  });
+
+  it('rejects an unknown position and is read from data-hp-footnote-position', () => {
+    expect(() => run('<p data-h="30">a<span data-footnote>n</span></p>', { footnotes: { position: 'end' as never } })).toThrow(
+      /footnotes.position must be page or beneath-text/,
+    );
+    document.body.innerHTML = `<div data-hp-content data-hp-footnote-position="beneath-text"><p>a</p></div>`;
+    expect(parseDeclarativeConfig(document)!.footnotes).toEqual({ position: 'beneath-text' });
   });
 });

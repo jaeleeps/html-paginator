@@ -60,7 +60,7 @@ import { createPaginator } from './createPaginator';
  *   (e.g. `data-hp-page-start="0"`, `data-hp-page-format="lower-roman"`);
  *   `data-hp-page-chapter="1"` (+ `-separator`) prefixes the chapter number.
  * - `data-hp-repeat-table-head` (boolean attribute) enables repeatTableHead.
- * - `data-hp-footnote-restart` / `-format` and `data-hp-endnote-location` /
+ * - `data-hp-footnote-restart` / `-format` / `-position` and `data-hp-endnote-location` /
  *   `-restart` / `-format` set the footnote and endnote options.
  * - `<div data-hp-section="name">` groups describe `sections[name]` (started
  *   in content by `data-section="name"`): their own slots, size/margin,
@@ -102,6 +102,7 @@ export const DECLARATIVE_ATTRIBUTES = {
   balanceColumns: 'data-hp-balance-columns',
   footnoteRestart: 'data-hp-footnote-restart',
   footnoteFormat: 'data-hp-footnote-format',
+  footnotePosition: 'data-hp-footnote-position',
   endnoteLocation: 'data-hp-endnote-location',
   endnoteRestart: 'data-hp-endnote-restart',
   endnoteFormat: 'data-hp-endnote-format',
@@ -316,6 +317,8 @@ export function parseDeclarativeConfig(doc: Document): PaginatorConfig | null {
   if (footnoteRestart) footnotes.restart = footnoteRestart as FootnoteOptions['restart'];
   const footnoteFormat = option(A.footnoteFormat);
   if (footnoteFormat) footnotes.format = footnoteFormat as PageNumberFormat;
+  const footnotePosition = option(A.footnotePosition);
+  if (footnotePosition) footnotes.position = footnotePosition as FootnoteOptions['position'];
   if (Object.keys(footnotes).length > 0) config.footnotes = footnotes;
   const endnotes: EndnoteOptions = {};
   const endnoteLocation = option(A.endnoteLocation);

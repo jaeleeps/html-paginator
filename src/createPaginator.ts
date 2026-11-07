@@ -17,7 +17,7 @@ import { createRowSplitter } from './rowSplit';
 import { numberSequences, resolveCrossRefs } from './captions';
 import { collectEndnotes } from './endnotes';
 import { prepareFields, resolveFields } from './fields';
-import { createFootnotes, injectFootnoteStyles, renumberFootnotes } from './footnotes';
+import { createFootnotes, injectFootnoteStyles, notesBeneathText, renumberFootnotes } from './footnotes';
 import { numberLines } from './lineNumbers';
 import { longestRunning, runningValues } from './running';
 import { createSheetPlanner } from './sheets';
@@ -259,6 +259,7 @@ export function createPaginator(config: PaginatorConfig): Paginator {
           document: doc,
           layout,
           renderNotes: footnotes ? (notes) => footnotes.area(notes) : undefined,
+          notesBeneathText: notesBeneathText(resolved.footnotes),
           regionColumns: (page, index) =>
             planner.regions.find((region) => region.sheet === page && region.index === index),
         });
