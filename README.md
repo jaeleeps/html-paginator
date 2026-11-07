@@ -201,6 +201,27 @@ createPaginator({
 
 Each page prints on a sheet of its own size and orientation: the stylesheet declares a CSS named page (`@page hp-11in-8_5in { size: 11in 8.5in }`) for every page size used, and each page selects its own. Declaratively: `data-hp-orientation="landscape"` on the config, content or a `data-hp-section` group.
 
+### Columns
+
+`columns: 2` flows the body in newspaper columns (Word's section columns): content fills the first column, then the next, then the next page. `columnGap` sets the space between columns (default `'0.5in'`, as in Word) and `columnRule` draws a line in it (a CSS border, Word's "line between"). Set them on a section to switch columns on and off:
+
+```js
+createPaginator({
+  source: '#content',
+  sections: {
+    news: { page: { columns: 2, columnGap: '0.4in', columnRule: '1px solid #999' } },
+    body: {},
+  },
+});
+```
+
+- Items are measured at column width; paragraphs and table rows split between columns as between pages.
+- Footnotes go to the bottom of the column holding their reference (as in Word).
+- A page break (`data-break-before="page"`, CSS `break-before: page`) inside a multi-column page moves to the next column, like Word's column break. A section always starts on a new page.
+- Columns are not balanced: the last page of a section fills its first column first.
+- Rendered as `.hp-body > .hp-column > .hp-column-body` (plus `.hp-column-rule` and `.hp-footnotes`); the geometry is inline, so it holds with `injectStyles: false`.
+- Declaratively: `data-hp-columns="2"`, `data-hp-column-gap`, `data-hp-column-rule` on the config, content or a `data-hp-section` group.
+
 ### Margin
 
 Any CSS margin shorthand:
@@ -564,6 +585,7 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-hp-page-ref` | content elements | Replace the text with the page label of `#id` (attribute value or `href`) |
 | `data-section` | content elements | Start a new section (`sections[name]`); implies a page break |
 | `data-hp-orientation` | config / content / section group | `landscape` or `portrait` |
+| `data-hp-columns` / `data-hp-column-gap` / `data-hp-column-rule` | config / content / section group | Newspaper columns, the space and line between them |
 | `data-hp-section` | inside config | Section layout group (slots, margin, numbering, nested first/odd/even groups) |
 | `data-hp-section-start` | section group | `odd` / `even`: start on that side, inserting a blank page if needed |
 

@@ -1,5 +1,6 @@
 import type { PageConfig } from './types';
 import { CLASS_NAMES } from './buildPages';
+import { columnWidth } from './pageConfig';
 import type { PageVariants } from './pageConfig';
 import { createPageLayout } from './layout';
 import type { PageLayout } from './layout';
@@ -123,6 +124,8 @@ export function createDomMeasurer(options: DomMeasurerOptions): DomMeasurer {
     body.style.flex = 'none';
     body.style.height = 'auto';
     body.style.minHeight = '0';
+    // Multi-column pages: items are laid out at the width of a column.
+    if (config.columns > 1) body.style.width = columnWidth(config.columns, config.columnGap);
     pageEl.appendChild(body);
 
     const footer = renderTemplate(config.footer, ctx, doc);

@@ -13,7 +13,13 @@ export interface ResolvedPageConfig {
   header: PageConfig['header'];
   footer: PageConfig['footer'];
   watermark: PageConfig['watermark'];
+  /** Number of columns (1 = none). */
+  columns: number;
+  columnGap: string;
+  columnRule?: string;
 }
+
+export const DEFAULT_COLUMN_GAP = '0.5in';
 
 export const DEFAULT_MARGIN = '0';
 
@@ -39,6 +45,19 @@ export function resolveSize(
     throw new Error(`html-paginator: unknown orientation "${orientation}" (expected portrait | landscape)`);
   }
   return dims;
+}
+
+function resolveColumns(columns: number | undefined): number {
+  if (columns === undefined) return 1;
+  if (!Number.isInteger(columns) || columns < 1) {
+    throw new Error(`html-paginator: columns must be a positive integer, got ${columns}`);
+  }
+  return columns;
+}
+
+/** Width of one of `columns` columns sharing a box (CSS calc). */
+export function columnWidth(columns: number, gap: string): string {
+  return `calc((100% - ${columns - 1} * ${gap}) / ${columns})`;
 }
 
 /**
@@ -97,5 +116,8 @@ export function mergePageLayers(...layers: (PageConfig | undefined)[]): Resolved
     header: merged.header,
     footer: merged.footer,
     watermark: merged.watermark,
+    columns: resolveColumns(merged.columns),
+    columnGap: merged.columnGap ?? DEFAULT_COLUMN_GAP,
+    columnRule: merged.columnRule,
   };
 }

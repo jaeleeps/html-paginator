@@ -106,6 +106,17 @@ export interface PageConfig {
    * templates and context as header/footer.
    */
   watermark?: HeaderFooterTemplate;
+  /**
+   * Newspaper columns (Word: section columns). Content flows down the
+   * first column, then the next; set per section to switch columns on and
+   * off. A forced page break inside a multi-column page moves to the next
+   * column (Word's column break). Default: 1.
+   */
+  columns?: number;
+  /** Space between columns (CSS length). Default: '0.5in' (Word's default). */
+  columnGap?: string;
+  /** Line between columns (CSS border, e.g. '1px solid #999'). Default: none. */
+  columnRule?: string;
 }
 
 /** Values accepted by the `data-break` attribute on content elements. */
