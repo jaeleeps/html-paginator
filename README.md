@@ -288,7 +288,7 @@ For printed books, `mirrorMargins: true` swaps the left and right margins on eve
 // odd pages: 20mm inside (left), 12mm outside; even pages: the reverse
 ```
 
-Odd and even go by the page number, as for odd/even headers, so a numbering restart can shift them. Both are page settings (per section, etc.). Declaratively: `data-hp-mirror-margins` and `data-hp-gutter="5mm"`.
+Odd and even go by the page number, as for odd/even headers, so a numbering restart can shift them. Without mirror margins, `gutterPosition` puts the gutter in the `'left'` (default), `'right'` (right-to-left documents) or `'top'` margin (Word: Gutter position). All are page settings (per section, etc.). Declaratively: `data-hp-mirror-margins`, `data-hp-gutter="5mm"` and `data-hp-gutter-position`.
 
 #### Header and footer distance (Word layout)
 
@@ -759,7 +759,7 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-hp-orientation` | config / content / section group | `landscape` or `portrait` |
 | `data-hp-columns` / `data-hp-column-gap` / `data-hp-column-rule` | config / content / section group | Newspaper columns, the space and line between them |
 | `data-hp-header-distance` / `data-hp-footer-distance` | config / content / section group | Header/footer distance from the sheet edge (Word layout) |
-| `data-hp-mirror-margins` / `data-hp-gutter` | config / content / section group | Facing-page margins and binding gutter |
+| `data-hp-mirror-margins` / `data-hp-gutter` / `-position` | config / content / section group | Facing-page margins, binding gutter and its margin (`left`, `right`, `top`) |
 | `data-hp-footnote-restart` / `-format` / `-position` | config / content | Footnote numbering: `continuous`, `section` or `page`; number style; `page` or `beneath-text` |
 | `data-hp-endnote-location` / `-restart` / `-format` | config / content | Endnotes at the end of the `document` or each `section`; `continuous` or `section` numbering; number style |
 | `data-hp-vertical-align` | config / content / section group | `top`, `center` or `bottom` (Word's vertical alignment) |

@@ -87,6 +87,7 @@ export const DECLARATIVE_ATTRIBUTES = {
   verticalAlign: 'data-hp-vertical-align',
   mirrorMargins: 'data-hp-mirror-margins',
   gutter: 'data-hp-gutter',
+  gutterPosition: 'data-hp-gutter-position',
   pageBorder: 'data-hp-page-border',
   pageBorderFrom: 'data-hp-page-border-from',
   pageBorderOffset: 'data-hp-page-border-offset',
@@ -192,6 +193,8 @@ function parsePageAttrs(el: Element): PageConfig {
   if (mirror !== null) config.mirrorMargins = mirror.trim() !== 'false';
   const gutter = el.getAttribute(A.gutter);
   if (gutter) config.gutter = gutter;
+  const gutterPosition = el.getAttribute(A.gutterPosition);
+  if (gutterPosition) config.gutterPosition = gutterPosition.trim() as PageConfig['gutterPosition'];
   const verticalAlign = el.getAttribute(A.verticalAlign);
   if (verticalAlign) config.verticalAlign = verticalAlign.trim() as PageConfig['verticalAlign'];
   const pageBorder = el.getAttribute(A.pageBorder)?.trim();

@@ -31,6 +31,17 @@ describe('mirror margins and gutter', () => {
     expect(margin(2, mirrored)).toBe('1in calc(0.5in + 0.25in) 1in 0.5in');
   });
 
+  it('puts the gutter at the top or on the right with gutterPosition (not when mirrored)', () => {
+    expect(margin(1, { margin: '1in', gutter: '0.5in', gutterPosition: 'top' })).toBe('calc(1in + 0.5in) 1in 1in 1in');
+    expect(margin(1, { margin: '1in', gutter: '0.5in', gutterPosition: 'right' })).toBe('1in calc(1in + 0.5in) 1in 1in');
+    expect(margin(2, { margin: '1in', gutter: '0.5in', gutterPosition: 'top', mirrorMargins: true })).toBe(
+      '1in calc(1in + 0.5in) 1in 1in',
+    );
+    expect(() => margin(1, { margin: '1in', gutter: '1in', gutterPosition: 'bottom' as never })).toThrow(
+      /gutterPosition must be left, right or top/,
+    );
+  });
+
   it('leaves the margin untouched without them', () => {
     expect(margin(2, { margin: '10mm 20mm' })).toBe('10mm 20mm');
   });
@@ -57,12 +68,12 @@ describe('mirror margins and gutter', () => {
 
   it('is read from data-hp-mirror-margins and data-hp-gutter', () => {
     document.body.innerHTML = `
-      <template data-hp-config data-hp-margin="1in" data-hp-mirror-margins data-hp-gutter="0.5in">
+      <template data-hp-config data-hp-margin="1in" data-hp-mirror-margins data-hp-gutter="0.5in" data-hp-gutter-position="top">
         <div data-hp-section="loose" data-hp-mirror-margins="false"></div>
       </template>
       <div data-hp-content><p>a</p></div>`;
     const config = parseDeclarativeConfig(document)!;
-    expect(config.page).toMatchObject({ mirrorMargins: true, gutter: '0.5in' });
+    expect(config.page).toMatchObject({ mirrorMargins: true, gutter: '0.5in', gutterPosition: 'top' });
     expect(config.sections?.loose?.page?.mirrorMargins).toBe(false);
   });
 });
