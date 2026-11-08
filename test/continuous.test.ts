@@ -243,6 +243,28 @@ describe('continuous sections', () => {
     expect(run(true)).toEqual([[10, 10], [3, 2]]);
   });
 
+  it('ends balanced columns, and the line between, with their content', () => {
+    const regionFlex = (pages: HTMLElement[]) =>
+      pages.map((page) => Array.from(page.querySelectorAll<HTMLElement>('.hp-region'), (r) => r.style.flex));
+    const cols = { page: { columns: 2, columnRule: '1px solid' }, balanceColumns: true };
+    // Alone on the page: the body is a grid whose row is as tall as the columns.
+    src(paras('c', 6, 20, 'cols'));
+    const body = createPaginator({ source: '#src', measurer: measurer(), sections: { cols } })
+      .paginate()
+      .pages[0]!.querySelector<HTMLElement>('.hp-body')!;
+    expect(body.style).toMatchObject({ display: 'grid', alignContent: 'start' });
+    expect(body.querySelectorAll(':scope > .hp-column')).toHaveLength(2);
+    // Last region below a title: also its content's height, not the rest of the page.
+    src(`<p data-h="30">title</p>${paras('c', 6, 20, 'cols')}`);
+    const { pages } = createPaginator({
+      source: '#src',
+      measurer: measurer(),
+      sections: { cols: { ...cols, start: 'continuous' } },
+    }).paginate();
+    expect(regionFlex(pages)).toEqual([['0 0 auto', '0 0 auto']]);
+    expect(pages[0]!.querySelectorAll('.hp-column-rule')).toHaveLength(1);
+  });
+
   it('is read from data-hp-section-start="continuous"', () => {
     document.body.innerHTML = `
       <template data-hp-config><div data-hp-section="cols" data-hp-section-start="continuous" data-hp-columns="2" data-hp-balance-columns></div></template>

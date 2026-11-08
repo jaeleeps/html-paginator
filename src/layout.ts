@@ -27,6 +27,13 @@ export interface PageLayout {
    * recorded is left as is.
    */
   open(page: number, slot: PageSlot): void;
+  /**
+   * Record that `section` started partway down the last opened page (a
+   * continuous break), and return its page settings there: the top-level
+   * and section layers only, as its other settings take effect from the
+   * next page.
+   */
+  startBelow(section: string | undefined): ResolvedPageConfig;
   /** Whether a blank page must precede `page` so `section` starts on its side. */
   blankPageBefore(section: string, page: number): boolean;
   /** Resolved config (size, margin, header, footer) of a page. */
@@ -82,11 +89,21 @@ export function createPageLayout(config: PageLayoutConfig): PageLayout {
   const plans: PagePlan[] = [];
   let runs = 0;
   let instances = 0;
+  /** Chain of the last section started, which may have started mid-page. */
+  let chain: string[] = [];
+  /** That section started mid-page, and has no page of its own yet. */
+  let below: string | undefined;
 
   const sectionConfig = (name: string | undefined): SectionConfig | undefined =>
     name === undefined ? undefined : config.sections?.[name];
 
   const lastPlan = (): PagePlan | undefined => plans[plans.length - 1];
+
+  /** Chain of `section` starting after the last one started. */
+  const chainOf = (section: string | undefined): string[] => {
+    const own = section === undefined ? [] : [section];
+    return plans.length > 0 && sectionConfig(section)?.linkToPrevious ? [...chain, ...own] : own;
+  };
 
   const formatOf = (plan: PagePlan) =>
     sectionConfig(plan.section)?.pageNumbers?.format ?? config.pageNumbers?.format;
@@ -112,9 +129,11 @@ export function createPageLayout(config: PageLayoutConfig): PageLayout {
     if (!prev || slot.sectionStart) {
       const start = sectionConfig(slot.section)?.pageNumbers?.start;
       const restart = !prev || start !== undefined;
-      const own = slot.section === undefined ? [] : [slot.section];
+      // A section that started mid-page has its chain already.
+      if (below === undefined || below !== slot.section) chain = chainOf(slot.section);
+      below = undefined;
       plans.push({
-        chain: prev && sectionConfig(slot.section)?.linkToPrevious ? [...prev.chain, ...own] : own,
+        chain,
         section: slot.section,
         sectionPage: 1,
         number: start ?? (prev ? prev.number + 1 : (config.pageNumbers?.start ?? 1)),
@@ -161,6 +180,12 @@ export function createPageLayout(config: PageLayoutConfig): PageLayout {
 
   return {
     open,
+
+    startBelow(section) {
+      chain = chainOf(section);
+      below = section;
+      return mergePageLayers(config.page, ...chain.map((name) => sectionConfig(name)?.page));
+    },
 
     blankPageBefore(section, page) {
       if (page <= 1) return false;
