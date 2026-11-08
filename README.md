@@ -521,7 +521,8 @@ createPaginator({
 ```
 
 - `data-section="name"` starts a new section and implies a page break. A name can repeat: each occurrence starts a new section that uses the same settings.
-- A section's `page`, `oddPages` and `evenPages` merge over the top-level ones, like Word's "Link to Previous". Its `firstPage` applies to the section's own first page.
+- A section's `page`, `oddPages` and `evenPages` merge over the top-level ones. Its `firstPage` applies to the section's own first page.
+- `linkToPrevious: true` is Word's "Link to Previous": the previous section's `page`, `oddPages` and `evenPages` apply under this section's own (and those before it, if that one is linked too), so a section without its own header keeps the one before it instead of falling back to the top level. Declaratively: `data-hp-link-to-previous` on the section group.
 - `pageNumbers.start` restarts numbering. Without it, numbering continues from the previous page. The `format` falls back to the top-level one.
 - `start: 'continuous'` starts the section on the same page, below the previous one (see [Columns](#columns)).
 - `start: 'odd' | 'even'` starts the section on the next odd or even **physical** page (right- or left-hand side in duplex printing), inserting a blank page when needed. The blank page belongs to the previous section.

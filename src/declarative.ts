@@ -103,6 +103,7 @@ export const DECLARATIVE_ATTRIBUTES = {
   section: 'data-hp-section',
   sectionStart: 'data-hp-section-start',
   balanceColumns: 'data-hp-balance-columns',
+  linkToPrevious: 'data-hp-link-to-previous',
   footnoteRestart: 'data-hp-footnote-restart',
   footnoteFormat: 'data-hp-footnote-format',
   footnotePosition: 'data-hp-footnote-position',
@@ -283,6 +284,7 @@ function parseSection(root: ParentNode, group: Element): SectionConfig {
   if (numbering) section.pageNumbers = numbering;
 
   if (group.hasAttribute(A.balanceColumns)) section.balanceColumns = true;
+  if (group.hasAttribute(A.linkToPrevious)) section.linkToPrevious = true;
   const start = group.getAttribute(A.sectionStart)?.trim();
   if (start !== undefined) {
     if (SECTION_STARTS.has(start)) section.start = start as SectionConfig['start'];

@@ -83,6 +83,14 @@ export interface SectionConfig {
    * end of the document or before a section starting on a new page.
    */
   balanceColumns?: boolean;
+  /**
+   * Inherit the previous section's settings (Word's "Link to Previous" for
+   * headers and footers): its `page`, `oddPages` and `evenPages` layers
+   * (and, if it is linked too, those before it) apply under this section's
+   * own, instead of only the top-level ones. `firstPage` is not inherited.
+   * Default: false.
+   */
+  linkToPrevious?: boolean;
 }
 
 /** Page numbering options. */
