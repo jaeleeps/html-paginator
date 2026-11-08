@@ -138,4 +138,35 @@ test.describe('footnotes', () => {
     // Some pages end short of the bottom (sections, the last page): their notes moved up.
     expect(moved).toBeGreaterThan(0);
   });
+
+  test('ends a note continued on the next page with the continuation notice', async ({ page }) => {
+    expect(await openPaginated(page, 'e2e/fixtures/footnotes.html?notice')).toEqual([]);
+    const pages = await inspectPages(page);
+    for (const p of pages) expect(p.overflowPx, `page ${p.page}`).toBe(0);
+    const notes = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('.hp-pages > .hp-page'), (pg) => {
+        const area = pg.querySelector('.hp-footnotes');
+        const footer = pg.querySelector('.hp-footer')!.getBoundingClientRect();
+        const notice = pg.querySelector('.hp-footnote-notice');
+        return {
+          notice: notice?.textContent ?? null,
+          // The notice ends the area's last note, and the area clears the footer.
+          last: notice ? notice.closest('.hp-footnote') === area!.querySelector('.hp-footnote:last-of-type') : null,
+          noticeAtEnd: notice ? notice === notice.parentElement!.lastElementChild : null,
+          areaBottom: area?.getBoundingClientRect().bottom ?? null,
+          footerTop: footer.top,
+          continued: pg.querySelector('.hp-footnote[data-hp-continued]') !== null,
+        };
+      }),
+    );
+    const withNotice = notes.flatMap((n, i) => (n.notice ? [i] : []));
+    // Exactly the page whose last note continues on the next page.
+    expect(withNotice).toHaveLength(1);
+    const i = withNotice[0]!;
+    expect(notes[i]!.notice).toBe('NOTICE continued on next page');
+    expect(notes[i]!.last).toBe(true);
+    expect(notes[i]!.noticeAtEnd).toBe(true);
+    expect(notes[i + 1]!.continued).toBe(true);
+    for (const n of notes) if (n.areaBottom !== null) expect(n.areaBottom).toBeLessThanOrEqual(n.footerTop + 0.5);
+  });
 });

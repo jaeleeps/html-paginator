@@ -17,7 +17,7 @@ import { createRowSplitter } from './rowSplit';
 import { numberSequences, resolveCrossRefs } from './captions';
 import { collectEndnotes } from './endnotes';
 import { prepareFields, resolveFields } from './fields';
-import { createFootnotes, injectFootnoteStyles, notesBeneathText, renumberFootnotes } from './footnotes';
+import { createFootnotes, injectFootnoteStyles, notesBeneathText, renumberFootnotes, withContinuationNotice } from './footnotes';
 import { numberLines } from './lineNumbers';
 import { longestRunning, runningValues } from './running';
 import { createSheetPlanner } from './sheets';
@@ -242,7 +242,18 @@ export function createPaginator(config: PaginatorConfig): Paginator {
         notes: footnotes ? (el) => footnotes.notesOf(el) : undefined,
         fragmentNote:
           footnotes && splitText
-            ? (note, fits, i) => footnotes.inArea(note, () => splitText(note, fits, info(i)))
+            ? (note, fits, i) =>
+                footnotes.inArea(note, () => {
+                  const notice = resolved.footnotes?.continuationNotice;
+                  if (!notice) return splitText(note, fits, info(i));
+                  // The part on this page ends with the notice: it must fit too.
+                  const split = splitText(
+                    note,
+                    (head) => fits(withContinuationNotice(head.cloneNode(true) as HTMLElement, notice)),
+                    info(i),
+                  );
+                  return split && { ...split, head: withContinuationNotice(split.head, notice) };
+                })
             : undefined,
         notesHeight: footnotes
           ? (notes, enginePage) => measurer.measure(footnotes.area(notes), sheetOf(enginePage))

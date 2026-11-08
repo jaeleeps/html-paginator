@@ -106,6 +106,7 @@ export const DECLARATIVE_ATTRIBUTES = {
   footnoteRestart: 'data-hp-footnote-restart',
   footnoteFormat: 'data-hp-footnote-format',
   footnotePosition: 'data-hp-footnote-position',
+  footnoteContinuationNotice: 'data-hp-footnote-continuation-notice',
   endnoteLocation: 'data-hp-endnote-location',
   endnoteRestart: 'data-hp-endnote-restart',
   endnoteFormat: 'data-hp-endnote-format',
@@ -324,6 +325,8 @@ export function parseDeclarativeConfig(doc: Document): PaginatorConfig | null {
   if (footnoteFormat) footnotes.format = footnoteFormat as PageNumberFormat;
   const footnotePosition = option(A.footnotePosition);
   if (footnotePosition) footnotes.position = footnotePosition as FootnoteOptions['position'];
+  const notice = option(A.footnoteContinuationNotice);
+  if (notice) footnotes.continuationNotice = notice;
   if (Object.keys(footnotes).length > 0) config.footnotes = footnotes;
   const endnotes: EndnoteOptions = {};
   const endnoteLocation = option(A.endnoteLocation);

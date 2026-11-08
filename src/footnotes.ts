@@ -38,6 +38,25 @@ export interface FootnoteOptions {
    * at the bottom, or right below the text. Default: 'page'.
    */
   position?: 'page' | 'beneath-text';
+  /**
+   * Text ending the part of a note that continues on the next page (Word's
+   * footnote continuation notice, e.g. 'Continued on next page'). Default:
+   * none.
+   */
+  continuationNotice?: string;
+}
+
+export const CONTINUATION_NOTICE_CLASS = 'hp-footnote-notice';
+
+/** `note` (a head fragment) with a continuation notice at its end. */
+export function withContinuationNotice(note: HTMLElement, text: string): HTMLElement {
+  const notice = note.ownerDocument.createElement('div');
+  notice.className = CONTINUATION_NOTICE_CLASS;
+  notice.textContent = text;
+  // Inline, so it is measured as rendered.
+  notice.style.textAlign = 'end';
+  note.appendChild(notice);
+  return note;
 }
 
 /** Whether notes go right below the text (validating `position`). */
