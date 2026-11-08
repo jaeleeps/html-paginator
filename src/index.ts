@@ -98,6 +98,8 @@ export { buildPages, CLASS_NAMES } from './buildPages';
 export type { BuildPagesOptions } from './buildPages';
 export { createDomMeasurer, measureOuterHeight } from './measure';
 export { buildStylesheet, injectStyles, STYLE_ATTRIBUTE } from './styles';
+export { whenContentReady } from './ready';
+export type { ReadyOptions } from './ready';
 export {
   buildIndex,
   dedupeIndexPages,

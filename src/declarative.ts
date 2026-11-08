@@ -12,6 +12,8 @@ import type {
 import type { LineNumberOptions } from './lineNumbers';
 import type { FootnoteOptions } from './footnotes';
 import type { EndnoteOptions } from './endnotes';
+import { whenContentReady } from './ready';
+import type { ReadyOptions } from './ready';
 import { createPaginator } from './createPaginator';
 
 /**
@@ -381,6 +383,11 @@ export function autoPaginate(
 export interface PrintPaginationHandle {
   /** Paginate now (what `beforeprint` triggers). */
   run(): void;
+  /**
+   * Wait for the content's images and web fonts (see `whenContentReady`),
+   * then paginate. Use before headless `page.pdf()`.
+   */
+  runWhenReady(options?: ReadyOptions): Promise<void>;
   /** Restore the original content (what `afterprint` triggers). */
   reset(): void;
   /** Remove the print event listeners. */
@@ -417,6 +424,11 @@ export function bindPrintPagination(
 
   return {
     run,
+    async runWhenReady(options) {
+      const content = doc.querySelector(`[${A.content}]`);
+      if (content) await whenContentReady(content, options);
+      run();
+    },
     reset,
     unbind(): void {
       win?.removeEventListener('beforeprint', run);

@@ -64,7 +64,7 @@ const { pages, totalPages } = paginator.paginate();
 
 ## Headless PDF generation (Puppeteer)
 
-Headless Chrome's `page.pdf()` does **not** fire `beforeprint`. Call `window.htmlPaginator.run()` before generating the PDF:
+Headless Chrome's `page.pdf()` does **not** fire `beforeprint`. Call `window.htmlPaginator.runWhenReady()` before generating the PDF (it waits for images and web fonts, then paginates):
 
 ```js
 import puppeteer from 'puppeteer';
@@ -74,7 +74,7 @@ const page = await browser.newPage();
 await page.goto(url);
 
 // Trigger pagination (declarative auto entry exposes this on window)
-await page.evaluate(() => window.htmlPaginator.run());
+await page.evaluate(() => window.htmlPaginator.runWhenReady());
 
 await page.pdf({
   path: 'output.pdf',
@@ -84,7 +84,19 @@ await page.pdf({
 await browser.close();
 ```
 
-For the JS API, call `paginator.paginate()` directly (pagination is synchronous) -- no special handling needed.
+For the JS API, call `paginator.paginate()` directly (pagination is synchronous), or `await paginator.paginateWhenReady()`.
+
+### Images and web fonts
+
+Pagination measures the content as it is laid out at that moment. An image that has not loaded yet takes no height (unless it has `width`/`height` attributes or CSS sizes), and text in a web font still loading is measured in the fallback font, so pages would overflow once they arrive. Wait for them first:
+
+```js
+await paginator.paginateWhenReady();               // JS API
+await window.htmlPaginator.runWhenReady();         // declarative / auto entry
+await whenContentReady(element, { timeout: 5000 }); // just wait
+```
+
+They wait for every image under the content and for `document.fonts.ready`. Lazy images (`loading="lazy"`) are switched to eager loading so they load without being scrolled to. Failed images count as done, and after `timeout` (default 10 s) pagination goes ahead with a warning. The `beforeprint` binding paginates synchronously, so print from a page whose images have loaded.
 
 ## Content break control
 
@@ -676,8 +688,8 @@ Create a paginator instance.
 | `page` | `PageConfig` | letter, no margin | Default page definition |
 | `pageOverrides` | `Record<number, PageConfig>` | `{}` | Per-page overrides (1-based) |
 | `repeatTableHead` | `boolean` | `false` | Repeat `<thead>` on table continuation pages |
-| `endnotes` | `{ format? }` | lower-roman | Endnote number format |
-| `footnotes` | `{ restart?, format? }` | continuous, decimal | Footnote numbering: restart `'continuous'`, `'section'` or `'page'`; number format |
+| `endnotes` | `{ format?, location?, restart? }` | lower-roman, end of document | Endnote number format; `location` `'document'` or `'section'`; `restart` `'continuous'` or `'section'` |
+| `footnotes` | `{ restart?, format?, position? }` | continuous, decimal, bottom of page | Footnote numbering: restart `'continuous'`, `'section'` or `'page'`; number format; `position` `'page'` or `'beneath-text'` |
 | `splitTableRows` | `boolean` | `true` | Let rows break across pages (cells split between lines) |
 | `splitParagraphs` | `boolean` | `true` | Split paragraphs between lines (widow/orphan control via CSS `orphans`/`widows`) |
 | `keepHeadingsWithNext` | `boolean` | `true` | Headings keep with the next element |
@@ -689,6 +701,7 @@ Create a paginator instance.
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `paginate()` | `{ pages, totalPages }` | Distribute and render pages |
+| `paginateWhenReady(options?)` | `Promise<{ pages, totalPages }>` | Wait for images and web fonts (`{ timeout }`), then paginate |
 | `reset()` | `void` | Remove pages and restore original content |
 | `getConfig()` | `PaginatorConfig` | Current resolved configuration |
 
@@ -703,6 +716,7 @@ Bind pagination to the print lifecycle. Returns a handle:
 | Method | Description |
 |--------|-------------|
 | `run()` | Paginate now (what `beforeprint` triggers) |
+| `runWhenReady(options?)` | Wait for images and web fonts, then paginate (returns a promise; use before headless `page.pdf()`) |
 | `reset()` | Restore original content (what `afterprint` triggers) |
 | `unbind()` | Remove the print event listeners |
 
