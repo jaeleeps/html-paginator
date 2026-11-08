@@ -12,6 +12,7 @@ notes/
 docs/
 *.md
 !README.md
+!CHANGELOG.md
 
 # Editor / OS
 .idea/
