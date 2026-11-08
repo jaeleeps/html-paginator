@@ -47,16 +47,23 @@ describe('createDomMeasurer', () => {
     measurer.dispose();
   });
 
-  it('reuses the probe for the same page and creates one per differing page', () => {
+  it('reuses the probe for the same page and creates one per differing page, one in the document at a time', () => {
     const measurer = createDomMeasurer({
       document,
       pageOverrides: { 2: { margin: '30mm' } },
     });
+    const probes = () => Array.from(document.querySelectorAll<HTMLElement>(`.${CLASS_NAMES.page}`));
     measurer.pageHeight(1);
+    const first = probes()[0];
     measurer.pageHeight(1);
-    expect(document.querySelectorAll(`.${CLASS_NAMES.page}`)).toHaveLength(1);
+    expect(probes()).toEqual([first]);
     measurer.pageHeight(2);
-    expect(document.querySelectorAll(`.${CLASS_NAMES.page}`)).toHaveLength(2);
+    // Page 2's probe replaces page 1's in the document...
+    expect(probes()).toHaveLength(1);
+    expect(probes()[0]!.style.padding).toBe('30mm');
+    // ...and page 1's comes back when needed again.
+    measurer.pageHeight(1);
+    expect(probes()).toEqual([first]);
     measurer.dispose();
   });
 
@@ -65,7 +72,7 @@ describe('createDomMeasurer', () => {
       document,
       page: { header: '<header>h</header>', footer: '<footer>f</footer>' },
     });
-    measurer.pageHeight(1); // mount probe
+    measurer.measure(document.createElement('div'), 1); // mount the probe (its height is not measured yet)
 
     const pageEl = document.querySelector<HTMLElement>(`.${CLASS_NAMES.page}`);
     const header = document.querySelector<HTMLElement>(`.${CLASS_NAMES.header}`);
@@ -86,10 +93,11 @@ describe('createDomMeasurer', () => {
       evenPages: { header: '<header>even</header>' },
     });
     measurer.pageHeight(1);
-    measurer.pageHeight(2);
-    const [first, even] = Array.from(document.querySelectorAll<HTMLElement>(`.${CLASS_NAMES.page}`));
+    const first = document.querySelector<HTMLElement>(`.${CLASS_NAMES.page}`);
     expect(first?.style.padding).toBe('30px');
     expect(first?.querySelector(`.${CLASS_NAMES.footer}`)).toBeNull();
+    measurer.pageHeight(2);
+    const even = document.querySelector<HTMLElement>(`.${CLASS_NAMES.page}`);
     expect(even?.querySelector(`.${CLASS_NAMES.header}`)?.textContent).toBe('even');
     expect(even?.querySelector(`.${CLASS_NAMES.footer}`)).not.toBeNull();
     measurer.dispose();
@@ -97,7 +105,7 @@ describe('createDomMeasurer', () => {
 
   it('subtracts page padding (margin config)', () => {
     const measurer = createDomMeasurer({ document, page: { margin: '20px' } });
-    measurer.pageHeight(1);
+    measurer.measure(document.createElement('div'), 1);
     const pageEl = document.querySelector<HTMLElement>(`.${CLASS_NAMES.page}`);
     stub(pageEl!, { clientHeight: 500 });
     // clientHeight includes padding; 500 - 20 - 20 = 460
@@ -162,7 +170,7 @@ describe('createDomMeasurer', () => {
     const measurer = createDomMeasurer({ document, pageOverrides: { 2: { margin: '5mm' } } });
     measurer.pageHeight(1);
     measurer.pageHeight(2);
-    expect(document.querySelectorAll(`.${CLASS_NAMES.page}`)).toHaveLength(2);
+    expect(document.querySelectorAll(`.${CLASS_NAMES.page}`)).toHaveLength(1);
     measurer.dispose();
     expect(document.querySelectorAll(`.${CLASS_NAMES.page}`)).toHaveLength(0);
   });

@@ -68,6 +68,8 @@ interface Probe {
   header: HTMLElement | null;
   body: HTMLElement;
   footer: HTMLElement | null;
+  /** Available body height, once measured. */
+  height?: number;
 }
 
 /**
@@ -82,12 +84,19 @@ export function createDomMeasurer(options: DomMeasurerOptions): DomMeasurer {
   const layout = options.layout ?? createPageLayout(options);
   const probes = new Map<number, Probe>();
   let currentProbe: Probe | null = null;
+  /** The probe in the document. Only one is, so each layout stays small. */
+  let attached: Probe | null = null;
 
   const getProbe = (page: number): Probe => {
     let probe = probes.get(page);
     if (!probe) {
       probe = mountProbe(page);
       probes.set(page, probe);
+    }
+    if (probe !== attached) {
+      attached?.pageEl.remove();
+      doc.body.appendChild(probe.pageEl);
+      attached = probe;
     }
     currentProbe = probe;
     return probe;
@@ -140,7 +149,6 @@ export function createDomMeasurer(options: DomMeasurerOptions): DomMeasurer {
       pageEl.appendChild(footerArea!);
     }
 
-    doc.body.appendChild(pageEl);
     return { pageEl, header: headerArea, body, footer: footerArea };
   };
 
@@ -164,13 +172,15 @@ export function createDomMeasurer(options: DomMeasurerOptions): DomMeasurer {
   return {
     pageHeight(page: number): number {
       const probe = getProbe(page);
+      if (probe.height !== undefined) return probe.height;
       const style = doc.defaultView?.getComputedStyle(probe.pageEl);
       const paddingTop = parseFloat(style?.paddingTop ?? '0') || 0;
       const paddingBottom = parseFloat(style?.paddingBottom ?? '0') || 0;
       const innerHeight = probe.pageEl.clientHeight - paddingTop - paddingBottom;
       const headerHeight = probe.header ? measureOuterHeight(probe.header) : 0;
       const footerHeight = probe.footer ? measureOuterHeight(probe.footer) : 0;
-      return innerHeight - headerHeight - footerHeight;
+      probe.height = innerHeight - headerHeight - footerHeight;
+      return probe.height;
     },
 
     measure(item: HTMLElement, page?: number): number {
@@ -197,6 +207,7 @@ export function createDomMeasurer(options: DomMeasurerOptions): DomMeasurer {
       }
       probes.clear();
       currentProbe = null;
+      attached = null;
     },
   };
 }
