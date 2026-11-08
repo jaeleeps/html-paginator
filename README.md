@@ -782,7 +782,9 @@ The pipeline has two passes:
 
 ### Pass 1 -- Distribution (greedy first-fit)
 
-1. **Measure** -- A hidden probe page with the same dimensions, margins, header, and footer is mounted in the document. Each content element is temporarily placed inside it to get an accurate height from the browser's layout engine. Available body height is computed per page (it varies when headers/footers differ).
+0. **Prepare** -- The source is cloned. Footnotes, endnotes, captions, cross-references, the TOC and the index are resolved in the copy; page numbers they show are laid out with placeholders.
+
+1. **Measure** -- A hidden probe page with the same dimensions, margins, header, and footer is mounted in the document (one at a time, so each layout stays small). Each content element is temporarily placed inside it to get an accurate height from the browser's layout engine. Available body height is computed per page (it varies when headers/footers differ).
 
 2. **Distribute** -- Items are walked top-to-bottom, filling the current page until the next element doesn't fit. Order is always preserved; items are never reordered to fill gaps.
 
@@ -791,12 +793,17 @@ The pipeline has two passes:
    - **Table rows**: cut across all cells at one line, with per-cell `orphans`/`widows`.
    - **Paragraphs** (`auto` elements holding inline text): split between lines. Line boxes are found in the real layout, and the largest head within `orphans`/`widows` that fits stays on the page.
    - **Atomic** (`avoid`, `clip`, or leaf): the item is placed alone on a new page. If it exceeds the page height, it overflows in place (`overflows: true`). For `clip` items, `overflow: hidden` is applied to the page body.
+   - **Footnotes** travel with their reference: a page's note area is part of its height, and a long last note may split onto the next page.
+
+4. **Sheets** -- The engine's "pages" are columns: the sheet planner lays them out as the columns of regions on physical pages. A continuous section break starts a new region below the previous one, whose columns are first balanced (a search for the shortest column height that fits, laying out copies of the items).
 
 ### Pass 2 -- Rendering
 
-4. **Build pages** -- Distribution determines the final page count. Pages are assembled as flex-column divs; headers and footers are rendered with complete `{ page, totalPages }` context. Continuation fragments are marked with `data-hp-continued`.
+5. **Build pages** -- Distribution determines the final page count. Pages are assembled as flex-column divs; headers and footers are rendered with complete context (page labels, sections, running values). Continuation fragments are marked with `data-hp-continued`. Page references, fields, footnote numbers and line numbers are then filled in.
 
-5. **Print stylesheet** -- An injected `@page` rule sets the CSS page size and zeroes browser margins, so the library's own margin configuration is authoritative. Each page gets `page-break-after: always`.
+6. **Repaginate if needed** -- With an index, whose entries' length depends on their page numbers, the document is paginated again with the real numbers until they hold (at most three passes).
+
+7. **Print stylesheet** -- An injected `@page` rule sets the CSS page size and zeroes browser margins, so the library's own margin configuration is authoritative. Each page gets `page-break-after: always`.
 
 ## Development
 
