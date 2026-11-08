@@ -55,6 +55,11 @@ interface PagePlan {
   run: number;
   /** Id of the section instance (the same section name may start again). */
   instance: number;
+  /**
+   * Sections whose page layers apply, in order: the page's own, after those
+   * it links to (`linkToPrevious`).
+   */
+  chain: string[];
 }
 
 function checkNumbering(numbering: PageNumbering | undefined, where: string): void {
@@ -107,7 +112,9 @@ export function createPageLayout(config: PageLayoutConfig): PageLayout {
     if (!prev || slot.sectionStart) {
       const start = sectionConfig(slot.section)?.pageNumbers?.start;
       const restart = !prev || start !== undefined;
+      const own = slot.section === undefined ? [] : [slot.section];
       plans.push({
+        chain: prev && sectionConfig(slot.section)?.linkToPrevious ? [...prev.chain, ...own] : own,
         section: slot.section,
         sectionPage: 1,
         number: start ?? (prev ? prev.number + 1 : (config.pageNumbers?.start ?? 1)),
@@ -168,12 +175,13 @@ export function createPageLayout(config: PageLayoutConfig): PageLayout {
       const section = sectionConfig(p.section);
       const even = p.number % 2 === 0;
       const parity = even ? 'evenPages' : 'oddPages';
+      const chain = p.chain.map(sectionConfig);
       return bookMargins(
         mergePageLayers(
           config.page,
-          section?.page,
+          ...chain.map((linked) => linked?.page),
           config[parity],
-          section?.[parity],
+          ...chain.map((linked) => linked?.[parity]),
           page === 1 ? config.firstPage : undefined,
           p.sectionPage === 1 ? section?.firstPage : undefined,
           config.pageOverrides?.[page],
