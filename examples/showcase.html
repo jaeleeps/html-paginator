@@ -1,0 +1,174 @@
+<!doctype html>
+<!--
+  A short book that shows most of html-paginator's Word-like features:
+  a centered cover inside a page border, roman-numbered front matter with a
+  table of contents and list of figures, chapters on right-hand pages with
+  mirror margins and a gutter, running headers that differ on odd and even
+  pages, footnotes, numbered figures and cross-references, a continuous
+  two-column section with a line between, endnotes, and a balanced
+  two-column index.
+
+  Open it through a web server (e.g. `npx serve .` at the repository root,
+  after `npm run build`) and print to PDF.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>On the Printed Page</title>
+<style>
+  body { margin: 0; font: 11px/1.55 Georgia, 'Times New Roman', serif; color: #222; background: #e6e6e6; }
+  .hp-page { background: #fff; margin: 0 auto 16px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); }
+  .head { display: flex; justify-content: space-between; font-size: 8.5px; letter-spacing: 0.04em; color: #666;
+          border-bottom: 0.5px solid #999; padding-bottom: 3px; margin-bottom: 10px; }
+  .foot { font-size: 9px; margin-top: 10px; color: #444; }
+  .odd { text-align: right; } .even { text-align: left; }
+  .cover { text-align: center; }
+  .cover h1 { font-size: 30px; font-weight: normal; letter-spacing: 0.06em; margin: 0 0 10px; }
+  .cover p { margin: 0; font-style: italic; color: #555; }
+  .cover .rule { width: 40%; margin: 18px auto; border-top: 1px solid #999; }
+  h1 { font-size: 20px; font-weight: normal; margin: 40px 0 16px; }
+  h2 { font-size: 12px; margin: 14px 0 6px; letter-spacing: 0.03em; }
+  p { margin: 0 0 7px; text-align: justify; hyphens: auto; }
+  .lede::first-letter { font-size: 2.6em; float: left; line-height: 0.9; padding: 2px 4px 0 0; }
+  figure { margin: 10px 0; text-align: center; }
+  figure .plate { height: 90px; border: 0.5px solid #999;
+                  background: repeating-linear-gradient(45deg, #f2f2f2 0 6px, #fafafa 6px 12px); }
+  figcaption { font-size: 9px; color: #555; margin-top: 4px; }
+  nav h1, .back h1 { margin-top: 0; }
+  .hp-toc-entry { font-size: 10px; }
+  .hp-footnote, .hp-endnote { font-size: 8.5px; line-height: 1.35; }
+  .hp-index-entry { font-size: 9px; line-height: 1.4; }
+  .hp-index-heading { font-size: 10px; }
+  .news h2 { margin-top: 0; }
+</style>
+</head>
+<body>
+<div id="book">
+  <div class="cover">
+    <h1 data-hp-toc-skip>On the Printed Page</h1>
+    <div class="rule"></div>
+    <p>Notes on paper, type and the art of the page break</p>
+  </div>
+
+  <div data-section="front">
+    <nav data-hp-toc data-hp-toc-levels="1"><h1>Contents</h1></nav>
+    <nav data-hp-toc="Figure"><h2>Figures</h2></nav>
+    <h1 data-hp-toc-skip>Preface</h1>
+    <p>This little book was not typeset by hand. It was written as one long HTML document and cut into pages by a script that measures every paragraph in the browser, the way a word processor measures lines, and then decides where each page ends.</p>
+    <p>Everything you see here comes from that one pass: the roman numerals in front, the chapters that always open on a right-hand page, the running headers, the footnotes at the foot of the page that cites them, and the index at the back, whose page numbers were filled in once the pages existed.</p>
+  </div>
+
+  <section data-section="body" id="chapters"></section>
+
+  <section data-section="back" class="back">
+    <h1>Index</h1>
+  </section>
+  <div data-section="index-columns">
+    <div data-hp-index-list data-hp-index-headings></div>
+  </div>
+</div>
+
+<script src="../dist/index.global.js"></script>
+<script>
+  // The chapters are generated to keep the file short; the paragraphs are real text.
+  const chapters = [
+    {
+      title: 'Paper',
+      paras: [
+        'A page begins as a sheet. Long before anyone chose a typeface, someone had to decide how large the <span data-hp-index="Sheet">sheet</span> would be, and that choice still shapes what we read: the <span data-hp-index="Paper sizes: A series">A series</span> keeps its proportions when folded in half<span data-footnote>The ratio of the sides is the square root of two, so A4 folded becomes A5 with the same shape.</span>, so a book printed on A5 can be laid out on A4 and folded without waste.',
+        'Paper has a grain, a direction in which its fibres run. A book whose grain runs across the spine fights the reader: the pages spring back and refuse to lie open. Printers learned to check the <span data-hp-index="Grain">grain</span> by tearing a corner, which tears straight along it and ragged against it.',
+        'The weight of paper is quoted in grams per square metre. Lighter paper lets the text of the next page show through, so the lines of a well-made book sit on the same baseline on both sides of the leaf, a practice called <span data-hp-index="Register">register</span>.',
+        'Coated paper takes fine images but glares under a lamp; uncoated paper is kinder to long reading and to a pencil in the margin. Most novels are printed on an off-white uncoated stock for that reason, while art books choose a heavy coated sheet and accept the weight.',
+        'The sheet that comes off the press is not yet a page. It is printed with several pages on each side, arranged so that after folding they fall in order. A sheet folded three times gives a <span data-hp-index="Signature">signature</span> of sixteen pages, and a book is a stack of signatures sewn together at the fold.',
+        'Margins were once dictated by the binding. The inner margin of a page, the one at the spine, must leave room for the stitches or glue, and the eye wants the two pages of a spread to read as one block. Hence the old proportions: a narrow inside margin, a wider outside one, the foot the widest of all<span data-footnote>Medieval scribes are often credited with a ratio of 2 : 3 : 4 : 6 for the inner, top, outer and bottom margins.</span>.',
+      ],
+      figure: 'A spread with mirrored margins',
+    },
+    {
+      title: 'Type',
+      paras: [
+        'Type is measured in points, a unit that survives from metal. A <span data-hp-index="Point">point</span> is now one seventy-second of an inch, but for centuries every foundry had its own, and a line set in one shop would not fit a page set in another.',
+        'Readers notice <span data-hp-index="Leading">leading</span>, the space between lines, only when it is wrong. Too little and the eye drops to the wrong line on its way back; too much and the paragraph falls apart into stripes. A line of ten to twelve words, with a little more space between lines than the size of the type, is the safe middle.',
+        'Justified text, set flush on both sides, needs help to look even. Without <span data-hp-index="Hyphenation">hyphenation</span> the spaces between words widen into rivers that run down the page; with too much of it, every other line ends in a broken word.',
+        'A typeface is chosen for the page it will live on. A face drawn for a newspaper, with sturdy serifs and open counters, survives cheap paper and fast presses; a delicate book face would fill in and blur. On screen the trade-offs differ again, which is why a document meant for print should be checked in print.',
+        'Small capitals, old-style figures and true italics are the quiet signs of careful setting. Figures that rise and fall like lower-case letters sit comfortably in running text, while lining figures, all the height of capitals, belong in tables where the columns must align.',
+        'Long passages of reference text read better in narrow columns. Newspapers discovered this early: a column of six or seven words lets the eye take in a whole line at once, and the page can hold several stories side by side.',
+      ],
+      columns: true,
+      figure: 'Lines set on a common baseline',
+    },
+    {
+      title: 'The Page Break',
+      paras: [
+        'Every page ends somewhere, and where it ends matters. A heading left alone at the foot of a page, separated from the text it introduces, is the most common fault, and word processors prevent it with a rule called <span data-hp-index="Keep with next">keep with next</span>.',
+        'A single line of a paragraph stranded at the top of a page is a <span data-hp-index="Widows and orphans: widow">widow</span>; a single first line left at the bottom of a page is an <span data-hp-index="Widows and orphans: orphan">orphan</span>. Both are avoided by moving a line or two across the break, at the cost of a slightly shorter page<span data-footnote>The terms are used the other way round in some style guides; the fault is the same either way.</span>.',
+        'Chapters traditionally open on a right-hand page. When the previous chapter ends on a right-hand page too, the left-hand page after it is left blank, without a header or a number showing, so that the new chapter can start on the right.',
+        'Tables are harder. A long table must break between rows and repeat its header on the next page, so that a reader landing on the second page still knows what each column means. A row too tall for a page has to split across its cells, line by line.',
+        '<span data-hp-index="Footnotes">Footnotes</span> complicate everything, because a note belongs at the foot of the page that cites it. Moving one line to the next page can move its note too, which changes the room left for the text, which can move the line back. The layout must be solved, not merely poured.',
+        'Finally the numbers. A table of contents and an <span data-hp-index="Index">index</span> both show page numbers that do not exist until the pages do; they are laid out with placeholders, then filled in. If the real numbers change the length of an index line, the document is paginated again until they settle.',
+      ],
+      figure: 'A heading kept with its paragraph',
+    },
+  ];
+
+  document.getElementById('chapters').innerHTML = chapters.map((ch, i) => {
+    const n = i + 1;
+    const paras = ch.paras.map((p, j) => `<p${j === 0 ? ' class="lede"' : ''}>${p}</p>`);
+    const figure = `<figure id="fig${n}"><div class="plate"></div><figcaption>Figure <span data-hp-seq="Figure"></span>. ${ch.figure}</figcaption></figure>`;
+    paras.splice(2, 0, figure);
+    let body = `<h1>${n}. ${ch.title}</h1>${paras.join('')}`;
+    if (ch.columns) {
+      // A continuous section break into two columns, and another back to one.
+      body += `<div data-section="columns" class="news"><h2>In the composing room</h2>${ch.paras.concat(ch.paras.slice(0, 2)).map((p) => `<p>${p.replace(/<span data-footnote>.*?<\/span>/g, '').replace(/<span data-hp-index="[^"]*">(.*?)<\/span>/g, '$1')}</p>`).join('')}</div>`
+        + `<div data-section="after-columns"><p>The columns above were balanced to equal height before the text returned to the full width of the page, as a word processor does at a continuous section break. See <a href="#fig1" data-hp-ref></a> on page <a href="#fig1" data-hp-page-ref></a>.<span data-endnote>Balancing searches for the shortest column height at which everything still fits.</span></p></div>`;
+    }
+    return n === 1 ? body : `<section data-section="chapter">${body}</section>`;
+  }).join('') + '<h2>Notes</h2><div data-hp-endnotes></div>';
+
+  const header = (side) => ({ running }) =>
+    side === 'odd'
+      ? `<div class="head"><span></span><span>${running.h1 ?? ''}</span></div>`
+      : `<div class="head"><span>On the Printed Page</span><span></span></div>`;
+  const footer = (side) => ({ pageLabel }) => `<div class="foot ${side}">${pageLabel}</div>`;
+
+  htmlPaginator.whenContentReady(document.getElementById('book')).then(() => {
+    const result = htmlPaginator.createPaginator({
+      source: '#book',
+      page: {
+        size: 'a5',
+        margin: '16mm 14mm 18mm 16mm',
+        mirrorMargins: true,
+        gutter: '4mm',
+      },
+      firstPage: { verticalAlign: 'center', pageBorder: { border: '3px double #555', offset: '10mm' } },
+      footnotes: { continuationNotice: 'continued' },
+      sections: {
+        // Front matter on a right-hand page: roman page numbers, no running header.
+        front: {
+          pageNumbers: { start: 1, format: 'lower-roman' },
+          start: 'odd',
+          oddPages: { footer: footer('odd') },
+          evenPages: { footer: footer('even') },
+        },
+        // Running headers and outside page numbers; chapter openers have no header.
+        body: {
+          pageNumbers: { start: 1 },
+          start: 'odd',
+          oddPages: { header: header('odd'), footer: footer('odd') },
+          evenPages: { header: header('even'), footer: footer('even') },
+          firstPage: { header: null },
+        },
+        // Later chapters keep the body's headers and footers (Word: Link to Previous).
+        chapter: { start: 'odd', linkToPrevious: true, firstPage: { header: null } },
+        columns: { start: 'continuous', linkToPrevious: true, page: { columns: 2, columnGap: '6mm', columnRule: '0.5px solid #aaa' } },
+        'after-columns': { start: 'continuous', linkToPrevious: true, page: { columns: 1 } },
+        back: { start: 'odd', linkToPrevious: true, firstPage: { header: null } },
+        'index-columns': { start: 'continuous', linkToPrevious: true, balanceColumns: true, page: { columns: 2, columnGap: '6mm', columnRule: '0.5px solid #aaa' } },
+      },
+    }).paginate();
+    window.totalPages = result.totalPages;
+    document.documentElement.dataset.paginated = 'true';
+  });
+</script>
+</body>
+</html>

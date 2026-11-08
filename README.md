@@ -4,6 +4,29 @@ Auto page-break pagination for HTML content. Distributes DOM elements across fix
 
 Zero runtime dependencies. Ships ESM, CJS, and TypeScript declarations.
 
+## Showcase
+
+[`examples/showcase.html`](examples/showcase.html) is a short book written as one HTML file and paginated in the browser, shown here as printed, in facing pages:
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/jaeleeps/html-paginator/main/assets/showcase/spreads.png" alt="The showcase book in facing pages: a centered cover inside a page border, roman-numbered contents, chapters on right-hand pages, a continuous two-column section, footnotes and a two-column index" width="900">
+</p>
+
+| Word feature | Here | Option |
+| --- | --- | --- |
+| Vertical alignment, page border | Cover | `firstPage: { verticalAlign: 'center', pageBorder }` |
+| Sections, roman page numbers | Front matter (i, ii) | `sections.front.pageNumbers` |
+| Table of contents, table of figures | Contents | `data-hp-toc`, `data-hp-toc="Figure"` |
+| Odd page section break, inserted blank page | Chapters 1–3 | `start: 'odd'` |
+| Different first page, odd & even headers | Running headers, outside page numbers | `firstPage`, `oddPages`, `evenPages`, `running.h1` |
+| Mirror margins, gutter | Every spread | `mirrorMargins`, `gutter` |
+| Link to Previous | Chapters 2–3, columns, index keep the body's headers | `linkToPrevious` |
+| Footnotes (with a note that moves with its line) | Chapter 1 | `data-footnote` |
+| Captions and cross-references | Figures 1–3 | `data-hp-seq`, `data-hp-ref`, `data-hp-page-ref` |
+| Continuous section break, columns, line between | Chapter 2 | `start: 'continuous'`, `columns`, `columnRule` |
+| Endnotes | Notes | `data-endnote` |
+| Index in balanced columns | Index | `data-hp-index`, `balanceColumns` |
+
 ## Install
 
 ```bash
@@ -183,6 +206,10 @@ Keep an element on the same page as the element after it, like Word's "Keep with
 
 ## Page configuration
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/jaeleeps/html-paginator/main/assets/page-anatomy.svg" alt="Anatomy of a page: margins and gutter, header and footer in the margins, body, footnote area, and page border" width="720">
+</p>
+
 ### Size presets
 
 `letter` (default), `legal`, `a4`, `a5` -- or pass explicit dimensions:
@@ -241,6 +268,10 @@ createPaginator({
 
   Before a continuous break, the columns on that page are **balanced** to equal height, as in Word. `balanceColumns: true` on a section also balances its last page of columns at the end of the document or before a section that starts on a new page (in Word, a continuous break after the section). Balanced columns end within one unsplittable chunk of each other (orphans/widows keep a few lines together). They end with the tallest of them, and so does the line between them. Footnotes stay in the column of their reference while balancing; only columns with a footnote continued from or onto another page are left unbalanced. A continuous section's other page settings (header, footer, margins) take effect from the next page. On a page with several sections, each is rendered in a `.hp-region` stacked in the body; footnotes outside columns share one area at the bottom of the page.
 - Rendered as `.hp-body > .hp-column > .hp-column-body` (plus `.hp-column-rule` and `.hp-footnotes`); the geometry is inline, so it holds with `injectStyles: false`.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/jaeleeps/html-paginator/main/assets/sheet-regions.svg" alt="Columns and continuous section breaks: the engine fills a stream of columns that the sheet planner places as regions on pages, balancing columns before a continuous break" width="720">
+</p>
 - Right-to-left text (`dir="rtl"`) is mirrored as in Word: columns flow from right to left, the rule stays in the gap, and line numbers go to the right of each column (where lines start).
 - Declaratively: `data-hp-columns="2"`, `data-hp-column-gap`, `data-hp-column-rule` on the config, content or a `data-hp-section` group.
 
@@ -289,6 +320,10 @@ For printed books, `mirrorMargins: true` swaps the left and right margins on eve
 ```
 
 Odd and even go by the page number, as for odd/even headers, so a numbering restart can shift them. Without mirror margins, `gutterPosition` puts the gutter in the `'left'` (default), `'right'` (right-to-left documents) or `'top'` margin (Word: Gutter position). All are page settings (per section, etc.). Declaratively: `data-hp-mirror-margins`, `data-hp-gutter="5mm"` and `data-hp-gutter-position`.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/jaeleeps/html-paginator/main/assets/facing-pages.svg" alt="Facing pages: mirrored margins with the gutter at the spine, odd and even headers, and a blank page inserted before a chapter that starts on an odd page" width="720">
+</p>
 
 #### Header and footer distance (Word layout)
 
@@ -528,6 +563,10 @@ createPaginator({
 - `start: 'odd' | 'even'` starts the section on the next odd or even **physical** page (right- or left-hand side in duplex printing), inserting a blank page when needed. The blank page belongs to the previous section.
 - Templates also receive `section`, `sectionPage` and `sectionPages`. `lastPageNumber` / `lastPageLabel` refer to the last page of the current numbering run, so "Page X of Y" works inside a restarted body.
 - Declaratively: `<div data-hp-section="name">` groups in the config template, with their own header/footer slots, `data-hp-margin`, `data-hp-page-start`, `data-hp-page-format`, `data-hp-section-start="odd"`, and nested `data-hp-page="first|odd|even"` groups.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/jaeleeps/html-paginator/main/assets/settings-layers.svg" alt="How page settings combine: layers from the top-level page up to per-page overrides, and Link to Previous keeping the previous section header" width="720">
+</p>
 
 ### Page fields in content
 
@@ -776,10 +815,14 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 ## How it works
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/jaeleeps/html-paginator/main/assets/distribution-algorithm.svg" alt="Distribution algorithm flowchart" width="720">
+  <img src="https://raw.githubusercontent.com/jaeleeps/html-paginator/main/assets/pipeline.svg" alt="Pipeline: prepare, measure, distribute, plan sheets, build pages, and repaginate when an index needs its real page numbers" width="900">
 </p>
 
-The pipeline has two passes:
+The pipeline has two passes. Distribution, steps 1 to 3, follows this flowchart:
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/jaeleeps/html-paginator/main/assets/distribution-algorithm.svg" alt="Distribution algorithm flowchart" width="720">
+</p>
 
 ### Pass 1 -- Distribution (greedy first-fit)
 
@@ -814,7 +857,7 @@ npm run test:e2e    # real Chromium: layout, print and PDF checks (Playwright)
 npm run typecheck
 ```
 
-The e2e suite builds `dist/` first, then paginates `examples/invoice.html` and the fixtures in `e2e/fixtures/`. For each one it checks every page's size, that no content extends past a page body, that all content appears once and in order, and that each page of the printed PDF has the same content as its rendered page. Install the browser once with `npx playwright install chromium`.
+The e2e suite builds `dist/` first, then paginates `examples/invoice.html`, `examples/showcase.html` and the fixtures in `e2e/fixtures/`. For each one it checks every page's size, that no content extends past a page body, that all content appears once and in order, and that each page of the printed PDF has the same content as its rendered page. Install the browser once with `npx playwright install chromium`.
 
 ## License
 

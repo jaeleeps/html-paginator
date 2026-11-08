@@ -1,0 +1,94 @@
+<svg viewBox="0 0 820 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="reg-title reg-desc">
+  <title id="reg-title">Columns and continuous section breaks</title>
+  <desc id="reg-desc">The distribution engine fills a stream of columns. The sheet planner places them on pages: a continuous section break starts a new region below the previous one on the same page, and the columns before it are balanced to equal height. Footnotes stay in the column of their reference.</desc>
+  <defs>
+    <style>
+      text { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+      .mono { font-family: ui-monospace, 'SFMono-Regular', 'SF Mono', Menlo, monospace; }
+      .key { fill: #2d3142; font-size: 11px; font-weight: 600; }
+      .code { fill: #eb6c36; font-size: 9px; }
+      .note { fill: #4f5d75; font-size: 9px; }
+      .cap { fill: #7a8399; font-size: 7px; letter-spacing: 0.08em; }
+      .line { fill: rgba(45,49,66,0.16); }
+      .col { fill: #ffffff; stroke: rgba(45,49,66,0.35); stroke-width: 0.8; }
+    </style>
+    <marker id="r-arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+    <g id="r-l4" class="line"><rect x="0" y="0" width="60" height="3"/><rect x="0" y="7" width="60" height="3"/><rect x="0" y="14" width="60" height="3"/><rect x="0" y="21" width="40" height="3"/></g>
+    <g id="r-wide" class="line"><rect x="0" y="0" width="200" height="3"/><rect x="0" y="7" width="200" height="3"/><rect x="0" y="14" width="140" height="3"/></g>
+  </defs>
+
+  <rect width="100%" height="100%" fill="#f5f5f5"/>
+  <text x="40" y="30" fill="#2d3142" font-size="14" font-weight="600">Columns and continuous section breaks</text>
+
+  <!-- engine stream -->
+  <text x="40" y="66" class="cap mono">ENGINE: A STREAM OF COLUMNS</text>
+  <g transform="translate(40,76)">
+    <rect class="col" x="0" y="0" width="120" height="30" rx="2"/><text x="8" y="19" class="note">title · full width</text>
+    <rect class="col" x="0" y="36" width="56" height="54" rx="2" fill="rgba(235,108,54,0.05)"/><text x="28" y="66" class="note" text-anchor="middle">col 1</text>
+    <rect class="col" x="64" y="36" width="56" height="54" rx="2" fill="rgba(235,108,54,0.05)"/><text x="92" y="66" class="note" text-anchor="middle">col 2</text>
+    <rect class="col" x="0" y="96" width="120" height="30" rx="2"/><text x="8" y="115" class="note">after · full width</text>
+    <rect class="col" x="0" y="132" width="56" height="70" rx="2" fill="rgba(235,108,54,0.05)"/><text x="28" y="170" class="note" text-anchor="middle">col 3</text>
+    <rect class="col" x="64" y="132" width="56" height="70" rx="2" fill="rgba(235,108,54,0.05)"/><text x="92" y="170" class="note" text-anchor="middle">col 4</text>
+    <text x="0" y="224" class="note">Each section is distributed at</text>
+    <text x="0" y="236" class="note">its own column width.</text>
+  </g>
+  <line x1="176" y1="180" x2="222" y2="180" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#r-arr)"/>
+  <text x="199" y="172" class="cap mono" text-anchor="middle">SHEETS</text>
+
+  <!-- page 1 -->
+  <text x="236" y="66" class="cap mono">PAGE 1</text>
+  <rect x="238" y="78" width="240" height="300" fill="rgba(0,0,0,0.08)"/>
+  <rect x="236" y="76" width="240" height="300" fill="#ffffff" stroke="#bfc0c0"/>
+  <!-- region 1: title -->
+  <rect x="256" y="96" width="140" height="10" rx="1" fill="rgba(45,49,66,0.45)"/>
+  <use href="#r-wide" x="256" y="114"/>
+  <line x1="248" y1="140" x2="464" y2="140" stroke="#eb6c36" stroke-dasharray="4 3"/>
+  <!-- region 2: two balanced columns -->
+  <use href="#r-l4" x="256" y="150"/><use href="#r-l4" x="256" y="180"/><use href="#r-l4" x="256" y="210"/>
+  <use href="#r-l4" x="372" y="150"/><use href="#r-l4" x="372" y="180"/><use href="#r-l4" x="372" y="210"/>
+  <rect x="256" y="150" width="88" height="88" fill="none" stroke="rgba(235,108,54,0.6)" stroke-width="0.6"/>
+  <rect x="372" y="150" width="88" height="88" fill="none" stroke="rgba(235,108,54,0.6)" stroke-width="0.6"/>
+  <line x1="356" y1="150" x2="356" y2="238" stroke="#bfc0c0"/>
+  <line x1="248" y1="248" x2="464" y2="248" stroke="#eb6c36" stroke-dasharray="4 3"/>
+  <!-- region 3: full width -->
+  <use href="#r-wide" x="256" y="258"/>
+  <line x1="248" y1="282" x2="464" y2="282" stroke="#eb6c36" stroke-dasharray="4 3"/>
+  <!-- region 4: two columns, continuing on page 2 -->
+  <use href="#r-l4" x="256" y="292"/><use href="#r-l4" x="256" y="322"/>
+  <use href="#r-l4" x="372" y="292"/><use href="#r-l4" x="372" y="322"/>
+  <line x1="356" y1="292" x2="356" y2="350" stroke="#bfc0c0"/>
+  <text x="458" y="296" fill="#eb6c36" font-size="6">1</text>
+  <line x1="372" y1="352" x2="396" y2="352" stroke="#4f5d75" stroke-width="0.6"/>
+  <rect x="372" y="357" width="80" height="3" fill="rgba(45,49,66,0.25)"/>
+
+  <!-- page 2 -->
+  <text x="500" y="66" class="cap mono">PAGE 2</text>
+  <rect x="502" y="78" width="120" height="150" fill="rgba(0,0,0,0.08)"/>
+  <rect x="500" y="76" width="120" height="150" fill="#ffffff" stroke="#bfc0c0"/>
+  <g transform="translate(510,90) scale(0.5)">
+    <use href="#r-l4" x="0" y="0"/><use href="#r-l4" x="0" y="30"/><use href="#r-l4" x="0" y="60"/><use href="#r-l4" x="0" y="90"/>
+    <use href="#r-l4" x="116" y="0"/><use href="#r-l4" x="116" y="30"/><use href="#r-l4" x="116" y="60"/>
+  </g>
+  <line x1="560" y1="90" x2="560" y2="150" stroke="#bfc0c0"/>
+
+  <!-- callouts -->
+  <g transform="translate(640,96)">
+    <text x="0" y="0" class="key">Continuous break</text>
+    <text x="0" y="14" class="code mono">start: 'continuous'</text>
+    <text x="0" y="28" class="note">a new region below the</text>
+    <text x="0" y="40" class="note">previous one, same page</text>
+
+    <text x="0" y="74" class="key">Balanced columns</text>
+    <text x="0" y="88" class="code mono">balanceColumns: true</text>
+    <text x="0" y="102" class="note">shortest equal height that</text>
+    <text x="0" y="114" class="note">fits, before a continuous</text>
+    <text x="0" y="126" class="note">break or at the section end</text>
+
+    <text x="0" y="160" class="key">Line between</text>
+    <text x="0" y="174" class="code mono">columnRule · columnGap</text>
+
+    <text x="0" y="208" class="key">Footnotes per column</text>
+    <text x="0" y="222" class="note">at the foot of the column</text>
+    <text x="0" y="234" class="note">holding the reference</text>
+  </g>
+</svg>

@@ -1,0 +1,99 @@
+<svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="face-title face-desc">
+  <title id="face-title">Facing pages</title>
+  <desc id="face-desc">A two-page spread. With mirrorMargins the inside margin, plus the gutter, is at the spine on both pages. Even pages have their own header and footer, with the page number on the outside. A section that starts on an odd page gets a blank page inserted when the previous section ends on an odd page.</desc>
+  <defs>
+    <style>
+      text { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+      .mono { font-family: ui-monospace, 'SFMono-Regular', 'SF Mono', Menlo, monospace; }
+      .key { fill: #2d3142; font-size: 11px; font-weight: 600; }
+      .opt { fill: #eb6c36; font-size: 9px; }
+      .note { fill: #4f5d75; font-size: 9px; }
+      .cap { fill: #7a8399; font-size: 7px; letter-spacing: 0.08em; }
+      .line { fill: rgba(45,49,66,0.16); }
+      .dim { stroke: #7a8399; stroke-width: 0.8; }
+    </style>
+    <pattern id="f-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="6" height="6" fill="rgba(235,108,54,0.08)"/>
+      <line x1="0" y1="0" x2="0" y2="6" stroke="rgba(235,108,54,0.35)" stroke-width="1.5"/>
+    </pattern>
+    <marker id="f-dim" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse"><polygon points="0 0, 6 3, 0 6" fill="#7a8399"/></marker>
+    <g id="f-lines" class="line">
+      <rect x="0" y="0" width="136" height="4" rx="1"/><rect x="0" y="9" width="136" height="4" rx="1"/>
+      <rect x="0" y="18" width="136" height="4" rx="1"/><rect x="0" y="27" width="90" height="4" rx="1"/>
+      <rect x="0" y="40" width="136" height="4" rx="1"/><rect x="0" y="49" width="136" height="4" rx="1"/>
+      <rect x="0" y="58" width="136" height="4" rx="1"/><rect x="0" y="67" width="136" height="4" rx="1"/>
+      <rect x="0" y="76" width="60" height="4" rx="1"/>
+    </g>
+  </defs>
+
+  <rect width="100%" height="100%" fill="#f5f5f5"/>
+  <text x="40" y="30" fill="#2d3142" font-size="14" font-weight="600">Facing pages</text>
+
+  <!-- spread -->
+  <rect x="42" y="62" width="400" height="280" fill="rgba(0,0,0,0.08)"/>
+  <rect x="40" y="60" width="200" height="280" fill="#ffffff" stroke="#bfc0c0"/>
+  <rect x="240" y="60" width="200" height="280" fill="#ffffff" stroke="#bfc0c0"/>
+  <text x="140" y="54" class="cap mono" text-anchor="middle">EVEN · LEFT</text>
+  <text x="340" y="54" class="cap mono" text-anchor="middle">ODD · RIGHT</text>
+  <!-- gutters at the spine -->
+  <rect x="228" y="60" width="12" height="280" fill="url(#f-hatch)"/>
+  <rect x="240" y="60" width="12" height="280" fill="url(#f-hatch)"/>
+  <line x1="240" y1="60" x2="240" y2="340" stroke="#bfc0c0"/>
+
+  <!-- even page: header left, number outside (left) -->
+  <rect x="62" y="74" width="136" height="12" rx="2" fill="rgba(45,49,66,0.06)"/>
+  <rect x="66" y="78" width="54" height="4" rx="1" fill="rgba(45,49,66,0.4)"/>
+  <rect x="62" y="96" width="136" height="214" fill="none" stroke="#2d3142" stroke-width="0.8"/>
+  <use href="#f-lines" x="62" y="104"/>
+  <use href="#f-lines" x="62" y="196"/>
+  <text x="62" y="328" fill="#2d3142" font-size="8">10</text>
+
+  <!-- odd page: header right, number outside (right) -->
+  <rect x="282" y="74" width="136" height="12" rx="2" fill="rgba(45,49,66,0.06)"/>
+  <rect x="360" y="78" width="54" height="4" rx="1" fill="rgba(45,49,66,0.4)"/>
+  <rect x="282" y="96" width="136" height="214" fill="none" stroke="#2d3142" stroke-width="0.8"/>
+  <use href="#f-lines" x="282" y="104"/>
+  <use href="#f-lines" x="282" y="196"/>
+  <text x="418" y="328" fill="#2d3142" font-size="8" text-anchor="end">11</text>
+
+  <!-- dimensions -->
+  <line class="dim" x1="42" y1="356" x2="60" y2="356" marker-start="url(#f-dim)" marker-end="url(#f-dim)"/>
+  <line class="dim" x1="200" y1="356" x2="238" y2="356" marker-start="url(#f-dim)" marker-end="url(#f-dim)"/>
+  <line class="dim" x1="242" y1="356" x2="280" y2="356" marker-start="url(#f-dim)" marker-end="url(#f-dim)"/>
+  <line class="dim" x1="420" y1="356" x2="438" y2="356" marker-start="url(#f-dim)" marker-end="url(#f-dim)"/>
+  <text x="51" y="372" class="note" text-anchor="middle">outside</text>
+  <text x="240" y="372" class="note" text-anchor="middle">inside + gutter</text>
+  <text x="429" y="372" class="note" text-anchor="middle">outside</text>
+
+  <!-- callouts -->
+  <text x="480" y="78" class="key">Mirror margins and gutter</text>
+  <text x="480" y="92" class="opt mono">mirrorMargins: true, gutter: '5mm'</text>
+  <text x="480" y="106" class="note">The left margin becomes the inside one on every page,</text>
+  <text x="480" y="118" class="note">and the gutter adds binding space at the spine.</text>
+
+  <text x="480" y="146" class="key">Different odd and even pages</text>
+  <text x="480" y="160" class="opt mono">oddPages: { header, footer }, evenPages: { … }</text>
+  <text x="480" y="174" class="note">Headers and page numbers on the outside edge.</text>
+  <text x="480" y="186" class="note">Odd/even follows the displayed page number.</text>
+
+  <text x="480" y="214" class="key">Chapters on right-hand pages</text>
+  <text x="480" y="228" class="opt mono">sections: { chapter: { start: 'odd' } }</text>
+
+  <!-- start: odd strip -->
+  <g transform="translate(480,244)">
+    <rect x="0" y="0" width="44" height="60" fill="#ffffff" stroke="#bfc0c0"/>
+    <g class="line"><rect x="6" y="10" width="32" height="3"/><rect x="6" y="17" width="32" height="3"/><rect x="6" y="24" width="20" height="3"/></g>
+    <rect x="50" y="0" width="44" height="60" fill="#ffffff" stroke="#eb6c36" stroke-dasharray="3 2"/>
+    <text x="72" y="34" class="cap mono" text-anchor="middle" fill="#eb6c36">BLANK</text>
+    <rect x="108" y="0" width="44" height="60" fill="#ffffff" stroke="#bfc0c0"/>
+    <rect x="114" y="14" width="24" height="5" rx="1" fill="rgba(45,49,66,0.45)"/>
+    <g class="line"><rect x="114" y="25" width="32" height="3"/><rect x="114" y="32" width="32" height="3"/><rect x="114" y="39" width="32" height="3"/></g>
+    <line x1="101" y1="0" x2="101" y2="60" stroke="#bfc0c0" stroke-dasharray="2 2"/>
+    <text x="22" y="74" class="note" text-anchor="middle">p. 9</text>
+    <text x="72" y="74" class="note" text-anchor="middle">p. 10</text>
+    <text x="130" y="74" class="note" text-anchor="middle">p. 11</text>
+    <text x="0" y="96" class="note">Chapter 2 would start on page 10, a left-hand page,</text>
+    <text x="0" y="108" class="note">so a blank page is inserted (it keeps the previous</text>
+    <text x="0" y="120" class="note">section's header and footer, as in Word).</text>
+  </g>
+</svg>

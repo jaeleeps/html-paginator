@@ -1,0 +1,88 @@
+<svg viewBox="0 0 960 272" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="pipe-title pipe-desc">
+  <title id="pipe-title">html-paginator pipeline</title>
+  <desc id="pipe-desc">The source is cloned and prepared (notes, captions, table of contents, index), measured in a probe page, distributed into columns, planned onto sheets, and built into pages. With an index the document is paginated again with the real page numbers, at most three passes.</desc>
+  <defs>
+    <style>
+      text { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+      .mono { font-family: ui-monospace, 'SFMono-Regular', 'SF Mono', Menlo, monospace; }
+      .step { fill: #ffffff; stroke: #2d3142; stroke-width: 1; }
+      .label { fill: rgba(45,49,66,0.8); font-size: 7px; letter-spacing: 0.08em; }
+      .title { fill: #2d3142; font-size: 12px; font-weight: 600; }
+      .note { fill: #4f5d75; font-size: 9px; }
+      .note.mono { font-size: 8px; }
+    </style>
+    <marker id="p-arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+    <marker id="p-arr-a" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+  </defs>
+
+  <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+  <!-- connectors -->
+  <g stroke="#4f5d75" stroke-width="1.2" marker-end="url(#p-arr)">
+    <line x1="134" y1="130" x2="158" y2="130"/>
+    <line x1="290" y1="130" x2="314" y2="130"/>
+    <line x1="446" y1="130" x2="470" y2="130"/>
+    <line x1="602" y1="130" x2="626" y2="130"/>
+    <line x1="758" y1="130" x2="782" y2="130"/>
+  </g>
+  <!-- repagination loop: Build → Prepare -->
+  <path d="M 862,190 L 862,236 Q 862,244 854,244 L 232,244 Q 224,244 224,236 L 224,194" stroke="#eb6c36" stroke-width="1.2" fill="none" stroke-dasharray="4 3" marker-end="url(#p-arr-a)"/>
+  <rect x="290" y="236" width="380" height="16" rx="2" fill="#f5f5f5"/>
+  <text x="480" y="248" fill="#eb6c36" font-size="9" text-anchor="middle">index present? paginate again with real page numbers (≤ 3 passes)</text>
+
+  <!-- 0. Source -->
+  <rect x="20" y="78" width="114" height="104" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.25)" stroke-dasharray="3 2"/>
+  <text x="32" y="96" class="label mono">INPUT</text>
+  <text x="32" y="118" class="title">Source HTML</text>
+  <text x="32" y="138" class="note">one long document</text>
+  <text x="32" y="152" class="note mono" font-size="8">data-section</text>
+  <text x="32" y="164" class="note mono" font-size="8">data-footnote …</text>
+
+  <!-- 1. Prepare -->
+  <rect x="160" y="70" width="130" height="120" rx="6" class="step"/>
+  <text x="172" y="88" class="label mono">1 · PREPARE</text>
+  <text x="172" y="108" class="title">Clone &amp; resolve</text>
+  <text x="172" y="128" class="note">footnotes, endnotes</text>
+  <text x="172" y="141" class="note">captions, cross-refs</text>
+  <text x="172" y="154" class="note">TOC, index</text>
+  <text x="172" y="172" class="note mono" font-size="8" fill="#7a8399">page nos → "000"</text>
+
+  <!-- 2. Measure -->
+  <rect x="316" y="70" width="130" height="120" rx="6" class="step"/>
+  <text x="328" y="88" class="label mono">2 · MEASURE</text>
+  <text x="328" y="108" class="title">Probe page</text>
+  <text x="328" y="128" class="note">hidden page with the</text>
+  <text x="328" y="141" class="note">same size, margins,</text>
+  <text x="328" y="154" class="note">header &amp; footer</text>
+  <text x="328" y="172" class="note mono" font-size="8" fill="#7a8399">real browser layout</text>
+
+  <!-- 3. Distribute -->
+  <rect x="472" y="70" width="130" height="120" rx="6" class="step"/>
+  <text x="484" y="88" class="label mono">3 · DISTRIBUTE</text>
+  <text x="484" y="108" class="title">Fill columns</text>
+  <text x="484" y="128" class="note">first-fit, in order</text>
+  <text x="484" y="141" class="note">split tables, lines</text>
+  <text x="484" y="154" class="note">notes follow refs</text>
+  <text x="484" y="172" class="note mono" font-size="8" fill="#7a8399">widows, orphans</text>
+
+  <!-- 4. Sheets -->
+  <rect x="628" y="70" width="130" height="120" rx="6" class="step"/>
+  <text x="640" y="88" class="label mono">4 · SHEETS</text>
+  <text x="640" y="108" class="title">Plan pages</text>
+  <text x="640" y="128" class="note">columns → regions</text>
+  <text x="640" y="141" class="note">continuous breaks</text>
+  <text x="640" y="154" class="note">balance columns</text>
+  <text x="640" y="172" class="note mono" font-size="8" fill="#7a8399">odd/even, blanks</text>
+
+  <!-- 5. Build -->
+  <rect x="784" y="70" width="156" height="120" rx="6" fill="rgba(235,108,54,0.06)" stroke="#eb6c36" stroke-width="1"/>
+  <text x="796" y="88" class="label mono" fill="rgba(235,108,54,0.9)">5 · BUILD</text>
+  <text x="796" y="108" class="title">Render pages</text>
+  <text x="796" y="128" class="note">headers, footers, borders</text>
+  <text x="796" y="141" class="note">page refs &amp; fields</text>
+  <text x="796" y="154" class="note">footnote &amp; line numbers</text>
+  <text x="796" y="172" class="note mono" font-size="8" fill="#7a8399">@page print CSS</text>
+
+  <text x="480" y="36" fill="#2d3142" font-size="14" font-weight="600" text-anchor="middle">From one HTML document to printed pages</text>
+  <text x="480" y="54" fill="#7a8399" font-size="9" class="mono" text-anchor="middle">createPaginator({ … }).paginate()</text>
+</svg>
