@@ -276,6 +276,15 @@ export function buildPages(
       const align = group.some((entry) => entry.overflows) ? 'top' : config.verticalAlign;
       if (columns.columns > 1) {
         Object.assign(body.style, { display: 'flex', flex: '1 1 auto', minHeight: '0' });
+        if (columns.balanced) {
+          // Balanced: the columns (and the line between) end with the
+          // tallest one, in a row only as tall as its content.
+          Object.assign(body.style, {
+            display: 'grid',
+            gridTemplateColumns: `repeat(${columns.columns}, minmax(0, 1fr))`,
+            alignContent: 'start',
+          });
+        }
         fillColumns(body, group, columns, align);
       } else {
         fill(body, dist.items, align);
@@ -294,14 +303,15 @@ export function buildPages(
       regions.forEach((entries, index) => {
         const region = doc.createElement('div');
         region.className = CLASS_NAMES.region;
-        // Earlier regions take their content's height; the last the rest.
+        const columns = columnsOf(entries);
+        // Earlier regions take their content's height; the last the rest,
+        // unless its columns are balanced.
         Object.assign(region.style, {
           display: 'flex',
-          flex: index === regions.length - 1 ? '1 1 auto' : '0 0 auto',
+          flex: index === regions.length - 1 && !columns.balanced ? '1 1 auto' : '0 0 auto',
           minHeight: '0',
         });
         body.appendChild(region);
-        const columns = columnsOf(entries);
         if (columns.columns > 1) {
           fillColumns(region, entries, columns);
         } else {

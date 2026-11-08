@@ -1,6 +1,5 @@
 import type { DistributedPage, PageSlot } from './distribute';
 import type { PageLayout, PageLayoutConfig } from './layout';
-import { mergePageLayers } from './pageConfig';
 
 /**
  * Sheets, regions and columns (Word: section columns and continuous
@@ -18,6 +17,8 @@ export interface RegionColumns {
   columns: number;
   columnGap: string;
   columnRule?: string;
+  /** Balanced columns: the region is only as tall as its content. */
+  balanced?: readonly unknown[];
 }
 
 export interface SheetRegion<T> extends RegionColumns {
@@ -159,7 +160,7 @@ export function createSheetPlanner<T>(options: SheetPlannerOptions<T>): SheetPla
     const top = above.top + regionUsed(above);
     const height = options.bodyHeight(above.sheet) - top;
     if (height < minHeight) return null;
-    const page = mergePageLayers(config.page, slot.section ? config.sections?.[slot.section]?.page : undefined);
+    const page = layout.startBelow(slot.section);
     return add({
       sheet: above.sheet,
       index: above.index + 1,
