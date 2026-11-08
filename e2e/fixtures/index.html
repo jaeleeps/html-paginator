@@ -1,0 +1,62 @@
+<!doctype html>
+<!--
+  Index (Word's XE / INDEX fields). Roman front matter, three chapters whose
+  paragraphs mark index terms (some with subentries, some marked several
+  times on one page), then the index: a full-width title, and below it a
+  continuous section of two balanced columns with letter headings.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>html-paginator index fixture</title>
+<style>
+  body { margin: 0; font: 12px/18px Georgia, serif; }
+  h2 { margin: 0 0 12px; }
+  p { margin: 0 0 8px; }
+  .hp-index-heading { font-size: 14px; }
+</style>
+</head>
+<body>
+<div id="src">
+  <div data-section="front" id="front"></div>
+  <div id="chapters"></div>
+  <section data-section="indexTitle"><h2>Index</h2></section>
+  <section data-section="index"><div data-hp-index-list data-hp-index-headings></div></section>
+</div>
+<script src="/dist/index.global.js"></script>
+<script>
+  const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.';
+  const terms = ['Anchor', 'Bridge: suspension', 'Bridge: arch', 'Canal', 'Dam', 'Engine: steam', 'Engine: diesel', 'Ferry', 'Gauge', 'Harbor', 'Isthmus', 'Jetty', 'Keel', 'Lock'];
+  let mark = 0;
+  // Every paragraph marks a term; some mark a second one, or the same twice.
+  const para = (prefix, i) => {
+    const term = terms[mark++ % terms.length];
+    const extra = i % 4 === 0 ? `<span data-hp-index="${term}"></span>` : i % 5 === 0 ? `<span data-hp-index="${terms[(i * 3) % terms.length]}"></span>` : '';
+    return `<p>${prefix}-${i}<span data-hp-index="${term}"></span> ${lorem}${extra} ${lorem}</p>`;
+  };
+  const paras = (prefix, n) => Array.from({ length: n }, (_, i) => para(prefix, i + 1)).join('');
+  document.getElementById('front').innerHTML = `<h2>Preface</h2>${paras('P', 12)}`;
+  document.getElementById('chapters').innerHTML = [1, 2, 3]
+    .map((n) => `<section data-section="${n === 1 ? 'body' : 'chapter'}"><h2>Chapter ${n}</h2>${paras(`C${n}`, 14 + n * 3)}</section>`)
+    .join('');
+  htmlPaginator.createPaginator({
+    source: '#src',
+    page: {
+      size: 'a5',
+      margin: '15mm',
+      footer: ({ pageLabel }) => `<div style="text-align:center">${pageLabel}</div>`,
+    },
+    sections: {
+      front: { pageNumbers: { start: 1, format: 'lower-roman' } },
+      body: { pageNumbers: { start: 1 } },
+      chapter: {},
+      // As Word inserts an index: a continuous break under the title, then
+      // balanced columns.
+      indexTitle: {},
+      index: { start: 'continuous', page: { columns: 2, columnGap: '6mm' }, balanceColumns: true },
+    },
+  }).paginate();
+  document.documentElement.dataset.paginated = 'true';
+</script>
+</body>
+</html>

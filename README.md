@@ -616,6 +616,24 @@ Word's TOC and PAGEREF fields. Mark a container with `data-hp-toc` and it is fil
 - Entries are `div.hp-toc-entry.hp-toc-level-N`, each holding `a.hp-toc-text`, `span.hp-toc-leader` and `span.hp-toc-page`. The layout (flex, dotted leader, 1.5em indent per level) is set inline so it is measured correctly. Restyle them with your own CSS.
 - Numbers are measured as `000` before they are known, so filling them in never changes the pagination.
 
+### Index
+
+Word's XE and INDEX fields. Mark terms where they are discussed with `data-hp-index`, and a `data-hp-index-list` container is filled with the terms in alphabetical order, each followed by the pages of its marks:
+
+```html
+<p>The <span data-hp-index="Bridge: suspension">Golden Gate</span> opened in 1937.</p>
+<p>Locks raise ships<span data-hp-index="Lock"></span> …</p>
+<p><b data-hp-index="">Canals</b> …</p>          <!-- empty: the element's text -->
+…
+<section data-hp-index-list data-hp-index-headings><h2>Index</h2></section>
+```
+
+- `"Main: sub"` makes a subentry under its main term (one level, as Word's default). Terms that differ only in case or accents are one entry, spelled as first marked. Sorting is locale-aware and numeric (`2 rules` before `10 rules`).
+- Pages are page labels, each listed once per entry in page order (`Canal, iv, 2, 7`). `data-hp-index-headings` adds a letter heading before each letter's entries (`#` for numbers and symbols).
+- Entries are `div.hp-index-entry.hp-index-level-N` with `span.hp-index-term` and `span.hp-index-page`s; headings are `div.hp-index-heading`. Entries keep together, and a term stays with its first subentry and a heading with its first entry.
+- As Word updates fields and repaginates, a document with an index is paginated again once the page numbers are known, so the index is laid out with its real numbers (and again if that moved any marked term, at most three passes).
+- For Word's usual layout, give the index its own section in columns: a title, then the list in a continuous two-column section with `balanceColumns: true`.
+
 ## Table splitting
 
 Tables with `data-break="auto"` split at row boundaries. The `<caption>` stays on the first fragment and `<tfoot>` goes on the fragment holding the last row (its height counts toward that page). Use `repeatTableHead` to repeat `<thead>` on continuation pages:
@@ -720,6 +738,8 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-hp-toc` | content container | Fill with a table of contents (`data-hp-toc-levels="1-3"`), or with `="Figure"` a list of that sequence's captions |
 | `data-hp-toc-level` / `data-hp-toc-skip` | content elements | Add an element to the TOC at a level / leave a heading out |
 | `data-hp-page-ref` | content elements | Replace the text with the page label of `#id` (attribute value or `href`) |
+| `data-hp-index` | content elements | Index mark: the term (`"Main: sub"`), or empty for the element's text |
+| `data-hp-index-list` / `data-hp-index-headings` | content container | Filled with the index / with letter headings |
 | `data-section` | content elements | Start a new section (`sections[name]`); implies a page break |
 | `data-hp-orientation` | config / content / section group | `landscape` or `portrait` |
 | `data-hp-columns` / `data-hp-column-gap` / `data-hp-column-rule` | config / content / section group | Newspaper columns, the space and line between them |
