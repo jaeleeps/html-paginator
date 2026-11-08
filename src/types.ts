@@ -139,6 +139,12 @@ export interface PageConfig {
    */
   gutter?: string;
   /**
+   * Which margin the gutter goes in (Word: Gutter position): 'left'
+   * (default), 'right' (right-to-left documents) or 'top' (top binding).
+   * With `mirrorMargins` it is always the inside margin.
+   */
+  gutterPosition?: 'left' | 'right' | 'top';
+  /**
    * Distance from the top edge of the sheet to the header (Word: "Header
    * from top", e.g. '0.5in'). The header then sits inside the top margin and
    * the body starts at the margin, lower only if the header is taller.

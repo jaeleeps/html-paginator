@@ -14,6 +14,7 @@ export interface ResolvedPageConfig {
   margin: string;
   mirrorMargins: boolean;
   gutter?: string;
+  gutterPosition: NonNullable<PageConfig['gutterPosition']>;
   header: PageConfig['header'];
   footer: PageConfig['footer'];
   watermark: PageConfig['watermark'];
@@ -120,9 +121,21 @@ export function bookMargins(config: ResolvedPageConfig, even: boolean): Resolved
   let [top, right, bottom, left] = marginSides(config.margin);
   if (config.mirrorMargins && even) [left, right] = [right, left];
   const inside = (side: string) => (config.gutter ? `calc(${side} + ${config.gutter})` : side);
-  if (config.mirrorMargins && even) right = inside(right);
+  if (config.mirrorMargins) {
+    if (even) right = inside(right);
+    else left = inside(left);
+  } else if (config.gutterPosition === 'top') top = inside(top);
+  else if (config.gutterPosition === 'right') right = inside(right);
   else left = inside(left);
   return { ...config, margin: [top, right, bottom, left].join(' ') };
+}
+
+function resolveGutterPosition(value: PageConfig['gutterPosition']): ResolvedPageConfig['gutterPosition'] {
+  if (value === undefined) return 'left';
+  if (value !== 'left' && value !== 'right' && value !== 'top') {
+    throw new Error(`html-paginator: gutterPosition must be left, right or top, got "${String(value)}"`);
+  }
+  return value;
 }
 
 /**
@@ -136,6 +149,7 @@ export function mergePageLayers(...layers: (PageConfig | undefined)[]): Resolved
     margin: merged.margin ?? DEFAULT_MARGIN,
     mirrorMargins: merged.mirrorMargins === true,
     gutter: merged.gutter,
+    gutterPosition: resolveGutterPosition(merged.gutterPosition),
     header: merged.header,
     footer: merged.footer,
     watermark: merged.watermark,
