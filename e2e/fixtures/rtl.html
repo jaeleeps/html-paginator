@@ -1,0 +1,23 @@
+<!doctype html>
+<html dir="rtl" lang="ar">
+<!--
+  Right-to-left content (Arabic): two columns with a rule, line numbers and
+  footnotes. Columns flow from right to left, the rule sits between them and
+  line numbers go before each line's start, on the right (as Word mirrors an
+  RTL section).
+-->
+<head><meta charset="utf-8"><title>html-paginator right-to-left fixture</title>
+<style>body { margin: 0; font: 12px/18px Arial, sans-serif; } p { margin: 0 0 6px; }</style></head>
+<body>
+<div id="src"></div>
+<script src="/dist/index.global.js"></script>
+<script>
+  const t = 'هذا نص تجريبي باللغة العربية لاختبار الاتجاه من اليمين إلى اليسار في تقسيم الصفحات. ';
+  document.getElementById('src').innerHTML = Array.from({ length: 40 }, (_, i) => `<p>P${i + 1} ${t.repeat(3)}${i % 9 === 0 ? '<span data-footnote>حاشية</span>' : ''}</p>`).join('');
+  htmlPaginator.createPaginator({
+    source: '#src',
+    page: { size: 'letter', margin: '1in', columns: 2, columnRule: '1px solid #000', lineNumbers: {}, footer: ({ page }) => `<div>${page}</div>` },
+  }).paginate();
+  document.documentElement.dataset.paginated = 'true';
+</script>
+</body></html>

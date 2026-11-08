@@ -41,7 +41,7 @@ describe('numberLines', () => {
     expect(numbers(b)).toEqual(['1', '2', '3']);
     const mark = b.querySelector<HTMLElement>('.hp-line-number:nth-of-type(1)') ?? b.querySelector<HTMLElement>('.hp-line-number')!;
     expect(mark.style.position).toBe('absolute');
-    expect(mark.style.right).toBe('calc(100% + 10px)');
+    expect(mark.style.insetInlineEnd).toBe('calc(100% + 10px)');
     expect(mark.getAttribute('aria-hidden')).toBe('true');
     const tops = Array.from(b.querySelectorAll<HTMLElement>('.hp-line-number'), (n) => n.style.top);
     expect(tops).toEqual(['0px', '20px', '80px']);
@@ -54,10 +54,9 @@ describe('numberLines', () => {
     row.style.columnGap = '20px';
     const [first, second] = Array.from(row.querySelectorAll<HTMLElement>('.c'));
     numberLines([{ bodies: [first!, second!], options: {}, sectionStart: false }]);
-    const right = (el: HTMLElement) => el.querySelector<HTMLElement>('.hp-line-number')!.style.right;
-    // As resolved by jsdom: 0.25in, and min(0.25in, 20px / 2).
-    expect(right(first!)).toBe('calc(100% + 24px)');
-    expect(right(second!)).toBe('calc(100% + 10px)');
+    const right = (el: HTMLElement) => el.querySelector<HTMLElement>('.hp-line-number')!.style.insetInlineEnd;
+    expect(right(first!)).toBe('calc(100% + 0.25in)');
+    expect(right(second!)).toBe('calc(100% + min(0.25in, 20px / 2))');
   });
 
   it('shows multiples of countBy, from start', () => {

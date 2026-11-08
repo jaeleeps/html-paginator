@@ -4,7 +4,8 @@ import { lineBoxes } from './textSplit';
  * Line numbers (Word: Layout > Line Numbers).
  *
  * Numbered after the pages are rendered, from the rendered lines of text,
- * and placed in the left margin of the body (of each column), out of the
+ * and placed in the margin before the body's lines (left, or right in
+ * right-to-left text) of each column, out of the
  * flow, so they never change pagination. As in Word, lines in tables,
  * headers, footers and footnotes are not numbered, and an element with
  * `data-hp-suppress-line-numbers` is left out (Word's "suppress line
@@ -46,6 +47,25 @@ function positive(value: number | undefined, what: string): number {
 function numbered(node: Text): boolean {
   const parent = node.parentElement;
   return !!parent && !parent.closest(`table, [${SUPPRESS_LINE_NUMBERS_ATTRIBUTE}]`);
+}
+
+/**
+ * Numbers beside a later column: once laid out, move them closer to its text
+ * if the widest would reach past the middle of the gap (the column rule).
+ * Needs a layout engine; without one (widths of 0) they stay as placed.
+ */
+function keepInGap(body: HTMLElement, marks: HTMLElement[], gap: number): void {
+  const widest = Math.max(0, ...marks.map((mark) => mark.getBoundingClientRect().width));
+  if (widest === 0 || !(gap > 0)) return;
+  const text = body.getBoundingClientRect();
+  const first = marks[0]!.getBoundingClientRect();
+  const rtl = body.ownerDocument.defaultView?.getComputedStyle(body).direction === 'rtl';
+  // Current distance from the text to the numbers' near edge.
+  const distance = rtl ? first.left - text.right : text.left - first.right;
+  // A few pixels clear of the middle, where a column rule is drawn.
+  const room = Math.max(0, gap / 2 - widest - 3);
+  if (distance <= room + 0.5) return;
+  for (const mark of marks) mark.style.insetInlineEnd = `calc(100% + ${room}px)`;
 }
 
 /**
@@ -92,6 +112,7 @@ export function numberLines(pages: readonly LineNumberedPage[]): number {
         ? doc.defaultView?.getComputedStyle(column.parentElement).columnGap
         : undefined;
       const offset = gap && gap !== 'normal' ? `min(${distance}, ${gap} / 2)` : distance;
+      const marks: HTMLElement[] = [];
       for (const line of lines) {
         counter++;
         total++;
@@ -102,7 +123,8 @@ export function numberLines(pages: readonly LineNumberedPage[]): number {
         mark.setAttribute('aria-hidden', 'true');
         Object.assign(mark.style, {
           position: 'absolute',
-          right: `calc(100% + ${offset})`,
+          // Before the start of the line: left of it, or right in RTL text.
+          insetInlineEnd: `calc(100% + ${offset})`,
           top: `${line.top - origin.top}px`,
           height: `${line.bottom - line.top}px`,
           display: 'flex',
@@ -111,7 +133,9 @@ export function numberLines(pages: readonly LineNumberedPage[]): number {
           userSelect: 'none',
         });
         body.appendChild(mark);
+        marks.push(mark);
       }
+      if (gap && gap !== 'normal') keepInGap(body, marks, parseFloat(gap));
     }
   });
   return total;
