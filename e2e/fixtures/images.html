@@ -1,0 +1,40 @@
+<!doctype html>
+<!--
+  Images that load after the script runs: a slow one without width/height
+  attributes and a lazy one far down. ?mode=ready paginates with
+  paginateWhenReady(); ?mode=now paginates at once (the images then take no
+  height when measured).
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>html-paginator images fixture</title>
+<style>
+  body { margin: 0; font: 12px/18px Helvetica, Arial, sans-serif; }
+  p { margin: 0 0 6px; }
+  img { display: block; margin: 0 0 6px; }
+</style>
+</head>
+<body>
+<div id="src"></div>
+<script src="/dist/index.global.js"></script>
+<script>
+  const lorem = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.';
+  const paras = (p, n) => Array.from({ length: n }, (_, i) => `<p>${p}${i + 1} ${lorem} ${lorem}</p>`).join('');
+  document.getElementById('src').innerHTML =
+    paras('A', 12) + '<img id="slow" src="http://slow.test/tall.svg" alt="">' + paras('B', 30) +
+    '<img id="lazy" loading="lazy" src="http://slow.test/lazy.svg" alt="">' + paras('C', 10);
+  const paginator = htmlPaginator.createPaginator({
+    source: '#src',
+    page: { size: 'letter', margin: '0.75in', footer: ({ page }) => `<div>PAGE-${page}</div>` },
+  });
+  const done = () => (document.documentElement.dataset.paginated = 'true');
+  if (location.search.includes('mode=now')) {
+    paginator.paginate();
+    done();
+  } else {
+    paginator.paginateWhenReady().then(done);
+  }
+</script>
+</body>
+</html>

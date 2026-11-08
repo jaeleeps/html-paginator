@@ -26,6 +26,8 @@ import { freezeTableColumns } from './tableColumns';
 import { createTextSplitter } from './textSplit';
 import { buildTableOfContents, resolvePageRefs } from './toc';
 import { buildIndex, dedupeIndexPages, indexPageLabels } from './indexEntries';
+import { whenContentReady } from './ready';
+import type { ReadyOptions } from './ready';
 
 export const DEFAULT_PAGE_SIZE = 'letter' as const;
 
@@ -344,6 +346,12 @@ export function createPaginator(config: PaginatorConfig): Paginator {
         if (!indexLabels || pass === 3 || sameLabels(indexLabels, labels)) return result;
         labels = indexLabels;
       }
+    },
+
+    async paginateWhenReady(options?: ReadyOptions): Promise<PaginateResult> {
+      const doc = typeof resolved.source !== 'string' ? resolved.source.ownerDocument : document;
+      await whenContentReady(resolveElement(resolved.source, doc, 'source'), options);
+      return this.paginate();
     },
 
     reset(): void {

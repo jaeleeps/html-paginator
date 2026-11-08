@@ -1,4 +1,5 @@
 import type { EndnoteOptions } from './endnotes';
+import type { ReadyOptions } from './ready';
 import type { FootnoteOptions } from './footnotes';
 import type { LineNumberOptions } from './lineNumbers';
 
@@ -295,6 +296,11 @@ export interface PaginateResult {
 export interface Paginator {
   /** Distribute content across pages and render the result. */
   paginate(): PaginateResult;
+  /**
+   * Wait until the source's images and the document's web fonts have
+   * loaded (see `whenContentReady`), then paginate.
+   */
+  paginateWhenReady(options?: ReadyOptions): Promise<PaginateResult>;
   /** Undo pagination and show the original source content. */
   reset(): void;
   /** Current resolved configuration. */
