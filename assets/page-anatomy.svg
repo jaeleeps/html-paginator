@@ -1,0 +1,105 @@
+<svg viewBox="0 0 780 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="anat-title anat-desc">
+  <title id="anat-title">Anatomy of a page</title>
+  <desc id="anat-desc">A page with its margins and gutter, a header placed at headerDistance from the top edge and a footer at footerDistance from the bottom edge, the body holding the distributed content, the footnote area with its separator at the bottom of the body, and a page border measured from the edge of the sheet.</desc>
+  <defs>
+    <style>
+      text { font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+      .mono { font-family: ui-monospace, 'SFMono-Regular', 'SF Mono', Menlo, monospace; }
+      .key { fill: #2d3142; font-size: 11px; font-weight: 600; }
+      .opt { fill: #eb6c36; font-size: 9px; }
+      .note { fill: #4f5d75; font-size: 9px; }
+      .lead { stroke: #7a8399; stroke-width: 0.8; fill: none; }
+      .line { fill: rgba(45,49,66,0.16); }
+    </style>
+    <pattern id="a-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="6" height="6" fill="rgba(235,108,54,0.08)"/>
+      <line x1="0" y1="0" x2="0" y2="6" stroke="rgba(235,108,54,0.35)" stroke-width="1.5"/>
+    </pattern>
+    <marker id="a-dim" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse"><polygon points="0 0, 6 3, 0 6" fill="#7a8399"/></marker>
+  </defs>
+
+  <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+  <!-- sheet -->
+  <rect x="62" y="42" width="300" height="420" fill="rgba(0,0,0,0.08)"/>
+  <rect x="60" y="40" width="300" height="420" fill="#ffffff" stroke="#bfc0c0"/>
+  <!-- margins (everything outside the body) -->
+  <path d="M 60,40 h 300 v 420 h -300 Z M 116,90 v 314 h 204 v -314 Z" fill="rgba(45,49,66,0.045)" fill-rule="evenodd"/>
+  <!-- gutter -->
+  <rect x="60" y="40" width="16" height="420" fill="url(#a-hatch)"/>
+  <!-- page border, from the edge -->
+  <rect x="68" y="48" width="284" height="404" fill="none" stroke="#eb6c36" stroke-width="1.2" stroke-dasharray="5 3"/>
+
+  <!-- header area, at headerDistance from the top -->
+  <rect x="116" y="58" width="204" height="18" rx="2" fill="rgba(45,49,66,0.06)" stroke="rgba(45,49,66,0.25)" stroke-width="0.6"/>
+  <rect x="122" y="64" width="60" height="5" rx="1" fill="rgba(45,49,66,0.35)"/>
+  <rect x="270" y="64" width="44" height="5" rx="1" fill="rgba(45,49,66,0.2)"/>
+
+  <!-- body -->
+  <rect x="116" y="90" width="204" height="314" fill="none" stroke="#2d3142" stroke-width="1"/>
+  <rect x="124" y="100" width="110" height="9" rx="1" fill="rgba(45,49,66,0.45)"/>
+  <g class="line">
+    <rect x="124" y="120" width="188" height="4" rx="1"/><rect x="124" y="129" width="188" height="4" rx="1"/>
+    <rect x="124" y="138" width="188" height="4" rx="1"/><rect x="124" y="147" width="120" height="4" rx="1"/>
+    <rect x="124" y="160" width="188" height="4" rx="1"/><rect x="124" y="169" width="188" height="4" rx="1"/>
+    <rect x="124" y="178" width="188" height="4" rx="1"/><rect x="124" y="187" width="188" height="4" rx="1"/>
+    <rect x="124" y="196" width="84" height="4" rx="1"/>
+  </g>
+  <rect x="140" y="210" width="156" height="62" rx="2" fill="rgba(45,49,66,0.05)" stroke="rgba(45,49,66,0.2)" stroke-width="0.6"/>
+  <rect x="170" y="278" width="96" height="3" rx="1" fill="rgba(45,49,66,0.25)"/>
+  <g class="line">
+    <rect x="124" y="292" width="188" height="4" rx="1"/><rect x="124" y="301" width="188" height="4" rx="1"/>
+    <rect x="124" y="310" width="188" height="4" rx="1"/><rect x="124" y="319" width="188" height="4" rx="1"/>
+    <rect x="124" y="328" width="150" height="4" rx="1"/>
+  </g>
+  <text x="276" y="333" fill="#eb6c36" font-size="7">1</text>
+  <!-- footnote area -->
+  <line x1="124" y1="364" x2="172" y2="364" stroke="#4f5d75" stroke-width="0.8"/>
+  <text x="124" y="378" fill="#eb6c36" font-size="6">1</text>
+  <rect x="130" y="373" width="176" height="3" rx="1" fill="rgba(45,49,66,0.25)"/>
+  <rect x="130" y="380" width="120" height="3" rx="1" fill="rgba(45,49,66,0.25)"/>
+  <rect x="124" y="389" width="182" height="3" rx="1" fill="rgba(45,49,66,0.25)"/>
+
+  <!-- footer area, at footerDistance from the bottom -->
+  <rect x="116" y="418" width="204" height="18" rx="2" fill="rgba(45,49,66,0.06)" stroke="rgba(45,49,66,0.25)" stroke-width="0.6"/>
+  <rect x="290" y="424" width="24" height="5" rx="1" fill="rgba(45,49,66,0.35)"/>
+
+  <!-- dimensions -->
+  <line x1="100" y1="42" x2="100" y2="56" stroke="#7a8399" stroke-width="0.8" marker-start="url(#a-dim)" marker-end="url(#a-dim)"/>
+  <line x1="100" y1="438" x2="100" y2="458" stroke="#7a8399" stroke-width="0.8" marker-start="url(#a-dim)" marker-end="url(#a-dim)"/>
+  <line x1="338" y1="42" x2="338" y2="88" stroke="#7a8399" stroke-width="0.8" marker-start="url(#a-dim)" marker-end="url(#a-dim)"/>
+  <line x1="322" y1="250" x2="358" y2="250" stroke="#7a8399" stroke-width="0.8" marker-start="url(#a-dim)" marker-end="url(#a-dim)"/>
+
+  <!-- callouts -->
+  <path class="lead" d="M 352,58 L 420,58"/>
+  <text x="426" y="56" class="key">Page border</text>
+  <text x="426" y="69" class="opt mono">pageBorder: { border, from: 'edge' | 'text', offset }</text>
+
+  <path class="lead" d="M 320,67 L 420,100"/>
+  <text x="426" y="98" class="key">Header, in the top margin</text>
+  <text x="426" y="111" class="opt mono">header · headerDistance</text>
+
+  <path class="lead" d="M 360,250 L 420,262"/>
+  <text x="426" y="260" class="key">Margins</text>
+  <text x="426" y="273" class="opt mono">margin · mirrorMargins</text>
+
+  <path class="lead" d="M 68,140 L 40,140 L 40,488 L 420,488"/>
+  <text x="426" y="480" class="key">Gutter (binding side)</text>
+  <text x="426" y="493" class="opt mono">gutter · gutterPosition</text>
+
+  <path class="lead" d="M 320,160 L 420,160"/>
+  <text x="426" y="156" class="key">Body: the distributed content</text>
+  <text x="426" y="169" class="opt mono">columns · verticalAlign · lineNumbers</text>
+  <text x="426" y="182" class="note">paragraphs split between lines, tables between rows;</text>
+  <text x="426" y="194" class="note">captions, cross-references and page fields resolved</text>
+
+  <path class="lead" d="M 306,378 L 420,320"/>
+  <text x="426" y="318" class="key">Footnotes, below the text of their page</text>
+  <text x="426" y="331" class="opt mono">footnotes: { restart, format, position, continuationNotice }</text>
+
+  <path class="lead" d="M 320,427 L 420,404"/>
+  <text x="426" y="402" class="key">Footer, in the bottom margin</text>
+  <text x="426" y="415" class="opt mono">footer · footerDistance · page numbers</text>
+
+  <text x="60" y="26" fill="#2d3142" font-size="14" font-weight="600">Anatomy of a page</text>
+</svg>
