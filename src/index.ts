@@ -3,6 +3,8 @@
  * Auto page-break pagination for HTML content, targeting @media print.
  */
 
+import { version } from '../package.json';
+
 export { createPaginator, DEFAULT_PAGE_SIZE } from './createPaginator';
 export { distribute } from './distribute';
 export type {
@@ -127,4 +129,5 @@ export type {
   PaginatorConfig,
 } from './types';
 
-export const VERSION = '0.0.1';
+/** The package version (from package.json, so it cannot drift). */
+export const VERSION: string = version;

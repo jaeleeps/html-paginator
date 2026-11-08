@@ -2,7 +2,7 @@
 
 Auto page-break pagination for HTML content. Distributes DOM elements across fixed-size pages with per-page headers, footers, and break control -- targeting `@media print` and headless PDF generation.
 
-Zero runtime dependencies. Ships ESM, CJS, and TypeScript declarations.
+Zero runtime dependencies. Ships ESM, CJS, and TypeScript declarations. See the [changelog](https://github.com/jaeleeps/html-paginator/blob/main/CHANGELOG.md) for what changed in each release.
 
 ## Showcase
 
