@@ -32,6 +32,7 @@ export {
 export type { EndnoteOptions } from './endnotes';
 export { FIELD_ATTRIBUTE, prepareFields, resolveFields } from './fields';
 export {
+  CONTINUATION_NOTICE_CLASS,
   createFootnotes,
   FOOTNOTE_ATTRIBUTE,
   FOOTNOTE_CLASS_NAMES,

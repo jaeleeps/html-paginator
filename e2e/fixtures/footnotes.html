@@ -60,6 +60,8 @@
     footnotes: {
       ...(location.search.includes('restart=page') ? { restart: 'page', format: 'lower-alpha' } : {}),
       ...(location.search.includes('position=beneath') ? { position: 'beneath-text' } : {}),
+      // ?notice: Word's continuation notice on a note continued on the next page.
+      ...(location.search.includes('notice') ? { continuationNotice: 'NOTICE continued on next page' } : {}),
     },
   }).paginate();
   document.documentElement.dataset.paginated = 'true';

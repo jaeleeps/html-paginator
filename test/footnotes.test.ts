@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createFootnotes, createPaginator, distribute, NOTE_ATTRIBUTE, parseDeclarativeConfig } from '../src/index';
+import { withContinuationNotice } from '../src/footnotes';
 import type { BreakBehavior, MeasureAdapter } from '../src/index';
 
 afterEach(() => {
@@ -295,5 +296,22 @@ describe('footnote position', () => {
     );
     document.body.innerHTML = `<div data-hp-content data-hp-footnote-position="beneath-text"><p>a</p></div>`;
     expect(parseDeclarativeConfig(document)!.footnotes).toEqual({ position: 'beneath-text' });
+  });
+});
+
+describe('footnote continuation notice', () => {
+  it('ends a note with the notice, aligned to the line end', () => {
+    const note = document.createElement('div');
+    note.textContent = 'head of a long note';
+    withContinuationNotice(note, 'Continued on next page');
+    const notice = note.lastElementChild as HTMLElement;
+    expect(notice.className).toBe('hp-footnote-notice');
+    expect(notice.textContent).toBe('Continued on next page');
+    expect(notice.style.textAlign).toBe('end');
+  });
+
+  it('is read from data-hp-footnote-continuation-notice', () => {
+    document.body.innerHTML = `<div data-hp-content data-hp-footnote-continuation-notice="(continued)"><p>a</p></div>`;
+    expect(parseDeclarativeConfig(document)!.footnotes).toEqual({ continuationNotice: '(continued)' });
   });
 });

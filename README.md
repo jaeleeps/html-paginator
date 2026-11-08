@@ -568,6 +568,7 @@ Wrap a note's text in `data-footnote` where its reference goes. The note moves t
 
 - An `id` on the `data-footnote` element moves to the note, so you can link to it. Footnote reference numbers are left out of TOC entries.
 - **Long notes continue on the next page**, as in Word. When a page's last note does not fit, it splits between lines, keeping CSS `orphans`/`widows`. The rest opens the next page's footnote area, without a number and under a full-width separator (`.hp-footnote-separator-continued`). Its fragment is marked `data-hp-continued`. Turning off `splitParagraphs` also turns this off.
+- `footnotes: { continuationNotice: 'Continued on next page' }` ends the part of a note that continues with that text (Word's footnote continuation notice), in a `div.hp-footnote-notice` aligned to the line end. It is counted when the note is split, so it always fits. Declaratively: `data-hp-footnote-continuation-notice`.
 
 ### Numbered captions and cross-references
 
@@ -690,7 +691,7 @@ Create a paginator instance.
 | `pageOverrides` | `Record<number, PageConfig>` | `{}` | Per-page overrides (1-based) |
 | `repeatTableHead` | `boolean` | `false` | Repeat `<thead>` on table continuation pages |
 | `endnotes` | `{ format?, location?, restart? }` | lower-roman, end of document | Endnote number format; `location` `'document'` or `'section'`; `restart` `'continuous'` or `'section'` |
-| `footnotes` | `{ restart?, format?, position? }` | continuous, decimal, bottom of page | Footnote numbering: restart `'continuous'`, `'section'` or `'page'`; number format; `position` `'page'` or `'beneath-text'` |
+| `footnotes` | `{ restart?, format?, position?, continuationNotice? }` | continuous, decimal, bottom of page | Footnote numbering: restart `'continuous'`, `'section'` or `'page'`; number format; `position` `'page'` or `'beneath-text'`; continuation notice text |
 | `splitTableRows` | `boolean` | `true` | Let rows break across pages (cells split between lines) |
 | `splitParagraphs` | `boolean` | `true` | Split paragraphs between lines (widow/orphan control via CSS `orphans`/`widows`) |
 | `keepHeadingsWithNext` | `boolean` | `true` | Headings keep with the next element |
@@ -760,7 +761,7 @@ Side-effect import that calls `bindPrintPagination()` and exposes the handle as 
 | `data-hp-columns` / `data-hp-column-gap` / `data-hp-column-rule` | config / content / section group | Newspaper columns, the space and line between them |
 | `data-hp-header-distance` / `data-hp-footer-distance` | config / content / section group | Header/footer distance from the sheet edge (Word layout) |
 | `data-hp-mirror-margins` / `data-hp-gutter` / `-position` | config / content / section group | Facing-page margins, binding gutter and its margin (`left`, `right`, `top`) |
-| `data-hp-footnote-restart` / `-format` / `-position` | config / content | Footnote numbering: `continuous`, `section` or `page`; number style; `page` or `beneath-text` |
+| `data-hp-footnote-restart` / `-format` / `-position` / `-continuation-notice` | config / content | Footnote numbering: `continuous`, `section` or `page`; number style; `page` or `beneath-text`; text ending a note continued on the next page |
 | `data-hp-endnote-location` / `-restart` / `-format` | config / content | Endnotes at the end of the `document` or each `section`; `continuous` or `section` numbering; number style |
 | `data-hp-vertical-align` | config / content / section group | `top`, `center` or `bottom` (Word's vertical alignment) |
 | `data-hp-page-border` / `-from` / `-offset` | config / content / section group | Page border (CSS border or `none`), measured from `edge` or `text` |
