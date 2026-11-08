@@ -164,7 +164,9 @@ export function buildPages(
           position: 'absolute',
           top: '0',
           bottom: '0',
-          left: `calc(${layout.columnGap} / -2)`,
+          // In the gap before the column (on its right in RTL, where
+          // columns flow from right to left).
+          insetInlineStart: `calc(${layout.columnGap} / -2)`,
           borderLeft: layout.columnRule,
         });
         column.appendChild(rule);

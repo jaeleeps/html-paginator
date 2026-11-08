@@ -68,7 +68,16 @@ test.describe('line numbers', () => {
         counted += body.lines;
         expect(body.marks.map((m) => m.n), `cols page ${i + 1} column ${c + 1}`).toEqual(expected);
         body.marks.forEach((m, k) => expect(Math.abs(m.center - centers[k]!)).toBeLessThan(2));
-        for (const m of body.marks) expect(m.right).toBeCloseTo(body.bodyLeft - 0.15 * 96, 0);
+        for (const m of body.marks) {
+          if (c === 0) expect(m.right).toBeCloseTo(body.bodyLeft - 0.15 * 96, 0);
+          else {
+            // Beside column 2: at most 0.15in from its text, within its half
+            // of the 0.5in gap (clear of the column before).
+            expect(m.right).toBeLessThanOrEqual(body.bodyLeft + 0.5);
+            expect(m.right).toBeGreaterThanOrEqual(body.bodyLeft - 0.15 * 96 - 0.5);
+            expect(m.left).toBeGreaterThan(body.bodyLeft - 0.25 * 96);
+          }
+        }
       }
     }
 
